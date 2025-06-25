@@ -1,0 +1,31 @@
+services:
+  frontend:
+      container_name: frontend
+      build:
+          context: ./frontend
+      volumes:
+          - frontend-dist:/app/dist
+      env_file:
+        - ./.env.production
+      networks:
+        - ft_transcendence
+
+  backend:
+      container_name: backend
+      build:
+        context: ./backend
+      ports:
+        - '443:443'
+      volumes:
+        - frontend-dist:/app/static
+      env_file:
+        - ./.env
+      networks:
+        - ft_transcendence
+
+networks:
+  ft_transcendence:
+    driver: bridge
+
+volumes:
+  frontend-dist:

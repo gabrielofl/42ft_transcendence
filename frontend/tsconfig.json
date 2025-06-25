@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+	  "target": "ESNext",                       // modern JS
+	  "module": "ESNext",                       // needed for Vite
+	  "moduleResolution": "Bundler",            // required for Vite
+	  "lib": ["DOM", "ESNext"],                 // DOM + latest JS features
+	  "strict": true,                           // strict typing is good!
+	  "esModuleInterop": true,                  // allows mixing imports
+	  "skipLibCheck": true,                     // faster builds
+	  "allowSyntheticDefaultImports": true,     // makes import smoother
+	  "forceConsistentCasingInFileNames": true, // optional, prevents subtle bugs
+	  "isolatedModules": true,                  // needed for Vite + TS
+	  "resolveJsonModule": true,                // allow importing JSON
+	  "noEmit": true                            // Vite handles emitting
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+  }
+  
