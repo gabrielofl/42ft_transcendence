@@ -3,10 +3,16 @@ services:
       container_name: frontend
       build:
           context: ./frontend
+      ports:
+        - "8080:5173"
       volumes:
+          - ./frontend:/app 
+          - /app/node_modules
           - frontend-dist:/app/dist
       env_file:
         - ./.env.production
+      environment:
+        - HOST=0.0.0.0
       networks:
         - ft_transcendence
 
