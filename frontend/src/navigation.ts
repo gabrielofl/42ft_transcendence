@@ -1,6 +1,8 @@
 import { API_BASE_URL } from './main.js';
-import { renderLogin, setupLogin } from './screens/Login.js';
-import { renderHome, setupHome } from './screens/Home.js';
+import { renderHeader } from './components/Header.js';
+import { renderAuthContainer } from './screens/AuthContainer.js';
+import { renderHome } from './screens/Home.js';
+import { renderGame } from './screens/GameScreen.js';
 
 export async function navigateTo(screen: string) {
 	const app = document.getElementById('app')!;
@@ -8,21 +10,39 @@ export async function navigateTo(screen: string) {
 		console.error('App container not found!');
 		return;
 	}
+	const header = document.getElementById('header')!;
+	if (!header) {
+		console.error('Header container not found!');
+		return;
+	}
+	const main = document.getElementById('main')!;
+	if (!main) {
+		console.error('Main container not found!');
+		return;
+	}
 
-	app.innerHTML = '';
+	main.innerHTML = '';
+	if (screen != 'login') {
+		renderHeader();
+	}
+	else
+		header.innerHTML = '';
 
-    switch (screen) {
-        case 'login':
-			app.innerHTML = renderLogin();
-			setupLogin();
-            break;
-
-		case 'home':
-			app.innerHTML = renderHome();
-			setupHome();
+	switch (screen) {
+		case 'login':
+			renderAuthContainer();
 			break;
 
-        default:
-            app.innerHTML = `<p class="text-red-500">Unknown screen: ${screen}</p>`;
-    }
+		case 'home':
+			renderHome();
+			break;
+		
+		case 'game':
+			renderGame("Jorge", "Miguel", "local");
+			break;
+
+
+		default:
+			app.innerHTML = `<p class="text-red-500">Unknown screen: ${screen}</p>`;
+	}
 }
