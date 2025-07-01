@@ -29,14 +29,6 @@ export async function navigateTo(screen: string) {
 		header.innerHTML = '';
 
 	switch (screen) {
-		case 'login':
-			renderAuthContainer();
-			break;
-
-		case 'home':
-			renderHome();
-			break;
-		
 		case 'game':
 			renderGame("Jorge", "Miguel", "local");
 			break;

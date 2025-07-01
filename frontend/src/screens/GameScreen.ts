@@ -20,7 +20,7 @@ export function renderGame(playerName: string, opponentName: string, mode: strin
 
 			<!-- Player 1 Box -->
 			<div id="player-box" class="flex flex-col items-center bg-[#1a1d26] rounded-xl px-4 py-3 shadow-md">
-			<div class="text-base font-semibold">${playerName}</div>
+			<div class="text-base font-semibold">${ playerName }</div>
 			<div id="player-score" class="text-3xl font-extrabold animate-none transition-transform">0</div>
 			<div class="font-semibold text-blue-200 text-xs">Controls:</div>
 				<div class="flex gap-2">
@@ -36,7 +36,7 @@ export function renderGame(playerName: string, opponentName: string, mode: strin
 
 			<!-- Opponent Box -->
 			<div id="opponent-box" class="flex flex-col items-center bg-[#1a1d26] rounded-xl px-4 py-3 shadow-md">
-			<div class="text-base font-semibold">${opponentName}</div>
+			<div class="text-base font-semibold">${opponentName} </div>
 			<div id="opponent-score" class="text-3xl font-extrabold animate-none transition-transform">0</div>
 			<div class="font-semibold text-purple-200 text-xs">Controls:</div>
 			<div class="flex gap-2 justify-end">
@@ -49,14 +49,7 @@ export function renderGame(playerName: string, opponentName: string, mode: strin
 	</div>
 		<!-- Game Canvas -->
 		<div class="relative w-full mt-4 px-8 max-w-screen-2xl mx-auto aspect-[21/9] min-h-[300px]">
-		<canvas id="pong-canvas" class="w-full aspect-[21/9]" data-mode="${mode}"></canvas>
-		<div id="countdown-overlay"
-			class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-5xl font-bold text-white bg-black bg-opacity-60 hidden">
-		</div>
-		<button id="start-button"
-			class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border border-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow-lg">
-			Start Match
-		</button>
+		<canvas id="pong-canvas" class="w-full aspect-[21/9]" data-mode="${ mode }"></canvas>
 		</div>
 	
 	`;
@@ -66,9 +59,9 @@ export function renderGame(playerName: string, opponentName: string, mode: strin
 function setupGameEvents(): void { 
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
-	const ctx = canvas.getContext('2d');
-	ctx!.fillStyle = 'indigo';
-	ctx!.fillRect(0, 0, canvas.width, canvas.height);
+	const gameArea = canvas.getContext('2d');
+	gameArea!.fillStyle = 'indigo';
+	gameArea!.fillRect(0, 0, canvas.width, canvas.height);
 	}
 }
 

@@ -22,14 +22,14 @@ export function renderHeader(): void {
     `;
 
 	const homeBtn = document.getElementById('nav-home')!;
-	homeBtn?.addEventListener('click', () => {
-			navigateTo('home');
-	});
+	// homeBtn?.addEventListener('click', () => {
+	// 		navigateTo('home');
+	// });
 	
 	const logoutBtn = document.getElementById('nav-logout')!;
-	logoutBtn?.addEventListener('click', () => {
-		navigateTo('login');
+	// logoutBtn?.addEventListener('click', () => {
+	// 	navigateTo('login');
 		//disconnect
 		//remove token
-		});
+		// });
 }

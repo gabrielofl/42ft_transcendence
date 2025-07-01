@@ -4,7 +4,8 @@ export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    root: 'src',
+	root: 'src',
+	publicDir: '../public',
     build: {
       outDir: '../dist',
       emptyOutDir: true,
