@@ -6,7 +6,7 @@ services:
       volumes:
           - frontend-dist:/app/dist
       env_file:
-        - ./.env.production
+        - ./frontend/.env.production
       networks:
         - ft_transcendence
 
@@ -19,7 +19,7 @@ services:
       volumes:
         - frontend-dist:/app/static
       env_file:
-        - ./.env
+        - ./backend/.env
       networks:
         - ft_transcendence
 

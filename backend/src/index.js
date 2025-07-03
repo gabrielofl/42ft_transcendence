@@ -1,48 +1,45 @@
-import Fastify from 'fastify';
-import fastifyCors from '@fastify/cors';
-import fastifyJwt from '@fastify/jwt';
-import fs from 'fs';
-import fastifyMultipart from '@fastify/multipart';
-import fastifyStatic from '@fastify/static';
-import websocket from '@fastify/websocket';
-import fastifyFormbody from '@fastify/formbody';
-import fastifyCookie from '@fastify/cookie';
-  
-const fastify = Fastify({
-	logger: true,
-	trustProxy: true,
-	https: {
-		key: fs.readFileSync('/app/certs/privkey.pem'),
-        cert: fs.readFileSync('/app/certs/fullchain.pem'),
+import { readFileSync } from 'fs';
+import { buildApp } from './app.js';
+import config from './config/index.js';
+
+const start = async () => {
+	try {
+		// Build app with HTTPS config
+		const app = await buildApp({
+		logger: {
+			level: config.logging.level,
+			...(config.env === 'development' && {
+			transport: {
+				target: 'pino-pretty',
+				options: {
+				translateTime: 'HH:MM:ss Z',
+				ignore: 'pid,hostname',
+				}
+			}
+			})
+		},
+		https: {
+			key: readFileSync(config.server.https.key),
+			cert: readFileSync(config.server.https.cert),
+		}
+		});
+
+		// Start server
+		await app.listen({
+		port: config.server.port,
+		host: config.server.host,
+		});
+
+		app.log.info(`🚀 Server running at https://${config.server.host}:${config.server.port}`);
+		
+	} catch (err) {
+		console.error('Failed to start server:', err);
+		process.exit(1);
 	}
-  });
+};
 
-await fastify.register(fastifyCookie, {
-	  secret: process.env.JWT_SECRET,
-	  parseOptions: {},
-});
+// Handle graceful shutdown
+process.on('SIGINT', () => process.exit(0));
+process.on('SIGTERM', () => process.exit(0));
 
-await fastify.register(websocket);
-
-fastify.register(fastifyMultipart);
-fastify.register(fastifyCors, { origin: true, credentials: true, });
-fastify.register(fastifyFormbody);
-  
-fastify.register(fastifyJwt, {
-	secret: process.env.JWT_SECRET,
-	sign: { expiresIn: '3h' },
-});
-
-fastify.register(fastifyStatic, {
-	root: '/app/static',
-	prefix: '/',
-});
-
-fastify.listen({ port: 443, host: '0.0.0.0' }, (err, address) => {
-	if (err) {
-	  console.error(' Failed to start server:', err);
-	  process.exit(1);
-	}
-  
-	console.log(`INFO Connections accepted at ${address}`);
-});
+start();
