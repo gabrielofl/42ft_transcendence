@@ -10,7 +10,7 @@ services:
           - /app/node_modules
           - frontend-dist:/app/dist
       env_file:
-        - ./.env.production
+        - ./frontend/.env.production
       environment:
         - HOST=0.0.0.0
       networks:
@@ -25,7 +25,7 @@ services:
       volumes:
         - frontend-dist:/app/static
       env_file:
-        - ./.env
+        - ./backend/.env
       networks:
         - ft_transcendence
 
