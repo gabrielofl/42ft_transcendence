@@ -19,10 +19,10 @@ export function renderGame(playerName: string, opponentName: string, mode: strin
 		<div class="justify-self-center flex items-center gap-6">
 
 			<!-- Player 1 Box -->
-			<div id="player-box" class="flex flex-col items-center bg-[#1a1d26] rounded-xl px-4 py-3 shadow-md">
-			<div class="text-base font-semibold">${playerName}</div>
+			<div id="player-box" class="flex flex-col items-center btn-primary rounded-xl px-4 py-3 shadow-md">
+			<div class="font-semibold text-sm">${playerName}</div>
 			<div id="player-score" class="text-3xl font-extrabold animate-none transition-transform">0</div>
-			<div class="font-semibold text-blue-200 text-xs">Controls:</div>
+			<div class="font-semibold text-blue-200 text-[0.4rem]">Controls:</div>
 				<div class="flex gap-2">
 				<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">W</kbd>
 				<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">S</kbd>
@@ -31,14 +31,14 @@ export function renderGame(playerName: string, opponentName: string, mode: strin
 
 			<!-- VS Center -->
 			<div class="flex items-center justify-center">
-			<span class="text-gradient bg-gradient-to-r text-gray-900 bg-clip-text font-bold text-lg">vs</span>
+			<span class="text-gradient bg-gradient-to-r text-[#ffff66] bg-clip-text font-bold text-lg">vs</span>
 			</div>
 
 			<!-- Opponent Box -->
-			<div id="opponent-box" class="flex flex-col items-center bg-[#1a1d26] rounded-xl px-4 py-3 shadow-md">
-			<div class="text-base font-semibold">${opponentName}</div>
+			<div id="opponent-box" class="flex flex-col items-center btn-primary rounded-xl px-4 py-3 shadow-md">
+			<div class="font-semibold text-sm">${opponentName}</div>
 			<div id="opponent-score" class="text-3xl font-extrabold animate-none transition-transform">0</div>
-			<div class="font-semibold text-purple-200 text-xs">Controls:</div>
+			<div class="font-semibold text-purple-200 text-[0.4rem]">Controls:</div>
 			<div class="flex gap-2 justify-end">
 				<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">↑</kbd>
 				<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">↓</kbd>

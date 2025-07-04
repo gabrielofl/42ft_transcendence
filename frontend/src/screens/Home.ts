@@ -30,12 +30,12 @@ const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
 return `
 	<div class="bg-black/40 backdrop-blur-sm rounded-xl p-4 h-2/3 w-full">
-	<h3 class="text-lg font-semibold mb-4 flex items-center">
+	<h3 class="text-md font-semibold mb-4 flex items-center">
 		Leaderboard
 	</h3>
 	<div class="space-y-3">
 		${sortedPlayers.map((player, index) => `
-		<div class="flex items-center justify-between p-3 hover:bg-gray-900 rounded-lg group ${index === 0 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-gray-800/50'}">
+		<div class="flex items-center justify-between p-3 hover:bg-yellow-500/40 rounded-lg group ${index === 0 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-indigo-800/50'}">
 			<div class="flex items-center space-x-3">
 			${index === 0 ? `<span class="material-symbols-outlined w-4 h-4 text-yellow-400 transition-transform duration-300 group-hover:-rotate-90 group-hover:scale-125">star</span>` : ''}
 			<div class="flex flex-col">
@@ -47,8 +47,8 @@ return `
 			</div>
 			</div>
 			<div class="text-right">
-			<div class="text-sm text-gray-300">Rank #${index + 1}</div>
-			<div class="font-bold text-lg">${player.score.toLocaleString()} pts.</div>
+			<div class="text-[0.6rem] text-gray-300">Rank #${index + 1}</div>
+			<div class="font-bold text-sm">${player.score.toLocaleString()} pts.</div>
 			</div>
 		</div>
 		`).join('')}
@@ -61,14 +61,14 @@ export function renderGameOptionsPanel(games: Games[]): string {
 
 return `
 	<div class="border border-indigo-700 rounded-xl p-4 h-2/3 w-full">
-	<h3 class="text-indigo-700 text-lg font-semibold font-press mb-4 flex items-center">
+	<h3 class="text-[#ffff66] text-md font-semibold font-press mb-4 flex items-center">
 		Game Mode
 	</h3>
 	<div class="space-y-3">
 	${games.map(game => `
 		<button id="${game.button}"
-		class="w-full border border-indigo-700 hover:bg-indigo-400 text-left text-lg font-bold text-indigo-700 font-press rounded-lg p-6 px-4 transition flex items-center gap-2">
-		< <span class="material-symbols-outlined"> ${game.icon} </span> ${game.type} game >
+		class="w-full border border-indigo-700 hover:bg-indigo-400 text-left text-sm font-bold text-[#ffff66] font-press rounded-lg p-6 px-4 transition flex items-center gap-2">
+		< <span class="material-symbols-outlined"> ${game.icon} </span> ${game.type} >
 		</button>
 		`).join('')}
 		</div>
@@ -80,24 +80,24 @@ export function renderGameStatsPanel(player: PlayerStats): string {
 
 return `
 <div class="bg-gray-300/70 rounded-xl p-4 h-2/3 w-full">
-		<h3 class="text-lg text-gray-900 font-semibold mb-4">Player Statistics</h3>
+		<h3 class="text-md text-gray-900 font-semibold mb-4">Player Statistics</h3>
 		
 		<div class="grid grid-cols-2 gap-4 text-sm">
 			<div class="text-center p-3 bg-gray-800/90 rounded-lg transition-all duration-300 hover:scale-105">
 				<div class="text-2xl font-bold text-green-400">${player.wins}</div>
-				<div class="text-white">Wins</div>
+				<div class="text-white text-xs">Wins</div>
 			</div>
 		<div class="text-center p-3 bg-gray-800/90 rounded-lg transition-all duration-300 hover:scale-105">
 			<div class="text-2xl font-bold text-red-400">${player.losses}</div>
-			<div class="text-white">Losses</div>
+			<div class="text-white text-xs">Losses</div>
 		</div>
 		<div class="text-center p-3 bg-gray-800/90 rounded-lg transition-all duration-300 hover:scale-105">
 			<div class="text-2xl font-bold text-yellow-400">${player.ratio}</div>
-			<div class="text-white">W/L Ratio</div>
+			<div class="text-white text-xs">W/L Ratio</div>
 		</div>
 		<div class="text-center p-3 bg-gray-800/90 rounded-lg transition-all duration-300 hover:scale-105">
 			<div class="text-2xl font-bold text-blue-400">${player.time}</div>
-			<div class="text-white">Time played</div>
+			<div class="text-white text-xs">Time played</div>
 		</div>
 		</div>
 	</div>

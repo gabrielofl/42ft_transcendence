@@ -16,22 +16,22 @@ if (!main) return;
 main.innerHTML = `
 	<div class="min-h-screen flex items-center justify-center p-4">
 	<div class="max-w-md w-full space-y-8">
-		<div class="bg-white rounded-2xl shadow-xl p-8">
+		<div class="bg-[#25004d] border border-[#ff00ff] rounded-2xl shadow-xl p-8">
 		<div class="text-center mb-8">
-			<h2 class="text-3xl font-bold text-gray-900 mb-2">
+			<h2 class="text-2xl font-bold text-[#ff00ff] mb-2">
 			${isLogin ? 'Welcome Back' : 'Create Account'}
 			</h2>
-			<p class="text-gray-600">
+			<p class="text-[#ffff66] text-sm">
 			${isLogin ? 'Sign in to your account to continue' : 'Join us today and get started'}
 			</p>
 		</div>
 
-		<div class="flex bg-gray-100 rounded-lg p-1 mb-6">
+		<div class="flex rounded-lg p-1 mb-6">
 			<button id="sign-in-tab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-			isLogin ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+			isLogin ? 'bg-white text-indigo-600 shadow-sm btn-secondary' : 'text-gray-500 hover:text-gray-700 btn-tertiary'
 			}">Sign In</button>
 			<button id="sign-up-tab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-			!isLogin ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+			!isLogin ? 'bg-white text-indigo-600 shadow-sm btn-secondary' : 'text-gray-500 hover:text-gray-700 btn-tertiary'
 			}">Sign Up</button>
 		</div>
 
@@ -50,10 +50,10 @@ main.innerHTML = `
 		<div class="relative">
 			<div class="relative my-6">
 				<div class="absolute inset-0 flex items-center">
-					<div class="w-full border-t border-gray-300"></div>
+					<div class="w-full border-t border-[--secondary-color]"></div>
 				</div>
 				<div class="relative flex justify-center text-sm">
-					<span class="bg-white px-3 text-gray-500">Or continue with email</span>
+					<span class="bg-[#25004d] text-xs px-3 text-[--secondary-color]">Or continue with email</span>
 				</div>
 				</div>
 		</div>
@@ -72,7 +72,7 @@ function renderLoginForm(): string {
 return `
 	<!-- Email Field -->
 		<div>
-			<label for="email" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="email" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Email Address
 			</label>
 			<div class="relative">
@@ -81,7 +81,7 @@ return `
 				id="email"
 				name="email"
 				type="email"
-				class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Enter your email"
 			/>
 			</div>
@@ -89,7 +89,7 @@ return `
 
 		<!-- Password Field -->
 		<div>
-			<label for="password" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="password" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Password
 			</label>
 			<div class="relative">
@@ -98,7 +98,7 @@ return `
 				id="password"
 				name="password"
 				type="password"
-				class="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-12 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Enter your password"
 			/>
 			<button
@@ -122,16 +122,16 @@ return `
 				type="checkbox"
 				class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
 			/>
-			<label for="remember-me" class="ml-2 block text-sm text-gray-700">
+			<label for="remember-me" class="ml-2 block text-xs text-[#ff00ff]">
 				Remember me
 			</label>
 			</div>
-			<button type="button" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+			<button type="button" class="text-xs text-indigo-600 hover:text-indigo-500 font-medium">
 			Forgot password?
 			</div>
 		<div>
 			</button>
-			<button id="submit-login-btn" class="w-full bg-indigo-600 text-white text-sm font-medium p-3 rounded-lg hover:bg-indigo-700 transition">
+			<button id="submit-login-btn" class="w-full bg-indigo-600 text-white text-sm font-medium p-3 rounded-lg hover:bg-indigo-700 transition btn-primary">
 			Sign In
 			</button>
 		</div>
@@ -143,7 +143,7 @@ function renderRegisterForm(): string {
 <!-- Firstname and Lastname Field -->
 		<div class="flex">
 		<div class="mr-4">
-			<label for="firstname" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="firstname" class="block text-sm font-medium text-[#ff00ff] my-2">
 			First Name
 			</label>
 			<div class="relative">
@@ -152,14 +152,14 @@ function renderRegisterForm(): string {
 				id="firstname"
 				name="firstName"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="First name"
 				required
 			/>
 			</div>
 			</div>
 			<div>
-			<label for="lastname" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="lastname" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Last Name
 			</label>
 			<div class="relative">
@@ -168,7 +168,7 @@ function renderRegisterForm(): string {
 				id="lastname"
 				name="lastName"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Last name"
 				required
 			/>
@@ -178,7 +178,7 @@ function renderRegisterForm(): string {
 
 		<!-- Username -->
 		<div>
-			<label for="username" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="username" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Username
 			</label>
 			<div class="relative">
@@ -187,7 +187,7 @@ function renderRegisterForm(): string {
 				id="username"
 				name="username"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Enter a username"
 				required
 			/>
@@ -196,7 +196,7 @@ function renderRegisterForm(): string {
 
 		<!-- Email Field -->
 		<div>
-			<label for="email" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="email" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Email Address
 			</label>
 			<div class="relative">
@@ -205,7 +205,7 @@ function renderRegisterForm(): string {
 				id="email"
 				name="emailAddress"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Enter your email"
 				required
 			/>
@@ -214,7 +214,7 @@ function renderRegisterForm(): string {
 
 			<!-- Password Field -->
 		<div>
-			<label for="password" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="password" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Password
 			</label>
 			<div class="relative">
@@ -223,7 +223,7 @@ function renderRegisterForm(): string {
 				id="password"
 				name="password"
 				type="password"
-				class="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-12 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Create a password"
 				required
 			/>
@@ -232,13 +232,13 @@ function renderRegisterForm(): string {
 				type="button"
 				id="toggle-password"
 				aria-label="Toggle password visibility"
-				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-[#ff00ff] focus:outline-none"
 				>
 				<span class="material-symbols-outlined text-xl">visibility</span>
 			</button>
 			</div>
 			<div>
-			<label for="confirmpassword" class="block text-sm font-medium text-gray-700 my-2">
+			<label for="confirmpassword" class="block text-sm font-medium text-[#ff00ff] my-2">
 			Confirm password
 			</label>
 			<div class="relative">
@@ -247,7 +247,7 @@ function renderRegisterForm(): string {
 				id="confirm-password"
 				name="confirmPassword"
 				type="password"
-				class="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				class="block w-full pl-10 pr-12 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
 				placeholder="Confirm your password"
 				required
 			/>
@@ -256,7 +256,7 @@ function renderRegisterForm(): string {
 				type="button"
 				id="toggle-confirm-password"
 				aria-label="Toggle password visibility"
-				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-[#ff00ff] focus:outline-none"
 				>
 				<span class="material-symbols-outlined text-xl">visibility</span>
 			</button>
@@ -265,7 +265,7 @@ function renderRegisterForm(): string {
 		</div>
 
 			<!-- I agree to the Terms of Service and Privacy Policy -->
-		<div class="flex w-full items-center justify-between pb-2 pt-2 py-1">
+		<div class="flex w-full items-center justify-between py-4">
 			<div class="flex items-center">
 			<input
 				id="terms"
@@ -273,25 +273,25 @@ function renderRegisterForm(): string {
 				type="checkbox"
 				class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
 			/>
-			<label for="terms" class="m-1 block text-sm text-gray-700">
+			<label for="terms" class="m-1 block text-[0.4rem] text-[#ff00ff]">
 				I agree to the
 			</label>
 			
-			<button type="button" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+			<button type="button" class="text-[0.4rem] text-indigo-600 hover:text-indigo-500 font-medium">
 			Terms of Service
 			</button>
-			<label for="terms" class="m-1 block text-sm text-gray-700">
+			<label for="terms" class="m-1 block text-[0.4rem] text-[#ff00ff]">
 				and
 			</label>
 
-			<button type="button" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+			<button type="button" class="text-[0.4rem] text-indigo-600 hover:text-indigo-500 font-medium">
 				Privacy Policy
 			</button>
 		</div>
 		</div>
 
 			<div>
-				<button id="submit-register-btn" class="w-full bg-indigo-600 text-sm font-medium text-white py-3 rounded-lg hover:bg-indigo-700 transition">Create Account</button>
+				<button id="submit-register-btn" class="w-full bg-indigo-600 text-sm font-medium text-white py-3 rounded-lg hover:bg-indigo-700 transition btn-primary">Create Account</button>
 			</div>
 		<div>
 		</div>
