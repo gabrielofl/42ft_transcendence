@@ -33,7 +33,7 @@ const config = {
 	
 	// Security settings
 	security: {
-		jwtSecret: process.env.JWT_SECRET || 'change-this-secret',
+		jwtSecret: process.env.JWT_SECRET,
 		bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 10,
 	},
 	
@@ -48,6 +48,10 @@ const config = {
 		level: process.env.LOG_LEVEL || 'info',
 	},
 };
+
+if (!config.security.jwtSecret) {
+	throw new Error('FATAL: JWT_SECRET environment variable is required!');
+}
 
 // Export so other files can import this config
 export default config;
