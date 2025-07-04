@@ -38,9 +38,26 @@ export async function buildApp(opts = {}) {
 	await app.register(fastifyCors, app.config.cors);
 	
 	// Helmet - Adds security headers
+	// Development
 	await app.register(fastifyHelmet, {
 		contentSecurityPolicy: false,  // Disable for development
 	});
+
+	// Production
+	// await app.register(fastifyHelmet, {
+	// 	contentSecurityPolicy: {
+	// 		directives: {
+	// 			defaultSrc: ["'self'"],                    // Only from same origin
+	// 			scriptSrc: ["'self'", "'unsafe-inline'"],  // Scripts from self + inline
+	// 			styleSrc: ["'self'", "'unsafe-inline'"],   // Styles from self + inline
+	// 			imgSrc: ["'self'", "data:", "https:"],     // Images from self, data URLs, HTTPS
+	// 			connectSrc: ["'self'", "wss:"],            // API/WebSocket connections
+	// 			fontSrc: ["'self'"],                       // Fonts
+	// 			objectSrc: ["'none'"],                     // No plugins (Flash, etc)
+	// 			upgradeInsecureRequests: []                // Upgrade HTTP to HTTPS
+	// 		}
+	// 	}
+	// });
 
 	// JWT - For authentication tokens
 	await app.register(fastifyJwt, {
