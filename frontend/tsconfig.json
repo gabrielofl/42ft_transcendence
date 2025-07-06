@@ -13,7 +13,7 @@
 	  "resolveJsonModule": true,                // allow importing JSON
 	  "noEmit": true                            // Vite handles emitting
 	},
-	"include": ["src/**/*.ts"],
+	"include": ["src/**/*.ts", "../public", "src/types"],
 	"exclude": ["node_modules", "dist"]
   }
   

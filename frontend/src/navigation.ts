@@ -2,7 +2,7 @@ import { API_BASE_URL } from './main.js';
 import { renderHeader } from './components/Header.js';
 import { renderAuthContainer } from './screens/AuthContainer.js';
 import { renderHome } from './screens/Home.js';
-import { renderGame } from './screens/GameScreen.js';
+import { renderGame } from './screens/Game/GameScreen.js';
 
 export async function navigateTo(screen: string) {
 	const app = document.getElementById('app')!;
