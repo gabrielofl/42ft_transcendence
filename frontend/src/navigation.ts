@@ -3,6 +3,7 @@ import { renderHeader } from './components/Header.js';
 import { renderAuthContainer } from './screens/AuthContainer.js';
 import { renderHome } from './screens/Home.js';
 import { renderGame } from './screens/GameScreen.js';
+import { renderTournament } from './screens/Tournament.js';
 
 export async function navigateTo(screen: string) {
 	const app = document.getElementById('app')!;
@@ -39,6 +40,10 @@ export async function navigateTo(screen: string) {
 		
 		case 'game':
 			renderGame("Jorge", "Miguel", "local");
+			break;
+		
+		case 'tournament':
+			renderTournament();
 			break;
 
 
