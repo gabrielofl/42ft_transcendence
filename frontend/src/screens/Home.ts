@@ -60,14 +60,14 @@ return `
 export function renderGameOptionsPanel(games: Games[]): string {
 
 return `
-	<div class="border border-indigo-700 rounded-xl p-4 h-2/3 w-full">
-	<h3 class="text-[#ffff66] text-md font-semibold font-press mb-4 flex items-center">
+	<div class="bg-black/40 rounded-xl p-4 h-2/3 w-full">
+	<h3 class="text-md font-semibold font-press mb-4 flex items-center">
 		Game Mode
 	</h3>
 	<div class="space-y-3">
 	${games.map(game => `
 		<button id="${game.button}"
-		class="w-full border border-indigo-700 hover:bg-indigo-400 text-left text-sm font-bold text-[#ffff66] font-press rounded-lg p-6 px-4 transition flex items-center gap-2">
+		class="w-full bg-indigo-800/50 hover:bg-indigo-500 text-left text-sm font-bold font-press rounded-lg p-6 px-4 transition flex items-center gap-2">
 		< <span class="material-symbols-outlined"> ${game.icon} </span> ${game.type} >
 		</button>
 		`).join('')}
@@ -177,6 +177,7 @@ export function renderHome(): void {
 export function setupHome() {
 	// const modeBtn = document.getElementById('mode-btn')!;
 	const localBtn = document.getElementById('local-btn')!;
+	const tournamentBtn = document.getElementById('tournament-btn')!;
 	const aiBtn = document.getElementById('ai-btn')!;
 	const multiplayerBtn = document.getElementById('multiplayer-btn')!;
 
@@ -184,6 +185,11 @@ export function setupHome() {
 	localBtn?.addEventListener('click', async () => {
 		// navigateTo('game', type, players);
 		navigateTo('game');
+	});
+
+	tournamentBtn?.addEventListener('click', async () => {
+		navigateTo('tournament');
+		// navigateTo('game', type, players);
 	});
 
 	aiBtn?.addEventListener('click', async () => {

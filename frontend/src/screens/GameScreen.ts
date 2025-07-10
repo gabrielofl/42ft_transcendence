@@ -71,8 +71,4 @@ function setupGameEvents(): void {
 	ctx!.fillRect(0, 0, canvas.width, canvas.height);
 	}
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-	renderGame("Jorge", "Miguel", "local");
-});
 	
