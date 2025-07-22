@@ -11,7 +11,8 @@
 		"@babylonjs/gui": "^8.6.2",
 		"@babylonjs/loaders": "^8.6.2",
 		"@babylonjs/materials": "^8.6.2",
-		"cannon": "^0.6.2"
+		"cannon": "^0.6.2",
+		"@toast-ui/chart": "^4.6.1"
 	},
 	"devDependencies": {
 		"@types/cannon": "^0.1.13",

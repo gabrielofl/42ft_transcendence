@@ -13,8 +13,9 @@ export function renderAuthContainer(): void {
 const main = document.getElementById('main');
 if (!main) return;
 
-main.innerHTML = `
-	<div class="min-h-screen flex items-center justify-center p-4">
+	main.innerHTML = `
+<div id="auth-form-container">
+	<div class="flex items-center justify-center p-4">
 	<div class="max-w-md w-full space-y-8">
 		<div class="bg-[#25004d] border border-[#ff00ff] rounded-2xl shadow-xl p-8">
 		<div class="text-center mb-8">
@@ -26,13 +27,13 @@ main.innerHTML = `
 			</p>
 		</div>
 
-		<div class="flex rounded-lg p-1 mb-6">
+		<div class="flex rounded-lg gap-4 p-1 mb-6">
 			<button id="sign-in-tab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-			isLogin ? 'bg-white text-indigo-600 shadow-sm btn-secondary' : 'text-gray-500 hover:text-gray-700 btn-tertiary'
-			}">Sign In</button>
+			isLogin ? 'text-white shadow-sm btn-four' : ' hover:text-gray-700 btn-five font-normal'
+			}">SIGN IN</button>
 			<button id="sign-up-tab" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-			!isLogin ? 'bg-white text-indigo-600 shadow-sm btn-secondary' : 'text-gray-500 hover:text-gray-700 btn-tertiary'
-			}">Sign Up</button>
+			!isLogin ? 'text-white shadow-sm btn-four' : 'hover:text-gray-700 btn-five font-normal'
+			}">SIGN UP</button>
 		</div>
 
 		<div class="p-1 mb-6">
@@ -44,11 +45,13 @@ main.innerHTML = `
 			data-client_id="PUT_YOUR_WEB_CLIENT_ID_HERE"
 			></div>
 			<!-- g_id_signin places the button on a page and supports customization -->
-			<div class="g_id_signin"></div>
-			</div>
+			<button id="google-login-btn" class="btn-primary w-full rounded-lg text-xs">
+			${isLogin ? 'SIGN IN WITH GOOGLE' : 'SIGN UP WITH GOOGLE'}
+			</button>
+		</div>
 			<!-- Divider -->
 		<div class="relative">
-			<div class="relative my-6">
+			<div class="relative my-8">
 				<div class="absolute inset-0 flex items-center">
 					<div class="w-full border-t border-[--secondary-color]"></div>
 				</div>
@@ -61,8 +64,46 @@ main.innerHTML = `
 			${isLogin ? renderLoginForm() : renderRegisterForm()}
 		</div>
 		</div>
+		</div>
 	</div>
 	</div>
+	<div
+  id="twofa-container"
+  class="hidden fixed inset-0 flex items-center justify-center bg-[#25004d] z-50"
+>
+  <div class="w-full max-w-sm p-6 border border-[--primary-color] bg-[#1a0033] rounded-lg shadow-md">
+    <div class="text-center text-[#ff00ff] mb-4" id="twofa-mode-register">
+      Scan this QR code with your authenticator app:
+    </div>
+    <div class="text-center text-[#ff00ff] mb-4 hidden" id="twofa-mode-login">
+      Enter your 2FA code from your app:
+    </div>
+    <div id="qrcode-wrapper" class="flex justify-center mb-4">
+      <img src="/api/qrcode" class="h-24 w-24 border border-white rounded-md" />
+    </div>
+    <input
+      id="twofa-code"
+      type="text"
+      placeholder="Enter 6-digit code"
+      class="block w-full px-4 py-3 border border-[--secondary-color] rounded-lg text-sm bg-[--bg-color] text-white placeholder-white mb-4"
+    />
+    <button
+      id="submit-twofa-btn"
+      class="w-full btn-primary text-white py-2 rounded-lg"
+    >
+      Verify 2FA
+    </button>
+    <button
+      id="back-to-auth"
+      class="mt-4 w-full text-sm text-[--secondary-color] hover:text-[#ff00ff]"
+    >
+      ← Back to Sign In
+    </button>
+  </div>
+</div>
+
+
+
 `;
 
 setupAuthEvents();
@@ -73,15 +114,16 @@ return `
 	<!-- Email Field -->
 		<div>
 			<label for="email" class="block text-sm font-medium text-[#ff00ff] my-2">
-			Email Address
+			Email
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">mail</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">mail</span>
 			<input
 				id="email"
 				name="email"
 				type="email"
-				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Enter your email"
 			/>
 			</div>
@@ -93,19 +135,20 @@ return `
 			Password
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">lock</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">lock</span>
 			<input
 				id="password"
 				name="password"
 				type="password"
-				class="block w-full pl-10 pr-12 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-12 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Enter your password"
 			/>
 			<button
 				type="button"
 				id="toggle-password"
 				aria-label="Toggle password visibility"
-				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+				class="absolute inset-y-0 right-0 pr-3 flex items-center text-white hover:text-gray-700 focus:outline-none"
 				>
 				<span class="material-symbols-outlined text-xl">visibility</span>
 			</button>
@@ -126,13 +169,13 @@ return `
 				Remember me
 			</label>
 			</div>
-			<button type="button" class="text-xs text-indigo-600 hover:text-indigo-500 font-medium">
+			<button type="button" class="text-xs text-[--secondary-color] hover:text-indigo-500 font-medium">
 			Forgot password?
 			</div>
 		<div>
 			</button>
 			<button id="submit-login-btn" class="w-full bg-indigo-600 text-white text-sm font-medium p-3 rounded-lg hover:bg-indigo-700 transition btn-primary">
-			Sign In
+			SIGN IN
 			</button>
 		</div>
 `;
@@ -144,15 +187,16 @@ function renderRegisterForm(): string {
 		<div class="flex">
 		<div class="mr-4">
 			<label for="firstname" class="block text-sm font-medium text-[#ff00ff] my-2">
-			First Name
+			Name
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">person</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">person</span>
 			<input
 				id="firstname"
 				name="firstName"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="First name"
 				required
 			/>
@@ -163,12 +207,13 @@ function renderRegisterForm(): string {
 			Last Name
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">person</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">person</span>
 			<input
 				id="lastname"
 				name="lastName"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Last name"
 				required
 			/>
@@ -182,12 +227,13 @@ function renderRegisterForm(): string {
 			Username
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">account_circle</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">account_circle</span>
 			<input
 				id="username"
 				name="username"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Enter a username"
 				required
 			/>
@@ -197,15 +243,16 @@ function renderRegisterForm(): string {
 		<!-- Email Field -->
 		<div>
 			<label for="email" class="block text-sm font-medium text-[#ff00ff] my-2">
-			Email Address
+			Email
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">mail</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">mail</span>
 			<input
 				id="email"
 				name="emailAddress"
 				type="text"
-				class="block w-full pl-10 pr-3 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Enter your email"
 				required
 			/>
@@ -218,12 +265,13 @@ function renderRegisterForm(): string {
 			Password
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">lock</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">lock</span>
 			<input
 				id="password"
 				name="password"
 				type="password"
-				class="block w-full pl-10 pr-12 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Create a password"
 				required
 			/>
@@ -232,7 +280,7 @@ function renderRegisterForm(): string {
 				type="button"
 				id="toggle-password"
 				aria-label="Toggle password visibility"
-				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-[#ff00ff] focus:outline-none"
+				class="absolute inset-y-0 right-0 pr-3 flex items-center text-white hover:text-[#ff00ff] focus:outline-none"
 				>
 				<span class="material-symbols-outlined text-xl">visibility</span>
 			</button>
@@ -242,12 +290,13 @@ function renderRegisterForm(): string {
 			Confirm password
 			</label>
 			<div class="relative">
-			<span class="material-symbols-outlined absolute left-3 top-3.5 text-gray-400">lock</span>
+			<span class="material-symbols-outlined absolute left-3 top-2.5 text-white">lock</span>
 			<input
 				id="confirm-password"
 				name="confirmPassword"
 				type="password"
-				class="block w-full pl-10 pr-12 py-3 border text-xs border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400"
+				style="box-shadow: 0 0 8px var(--primary-color);"
+				class="block w-full pl-10 pr-3 py-3 bg-[--bg-color] border text-xs border-[--secondary-color] rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-white"
 				placeholder="Confirm your password"
 				required
 			/>
@@ -256,7 +305,7 @@ function renderRegisterForm(): string {
 				type="button"
 				id="toggle-confirm-password"
 				aria-label="Toggle password visibility"
-				class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-[#ff00ff] focus:outline-none"
+				class="absolute inset-y-0 right-0 pr-3 flex items-center text-white hover:text-[#ff00ff] focus:outline-none"
 				>
 				<span class="material-symbols-outlined text-xl">visibility</span>
 			</button>
@@ -277,21 +326,21 @@ function renderRegisterForm(): string {
 				I agree to the
 			</label>
 			
-			<button type="button" class="text-[0.4rem] text-indigo-600 hover:text-indigo-500 font-medium">
+			<button type="button" class="text-[0.4rem] text-[--secondary-color] hover:text-indigo-500 font-medium">
 			Terms of Service
 			</button>
 			<label for="terms" class="m-1 block text-[0.4rem] text-[#ff00ff]">
 				and
 			</label>
 
-			<button type="button" class="text-[0.4rem] text-indigo-600 hover:text-indigo-500 font-medium">
+			<button type="button" class="text-[0.4rem] text-[--secondary-color] hover:text-indigo-500 font-medium">
 				Privacy Policy
 			</button>
 		</div>
 		</div>
 
 			<div>
-				<button id="submit-register-btn" class="w-full bg-indigo-600 text-sm font-medium text-white py-3 rounded-lg hover:bg-indigo-700 transition btn-primary">Create Account</button>
+				<button id="submit-register-btn" class="w-full bg-[--secondary-color] text-sm font-medium text-white py-3 rounded-lg hover:bg-indigo-700 transition btn-primary">CREATE ACCOUNT</button>
 			</div>
 		<div>
 		</div>
@@ -308,6 +357,13 @@ document.getElementById('sign-up-tab')?.addEventListener('click', () => {
 	isLogin = false;
 	renderAuthContainer();
 });
+	
+const googleLoginBtn = document.getElementById('google-login-btn');
+if (googleLoginBtn) {
+	googleLoginBtn.addEventListener('click', () => {
+		(window.google as any)?.accounts?.id?.prompt();
+	});
+}
 
 	const loginBtn = document.getElementById('submit-login-btn');
 	if (loginBtn) {
@@ -339,7 +395,8 @@ document.getElementById('sign-up-tab')?.addEventListener('click', () => {
 		// } catch (err) {
 		// 	loginResult!.innerText = 'Something went wrong. Try again.';
 		// }
-		navigateTo('home');
+		show2FA(false);
+		// navigateTo('home');
 	});
 	}
 
@@ -376,22 +433,69 @@ const registerBtn = document.getElementById('submit-register-btn');
 		// } catch (err) {
 		// 	loginResult!.innerText = 'Something went wrong. Try again.';
 		// }
-		navigateTo('home');
+		// navigateTo('home');
+		show2FA(true);
 	});
 	}
 
 if (window.google && window.google.accounts?.id) {
-	const buttonDiv = document.querySelector(".g_id_signin");
-	if (buttonDiv) {
-	window.google.accounts.id.renderButton(buttonDiv, {
-		theme: "outline",
-		size: "large",
-		width: "100%"
-	});
-	}
+  const buttonDiv = document.querySelector('.g_id_signin');
+  if (buttonDiv) {
+    window.google.accounts.id.renderButton(buttonDiv, {
+      theme: 'outline',
+      size: 'large',
+      width: '100%',
+      type: 'standard',
+      logo_alignment: 'left',
+      text: 'signin_with',
+      shape: 'rect'
+    });
+  }
 }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
 renderAuthContainer();
 });
+
+
+
+function show2FA(isRegistering: boolean): void {
+  const container = document.getElementById('twofa-container');
+  const authContainer = document.getElementById('auth-form-container');
+  const qrWrapper = document.getElementById('qrcode-wrapper');
+  const registerText = document.getElementById('twofa-mode-register');
+  const loginText = document.getElementById('twofa-mode-login');
+  const submit2FAbtn = document.getElementById('submit-twofa-btn');
+
+  if (!container || !authContainer || !qrWrapper || !registerText || !loginText) {
+    console.warn('2FA elements missing');
+    return;
+  }
+
+  // Hide auth UI, show 2FA
+  container.classList.remove('hidden');
+  authContainer.classList.add('hidden');
+
+  if (isRegistering) {
+    qrWrapper.classList.remove('hidden');
+    registerText.classList.remove('hidden');
+    loginText.classList.add('hidden');
+  } else {
+    qrWrapper.classList.add('hidden');
+    registerText.classList.add('hidden');
+    loginText.classList.remove('hidden');
+  }
+
+  const backBtn = document.getElementById('back-to-auth');
+  backBtn?.addEventListener('click', () => {
+    container.classList.add('hidden');
+    authContainer.classList.remove('hidden');
+  });
+	
+	submit2FAbtn?.addEventListener('click', () => {
+		navigateTo('home');
+  });
+	
+	
+}
