@@ -1,49 +1,88 @@
 import { navigateTo } from "../navigation.js";
 
-export function renderHome(): void {
+interface Player {
+id: number;
+name: string;
+score: number;
+isOnline: boolean;
+}
+
+const players: Player[] = [
+	{ id: 1, name: "David", score: 1200, isOnline: true },
+	{ id: 2, name: "Jorge", score: 950, isOnline: false },
+	{ id: 3, name: "Miguel", score: 800, isOnline: true },
+];
+
+interface Games {
+	type: string;
+	button: string;
+	icon: string;
+}
+const games: Games[] = [
+	{ type: "local", button: "local-btn", icon: "keyboard"},
+	{ type: "tournament", button: "tournament-btn", icon: "social_leaderboard" },
+	{ type: "ai", button: "ai-btn", icon: "robot" },
+	{ type: "multiplayer", button: "multiplayer-btn", icon: "groups_3" }
+];
+
+export function renderPlayersPanel(players: Player[]): string {
+const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+return `
+	<div class="bg-black/40 backdrop-blur-sm rounded-xl p-4 w-full">
+	<h3 class="text-md font-semibold mb-4 flex items-center">
+		Leaderboard
+	</h3>
+	<div class="space-y-3">
+		${sortedPlayers.map((player, index) => `
+		<div class="flex items-center justify-between p-3 hover:bg-yellow-500/40 rounded-lg group ${index === 0 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-indigo-800/50'}">
+			<div class="flex items-center space-x-3">
+			${index === 0 ? `<span class="material-symbols-outlined w-4 h-4 text-yellow-400 transition-transform duration-300 group-hover:-rotate-90 group-hover:scale-125">star</span>` : ''}
+			<div class="flex flex-col">
+				<span class="font-medium">${player.name}</span>
+				<div class="flex items-center space-x-2">
+				<div class="w-2 h-2 rounded-full ${player.isOnline ? 'bg-green-400' : 'bg-gray-400'}"></div>
+				<span class="text-xs text-gray-400">${player.isOnline ? 'Online' : 'Offline'}</span>
+				</div>
+			</div>
+			</div>
+			<div class="text-right">
+			<div class="text-[0.6rem] text-gray-300">Rank #${index + 1}</div>
+			<div class="font-bold text-sm">${player.score.toLocaleString()} pts.</div>
+			</div>
+		</div>
+		`).join('')}
+	</div>
+	</div>
+`;
+}
+
+interface PlayerStats {
+name: string;
+wins: number;
+losses: number;
+ratio: number;
+time: string;
+}
+const davidStats: PlayerStats = {
+name: "David",
+wins: 10,
+losses: 3,
+ratio: 5.0,
+time: "12:34"
+};
+
+export function renderLeaderboard(): void {
 	const main = document.getElementById('main');
 	if (!main) return;
 
-	main.innerHTML = `
-		<section class="text-center text-[--secondary-color] font-press px-4 pt-8 py-2 space-y-2">
-			<h1 class="text-5xl font-bold text-white">Pong Game</h1>
-			<h2 class="text-lg text-yellow-500 pb-4">THE LEGEND RETURNS</h2>
-			<p class="text-sm text-[--secondary-color] mx-auto leading-relaxed">
-				SMASH BALLS. BEAT FRIENDS. RULE THE RETRO COURT.<br>
-				Jump into the arcade classic that started it all. Simple, fast, and endlessly fun!
-			</p>
-
-			<h3 class="mt-6 text-[--secondary-color] pt-6">Choose your match:</h3>
-			<hr class="border-t-2 border-[--secondary-color] w-1/3 mx-auto my-2" />
-
-			<div class="flex flex-col items-center space-y-4">
-				<button id="local-btn" class="btn-primary w-1/4 rounded-lg">1P VS 1P</button>
-				<button id="ai-btn" class="btn-primary w-1/4 rounded-lg">1P VS AI</button>
-				<button id="tournament-btn" class="btn-primary w-1/4 rounded-lg">TOURNAMENT MODE</button>
-				<button id="multiplayer-btn" class="btn-primary w-1/4 rounded-lg">MULTIPLAYER MODE</button>
-			</div>
-
-			<hr class="border-t-2 border-[--secondary-color] w-1/3 mx-auto my-4" />
-
-			<div class="grid grid-cols-1 md:grid-cols-2 pt-8 gap-6 mx-auto text-left text-xs sm:text-sm text-white mt-6">
-				<div>
-					<h4 class="text-[--secondary-color] text-xs text-center font-bold mb-2">THE OG PONG VIBES</h4>
-					<p class="text-xs">
-						A faithful tribute to the first-ever video game sensation, now with a twist. Challenge friends online, face off against a smart AI, customize your map, and unleash wild power-ups. It's classic Pong… leveled up.
-					</p>
-				</div>
-				<div>
-					<h4 class="text-[--secondary-color] text-xs text-center font-bold mb-2">PONG: WHERE IT ALL BEGAN</h4>
-					<p class="text-xs">
-						Born in 1972, Pong sparked the arcade revolution. We're bringing that pixel-perfect feeling back—with style.
-					</p>
-				</div>
-			</div>
-		</section>
+	main.innerHTML += `
+		<div class="grid grid-cols-3 justify-center gap-8 mx-auto p-4">
+			${renderPlayersPanel(players)}
+		</div>
 	`;
-	setupHome();
+	setupLeaderboard();
 }
-
 
 		// <!-- Avalanche Button -->
 		// 	<button id="open-avalanche-dock"
@@ -59,7 +98,7 @@ export function renderHome(): void {
 //                 <div id="modes-panel"
 //                     class="w-[500px] z-20 relative top-0 left-0 h-auto flex flex-col bg-gray-900 text-white shadow-lg border-l border-gray-700 rounded-lg overflow-hidden transform transition-all duration-300 scale-0 origin-left pointer-events-none">
 //                     <div>
-//                         <button id="close-modes-panel" class="absolute mr-4 mt-4 text-sm right-2 text-red-500 hover:text-red-800">&times;</button>
+//                         <button id="close-modes-panel" class="absolute mr-4 mt-4 text-md right-2 text-red-500 hover:text-red-800">&times;</button>
 //                     </div>
 //                     <div id="modes-panel-content" class="flex justify-center pt-14 pb-8">
 //                         <!-- Content injection -->
@@ -86,33 +125,8 @@ export function renderHome(): void {
 //     `;
 // }
 
-export function setupHome() {
-	// const modeBtn = document.getElementById('mode-btn')!;
-	const localBtn = document.getElementById('local-btn')!;
-	const tournamentBtn = document.getElementById('tournament-btn')!;
-	const aiBtn = document.getElementById('ai-btn')!;
-	const multiplayerBtn = document.getElementById('multiplayer-btn')!;
+export function setupLeaderboard() {
 
-
-	localBtn?.addEventListener('click', async () => {
-		// navigateTo('game', type, players);
-		navigateTo('game');
-	});
-
-	tournamentBtn?.addEventListener('click', async () => {
-		navigateTo('tournament');
-		// navigateTo('game', type, players);
-	});
-
-	aiBtn?.addEventListener('click', async () => {
-		// navigateTo('game', type, players);
-		navigateTo('game');
-	});
-
-	multiplayerBtn?.addEventListener('click', async () => {
-		// navigateTo('game', type, players);
-		navigateTo('game');
-	});
 
 	// const panels = ['modes-panel'];
 	// function closeAllPanels() {

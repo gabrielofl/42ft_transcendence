@@ -7,7 +7,7 @@ body {
 }
 
 .menu-tab {
-	@apply px-4 py-1.5 rounded-full text-sm font-medium hover:bg-[#2f4e50] transition;
+	@apply px-1 py-1.5 rounded-md text-xs font-medium hover:bg-[#2f4e50] transition;
 }
 
 .menu-tab.active {
@@ -171,12 +171,57 @@ body{
   font-family: 'Press Start 2P', cursive;
   
 }
+
+.btn-winner {
+  color: white;
+  border: 2px solid var(--success-color);
+  font-family: 'Press Start 2P', cursive;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
+.btn-looser {
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-family: 'Press Start 2P', cursive;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
+.btn-vs {
+  color: white;
+  border: 1px solid var(--secondary-color);
+  font-family: 'Press Start 2P', cursive;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
+.btn-profile {
+  color: white;
+  border: 1px solid var(--secondary-color);
+  font-family: 'Press Start 2P', cursive;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
 .btn-primary {
   background: var(--primary-color);
   color: white;
   border: 2px solid var(--secondary-color);
   font-family: 'Press Start 2P', cursive;
-  padding: 10px 20px;
+  padding: 5px;
   cursor: pointer;
   text-shadow: 1px 1px 0 #000;
   box-shadow: 0 0 8px var(--primary-color);
@@ -199,7 +244,7 @@ body{
   color: #000;
   border: 2px solid var(--primary-color);
   font-family: 'Press Start 2P', cursive;
-  padding: 10px 20px;
+  padding: 10px 10px;
   cursor: pointer;
   text-shadow: 1px 1px 0 #fffcf2;
   box-shadow: 0 0 6px var(--secondary-color);
@@ -221,11 +266,57 @@ body{
   color: white;
   border: 2px solid var(--secondary-color);
   font-family: 'Press Start 2P', cursive;
-  padding: 10px 20px;
+  padding: 5px;
   cursor: pointer;
   text-shadow: 1px 1px 0 #000;
   box-shadow: 0 0 8px var(--primary-color);
   transition: transform 0.1s ease;
+}
+
+.btn-four {
+  background: black;
+  color: white;
+  border: 2px solid var(--secondary-color);
+  font-family: 'Press Start 2P', cursive;
+  padding: 5px;
+  cursor: pointer;
+  text-shadow: 1px 1px #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
+.btn-five {
+  background: var(--secondary-color);
+  color: black;
+  font-family: 'Press Start 2P', cursive;
+  padding: 5px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
+
+@keyframes text-glow {
+  0%, 100% { text-shadow: 0 0 8px #fff, 0 0 16px #f0f, 0 0 32px #0ff; }
+  50% { text-shadow: 0 0 16px #ff0, 0 0 32px #f0f, 0 0 64px #0ff; }
+}
+
+.animate-text-glow {
+  animation: text-glow 2s ease-in-out infinite;
+}
+
+@keyframes confetti {
+  0% { background-position: 0 0; opacity: 1; }
+  100% { background-position: 1000px 1000px; opacity: 0; }
+}
+
+.animate-confetti {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px),
+                    radial-gradient(circle, rgba(255,255,0,0.3) 1px, transparent 1px),
+                    radial-gradient(circle, rgba(255,0,255,0.3) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: confetti 3s linear infinite;
 }
 
 .score-table {
