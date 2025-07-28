@@ -36,6 +36,8 @@ async function databasePlugin(fastify, opts) {
 			online       INTEGER  DEFAULT 0,					-- 0 = offline, 1 = online
 			wins         INTEGER  DEFAULT 0,					-- Game statistics
 			losses       INTEGER  DEFAULT 0,
+			two_factor_secret  TEXT,							-- TOTP secret key
+    		two_factor_enabled INTEGER  DEFAULT 0,				-- 0 = disabled, 1 = enabled
 			created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,	-- Auto-set on insert
 			updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP		-- Should update on change
 		);
@@ -72,6 +74,33 @@ async function databasePlugin(fastify, opts) {
 			started_at  DATETIME,
 			finished_at DATETIME
 		);
+
+		CREATE TABLE IF NOT EXISTS refresh_tokens (
+			id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+			user_id    INTEGER  NOT NULL,
+			token      TEXT     UNIQUE
+								NOT NULL,
+			expires_at DATETIME NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			revoked_at DATETIME,
+			FOREIGN KEY (
+				user_id
+			)
+			REFERENCES users (id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS two_factor_backup_codes (
+			id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+			user_id    INTEGER  NOT NULL,
+			code       TEXT     NOT NULL,
+			used_at    DATETIME,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (
+				user_id
+			)
+			REFERENCES users (id) ON DELETE CASCADE
+		);
+
 	`);
 
 	// Add database to fastify instance
