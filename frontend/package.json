@@ -2,22 +2,22 @@
 	"name": "frontend",
 	"version": "1.0.0",
 	"scripts": {
-	  "dev": "vite",
-	  "build": "vite build",
-	  "preview": "vite preview"
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview"
 	},
 	"dependencies": {
-	  "@babylonjs/core": "^8.6.2",
-	  "@babylonjs/gui": "^8.6.2",
-	  "@babylonjs/loaders": "^8.6.2",
-	  "@babylonjs/materials": "^8.6.2"
+		"@babylonjs/core": "^8.6.2",
+		"@babylonjs/gui": "^8.6.2",
+		"@babylonjs/loaders": "^8.6.2",
+		"@babylonjs/materials": "^8.6.2",
+		"@toast-ui/chart": "^4.6.1"
 	},
 	"devDependencies": {
-	  "autoprefixer": "^10.4.13",
-	  "postcss": "^8.4.21",
-	  "tailwindcss": "^3.3.0",
-	  "typescript": "^5.0.4",
-	  "vite": "^5.0.0"
+		"autoprefixer": "^10.4.13",
+		"postcss": "^8.4.21",
+		"tailwindcss": "^3.3.0",
+		"typescript": "^5.0.4",
+		"vite": "^5.0.0"
 	}
-  }
-  
+}
