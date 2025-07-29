@@ -113,6 +113,8 @@ setupAuthEvents();
 
 function renderLoginForm(): string {
 return `
+	<!-- Login Result Message -->
+	<div id="login-result" class="text-center text-red-500 text-xs mb-2"></div>
 	<!-- Email Field -->
 		<div>
 			<label for="email" class="block text-sm font-medium text-[#ff00ff] my-2">
