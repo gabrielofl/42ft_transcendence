@@ -111,6 +111,8 @@ setupAuthEvents();
 
 function renderLoginForm(): string {
 return `
+	<!-- Login Result Message -->
+	<div id="login-result" class="text-center text-red-500 text-xs mb-2"></div>
 	<!-- Email Field -->
 		<div>
 			<label for="email" class="block text-sm font-medium text-[#ff00ff] my-2">
@@ -367,74 +369,78 @@ if (googleLoginBtn) {
 
 	const loginBtn = document.getElementById('submit-login-btn');
 	if (loginBtn) {
-	loginBtn.addEventListener('click', (e) => {
-		// e.preventDefault();
-		const email = (document.getElementById('email') as HTMLInputElement)?.value;
-		const password = (document.getElementById('password') as HTMLInputElement)?.value;
-		
-		// try {
-		// 	const response = await fetch(`https://localhost:443/login`, { //or direct to backend port?
-		// 		method: 'POST',
-		// 		headers: { 'Content-Type': 'application/json' },
-		// 		body: JSON.stringify({ username, password }),
-		// 		credentials: 'include',
-		// 	});
+		loginBtn.addEventListener('click', async () => {
+			const username = (document.getElementById('email') as HTMLInputElement)?.value;
+			const password = (document.getElementById('password') as HTMLInputElement)?.value;
+			const loginResult = document.getElementById('login-result');
+			
+			try {
+				const response = await fetch(`https://localhost:443/api/auth/login`, { //or direct to backend port?
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username, password }),
+					credentials: 'include',
+				});
 
-		// 	const data = await response.json();
-		// 	if (!response.ok) {
-		// 		try {
-		// 			loginResult!.innerText = data?.error;
-		// 		}
-		// 		catch {
-		// 			loginResult!.innerText = 'Login failed.';
-		// 		}
-		// 		return;
-		// 	}
-		// 	//login function?
-		// 	navigateTo('home');
-		// } catch (err) {
-		// 	loginResult!.innerText = 'Something went wrong. Try again.';
-		// }
-		show2FA(false);
-		// navigateTo('home');
-	});
+				const data = await response.json();
+				if (!response.ok) {
+					try {
+						if (loginResult) loginResult.innerText = data?.error;
+					}
+					catch {
+						if (loginResult) loginResult.innerText = 'Login failed.';
+					}
+					return;
+				}
+				show2FA(false);
+				// navigateTo('home');
+			} catch (err) {
+				if (loginResult) loginResult.innerText = 'Something went wrong. Try again.';
+			}
+			// show2FA(false);
+			// navigateTo('home');
+		});
 	}
 
 const registerBtn = document.getElementById('submit-register-btn');
 	if (registerBtn) {
-	registerBtn.addEventListener('click', (e) => {
-		// e.preventDefault();
+	registerBtn.addEventListener('click', async (e) => {
+		e.preventDefault();
+		console.log('hello from the inside');
 		const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value;
 		const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value;
-		const username = (document.getElementById('email') as HTMLInputElement)?.value;
+		const username = (document.getElementById('username') as HTMLInputElement)?.value;
 		const email = (document.getElementById('email') as HTMLInputElement)?.value;
 		const password = (document.getElementById('password') as HTMLInputElement)?.value;
 		
-		// try {
-		// 	const response = await fetch(`https://localhost:443/register`, { //or direct to backend port?
-		// 		method: 'POST',
-		// 		headers: { 'Content-Type': 'application/json' },
-		// 		body: JSON.stringify({ firstName, lastName, email, username, password }),
-		// 		credentials: 'include',
-		// 	});
+		try {
+			console.log('Request body:', JSON.stringify({ username, email, password, firstName, lastName }));
 
-		// 	const data = await response.json();
-		// 	if (!response.ok) {
-		// 		try {
-		// 			loginResult!.innerText = data?.error;
-		// 		}
-		// 		catch {
-		// 			loginResult!.innerText = 'Register failed.';
-		// 		}
-		// 		return;
-		// 	}
-		// 	//login function?
-		// 	navigateTo('home');
-		// } catch (err) {
-		// 	loginResult!.innerText = 'Something went wrong. Try again.';
-		// }
+			const response = await fetch(`https://localhost:443/api/auth/register`, { //or direct to backend port?
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ username, email, password, firstName, lastName }),
+				credentials: 'include',
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				// try {
+				// 	loginResult!.innerText = data?.error;
+				// }
+				// catch {
+				// 	loginResult!.innerText = 'Register failed.';
+				// }
+				return;
+			}
+			//login function?
+			show2FA(true);
+			// navigateTo('home');
+		} catch (err) {
+			// loginResult!.innerText = 'Something went wrong. Try again.';
+		}
 		// navigateTo('home');
-		show2FA(true);
+		
 	});
 	}
 
