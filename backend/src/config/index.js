@@ -39,7 +39,15 @@ const config = {
 	
 	// CORS settings (Cross-Origin Resource Sharing)
 	cors: {
-		origin: process.env.FRONTEND_URL || 'https://localhost:443',
+		origin: 'https://localhost:8080',
+		// origin: [
+		// 	// 'https://localhost:443',  // Production frontend served by backend
+		// 	// 'https://localhost:8080',  // Frontend dev server
+		// 	// 'http://localhost:5173',  // Vite dev server (alternative port)
+		// 	// process.env.FRONTEND_URL  // Environment override
+		// 	'*'
+		// ].filter(Boolean),  // Remove any undefined values
+		methods: ['GET', 'POST', 'OPTIONS'],
 		credentials: true,  // Allow cookies to be sent
 	},
 	

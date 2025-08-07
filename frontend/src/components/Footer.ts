@@ -1,4 +1,5 @@
 import { navigateTo } from "../navigation";
+import { apiService } from "../services/api.js";
 
 export function renderFooter(): void {
   const footer = document.getElementById("footer");
@@ -75,9 +76,16 @@ export function renderFooter(): void {
   });
 
   const logoutBtn = document.getElementById("nav-logout");
-  logoutBtn?.addEventListener("click", (e) => {
+  logoutBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
-    localStorage.removeItem("token");
-    navigateTo("login");
+    try {
+      await apiService.logout();
+      navigateTo("login");
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, clear local auth state
+      apiService.clearAuth();
+      navigateTo("login");
+    }
   });
 }

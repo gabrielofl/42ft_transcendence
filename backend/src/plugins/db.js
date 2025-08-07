@@ -24,6 +24,8 @@ async function databasePlugin(fastify, opts) {
 	await db.exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			id           INTEGER  PRIMARY KEY AUTOINCREMENT,	-- Auto-incrementing ID
+			first_name   TEXT,
+			last_name    TEXT,
 			username     TEXT     UNIQUE
 								NOT NULL,						-- Must be unique and not empty
 			password     TEXT     NOT NULL,						-- Hashed password
