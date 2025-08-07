@@ -1,4 +1,5 @@
 import { navigateTo } from "../navigation";
+import { apiService } from "../services/api.js";
 
 export function renderHeader(): void {
 	const header = document.getElementById('header');
@@ -42,10 +43,16 @@ export function renderHeader(): void {
 	});
 	
 	const logoutBtn = document.getElementById('nav-logout')!;
-	logoutBtn?.addEventListener('click', () => {
-		navigateTo('login');
-		//disconnect
-		//remove token
+	logoutBtn?.addEventListener('click', async () => {
+		try {
+			await apiService.logout();
+			navigateTo('login');
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Even if logout fails, clear local auth state
+			apiService.clearAuth();
+			navigateTo('login');
+		}
 	});
 	const leaderboardBtn = document.getElementById('nav-leaderboard')!;
 	leaderboardBtn?.addEventListener('click', () => {

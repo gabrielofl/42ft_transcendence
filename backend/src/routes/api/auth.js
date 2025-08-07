@@ -53,10 +53,10 @@ export default async function (fastify, opts) {
 			// Extract data from request body
 			const { username, password } = request.body;
 			
-			// Query database for user
+			// Query database for user (allow login with username OR email)
 			const user = await fastify.db.get(
-				'SELECT * FROM users WHERE username = ?',  // SQL query
-				[username]  // Parameters (prevents SQL injection)
+				'SELECT * FROM users WHERE username = ? OR email = ?',  // SQL query
+				[username, username]  // Check both username and email fields
 			);
 			
 			// Check if user exists and password matches
@@ -67,6 +67,42 @@ export default async function (fastify, opts) {
 				});
 			}
 
+			// Check if 2FA is enabled
+			if (user.two_factor_enabled) {
+				if (!twoFactorCode) {
+					return reply.code(202).send({ 
+						success: true,
+						requires2FA: true,
+						message: 'Two-factor authentication required'
+					});
+				}
+
+				// Verify 2FA code
+				const verified = speakeasy.totp.verify({
+					secret: user.two_factor_secret,
+					encoding: 'base32',
+					token: twoFactorCode,
+					window: 2 // Allow some time drift
+				});
+
+				// If TOTP fails, check backup codes
+				if (!verified) {
+					const backupCode = await fastify.db.get(
+						'SELECT * FROM two_factor_backup_codes WHERE user_id = ? AND code = ? AND used_at IS NULL',
+						[user.id, twoFactorCode.toUpperCase()]
+					);
+
+					if (!backupCode) {
+						return reply.code(401).send({ error: 'Invalid two-factor code' });
+					}
+
+					// Mark backup code as used
+					await fastify.db.run(
+						'UPDATE two_factor_backup_codes SET used_at = datetime("now") WHERE id = ?',
+						[backupCode.id]
+					);
+				}
+			}
 			// // Check if 2FA is enabled
 			// if (user.two_factor_enabled) {
 			// 	if (!twoFactorCode) {
@@ -127,6 +163,9 @@ export default async function (fastify, opts) {
 			});
 			reply.send({ success: true });
 			return {
+				success: true,
+				token: accessToken, // JWT token for future requests
+				refreshToken,
 				user: {
 					id: user.id,
 					username: user.username,
@@ -181,8 +220,18 @@ export default async function (fastify, opts) {
 			schema: {
 				body: {
 					type: 'object',
-					required: ['username', 'email', 'password', 'first_name', 'last_name'],
+					required: ['firstName', 'lastName', 'username', 'email', 'password'],
 					properties: {
+						firstName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 50
+						},
+						lastName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 50
+						},
 						username: { 
 							type: 'string', 
 							minLength: 3  // At least 3 characters
@@ -194,23 +243,12 @@ export default async function (fastify, opts) {
 						password: { 
 							type: 'string', 
 							minLength: 8  // At least 8 characters
-						},
-						first_name: {
-							type: 'string',
-							minLength: 1,
-							maxLength: 50
-						},
-						last_name: {
-							type: 'string',
-							minLength: 1,
-							maxLength: 50
 						}
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { username, email, password, first_name, last_name } = request.body;
-			console.log('hello from backend');
+			const { firstName, lastName, username, email, password } = request.body;
 			try {
 				// Hash password (never store plain text!)
 				const hashedPassword = await bcrypt.hash(
@@ -220,8 +258,8 @@ export default async function (fastify, opts) {
 				
 				// Insert into database
 				const result = await fastify.db.run(
-					'INSERT INTO users (username, email, password, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
-					[username, email, hashedPassword, first_name, last_name]
+					'INSERT INTO users (first_name, last_name, username, email, password) VALUES (?, ?, ?, ?, ?)',
+					[firstName, lastName, username, email, hashedPassword]
 				);
 				
 				// Create JWT token for immediate login
@@ -233,12 +271,27 @@ export default async function (fastify, opts) {
 				const refreshToken = await generateRefreshToken(result.lastID);
 				
 				// Send success response
-				reply.setCookie('token', refreshToken, {
-					httpOnly: true,
-					secure: true,
-					sameSite: 'None', //fix
-					path: '/',
-					maxAge: 3600,
+				reply.code(201).send({  // 201 = Created
+					success: true,
+					token: accessToken,
+					refreshToken,
+					user: {
+						id: result.lastID,     // New user's ID
+						firstName,
+						lastName,
+						username,
+						email,
+						avatar: 'default.jpg',
+						wins: 0,
+						losses: 0,
+						twoFactorEnabled: false
+					}
+// 				reply.setCookie('token', refreshToken, {
+// 					httpOnly: true,
+// 					secure: true,
+// 					sameSite: 'None', //fix
+// 					path: '/',
+// 					maxAge: 3600,
 				});
 				reply.send({ success: true });
 				// reply.code(201).send({  // 201 = Created
