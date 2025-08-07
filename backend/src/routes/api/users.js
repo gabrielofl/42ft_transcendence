@@ -10,7 +10,7 @@ export default async function (fastify, opts) {
 		}, async (request, reply) => {
 			// Get user data from database
 			const user = await fastify.db.get(
-				'SELECT id, username, email, display_name, avatar, wins, losses, online FROM users WHERE id = ?',
+				'SELECT id, username, email, display_name, avatar, wins, losses, online, two_factor_enabled, last_login FROM users WHERE id = ?',
 				[request.user.id]
 			);
 			
@@ -18,7 +18,10 @@ export default async function (fastify, opts) {
 				return reply.code(404).send({ error: 'User not found' });
 			}
 			
-			return user;
+			return {
+				...user,
+				twoFactorEnabled: !!user.two_factor_enabled
+			};
 		});
 		
 		// Update user profile - PUT /api/users/me

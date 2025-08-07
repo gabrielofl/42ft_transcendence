@@ -53,10 +53,10 @@ export default async function (fastify, opts) {
 			// Extract data from request body
 			const { username, password, twoFactorCode } = request.body;
 			
-			// Query database for user
+			// Query database for user (allow login with username OR email)
 			const user = await fastify.db.get(
-				'SELECT * FROM users WHERE username = ?',  // SQL query
-				[username]  // Parameters (prevents SQL injection)
+				'SELECT * FROM users WHERE username = ? OR email = ?',  // SQL query
+				[username, username]  // Check both username and email fields
 			);
 			
 			// Check if user exists and password matches
@@ -71,7 +71,8 @@ export default async function (fastify, opts) {
 			if (user.two_factor_enabled) {
 				if (!twoFactorCode) {
 					return reply.code(202).send({ 
-						requiresTwoFactor: true,
+						success: true,
+						requires2FA: true,
 						message: 'Two-factor authentication required'
 					});
 				}
@@ -119,6 +120,7 @@ export default async function (fastify, opts) {
 			
 			// Return success response
 			return {
+				success: true,
 				token: accessToken, // JWT token for future requests
 				refreshToken,
 				user: {
@@ -175,8 +177,18 @@ export default async function (fastify, opts) {
 			schema: {
 				body: {
 					type: 'object',
-					required: ['username', 'email', 'password'],
+					required: ['firstName', 'lastName', 'username', 'email', 'password'],
 					properties: {
+						firstName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 50
+						},
+						lastName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 50
+						},
 						username: { 
 							type: 'string', 
 							minLength: 3  // At least 3 characters
@@ -188,17 +200,12 @@ export default async function (fastify, opts) {
 						password: { 
 							type: 'string', 
 							minLength: 8  // At least 8 characters
-						},
-						display_name: {
-							type: 'string',
-							minLength: 1,
-							maxLength: 50
 						}
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { username, email, password, display_name } = request.body;
+			const { firstName, lastName, username, email, password } = request.body;
 			
 			try {
 				// Hash password (never store plain text!)
@@ -209,8 +216,8 @@ export default async function (fastify, opts) {
 				
 				// Insert into database
 				const result = await fastify.db.run(
-					'INSERT INTO users (username, email, password, display_name) VALUES (?, ?, ?, ?)',
-					[username, email, hashedPassword, display_name || username]
+					'INSERT INTO users (first_name, last_name, username, email, password) VALUES (?, ?, ?, ?, ?)',
+					[firstName, lastName, username, email, hashedPassword]
 				);
 				
 				// Create JWT token for immediate login
@@ -223,13 +230,15 @@ export default async function (fastify, opts) {
 				
 				// Send success response
 				reply.code(201).send({  // 201 = Created
+					success: true,
 					token: accessToken,
 					refreshToken,
 					user: {
 						id: result.lastID,     // New user's ID
+						firstName,
+						lastName,
 						username,
 						email,
-						display_name: display_name || username,
 						avatar: 'default.jpg',
 						wins: 0,
 						losses: 0,
