@@ -80,6 +80,9 @@ if (!main) return;
     <div class="text-center text-[#ff00ff] mb-4 hidden" id="twofa-mode-login">
       Enter your 2FA code from your app:
     </div>
+    <div class="text-center text-[#ff00ff] mb-4 hidden" id="backup-mode-login">
+      Enter one of your backup codes:
+    </div>
     <div id="qrcode-wrapper" class="flex justify-center mb-4">
       <img id="qrcode-img" src="" class="h-24 w-24 border border-white rounded-md" />
     </div>
@@ -89,11 +92,23 @@ if (!main) return;
       placeholder="Enter 6-digit code"
       class="block w-full px-4 py-3 border border-[--secondary-color] rounded-lg text-sm bg-[--bg-color] text-white placeholder-white mb-4"
     />
+    <input
+      id="backup-code"
+      type="text"
+      placeholder="Enter 8-character backup code"
+      class="block w-full px-4 py-3 border border-[--secondary-color] rounded-lg text-sm bg-[--bg-color] text-white placeholder-white mb-4 hidden"
+    />
     <button
       id="submit-twofa-btn"
       class="w-full btn-primary text-white py-2 rounded-lg"
     >
       Verify 2FA
+    </button>
+    <button
+      id="toggle-backup-btn"
+      class="mt-2 w-full text-sm text-[--secondary-color] hover:text-[#ff00ff]"
+    >
+      Use backup code instead
     </button>
     <button
       id="back-to-auth"
@@ -570,11 +585,47 @@ function show2FA(isRegistering: boolean, qrCodeData?: string): void {
     authContainer.classList.remove('hidden');
   });
 	
-	submit2FAbtn?.addEventListener('click', async () => {
-		const code = (document.getElementById('twofa-code') as HTMLInputElement)?.value;
+	// Toggle between TOTP and backup code modes
+	const toggleBackupBtn = document.getElementById('toggle-backup-btn');
+	const twofaCodeInput = document.getElementById('twofa-code') as HTMLInputElement;
+	const backupCodeInput = document.getElementById('backup-code') as HTMLInputElement;
+	const twofaModeLogin = document.getElementById('twofa-mode-login');
+	const backupModeLogin = document.getElementById('backup-mode-login');
+	
+	let isBackupMode = false;
+	
+	toggleBackupBtn?.addEventListener('click', () => {
+		isBackupMode = !isBackupMode;
 		
-		if (!code || code.length !== 6) {
-			alert('Please enter a valid 6-digit code');
+		if (isBackupMode) {
+			// Switch to backup code mode
+			twofaCodeInput.classList.add('hidden');
+			backupCodeInput.classList.remove('hidden');
+			twofaModeLogin?.classList.add('hidden');
+			backupModeLogin?.classList.remove('hidden');
+			toggleBackupBtn.textContent = 'Use authenticator code instead';
+		} else {
+			// Switch to TOTP mode
+			twofaCodeInput.classList.remove('hidden');
+			backupCodeInput.classList.add('hidden');
+			twofaModeLogin?.classList.remove('hidden');
+			backupModeLogin?.classList.add('hidden');
+			toggleBackupBtn.textContent = 'Use backup code instead';
+		}
+		
+		// Clear both inputs when switching
+		twofaCodeInput.value = '';
+		backupCodeInput.value = '';
+	});
+
+	submit2FAbtn?.addEventListener('click', async () => {
+		const code = isBackupMode 
+			? backupCodeInput?.value
+			: twofaCodeInput?.value;
+		
+		if (!code || (!isBackupMode && code.length !== 6) || (isBackupMode && code.length !== 8)) {
+			const expectedFormat = isBackupMode ? '8-character backup code' : '6-digit code';
+			alert(`Please enter a valid ${expectedFormat}`);
 			return;
 		}
 

@@ -51,7 +51,7 @@ export default async function (fastify, opts) {
 			}
 		}, async (request, reply) => {
 			// Extract data from request body
-			const { username, password } = request.body;
+			const { username, password, twoFactorCode } = request.body;
 			
 			// Query database for user (allow login with username OR email)
 			const user = await fastify.db.get(
@@ -154,14 +154,14 @@ export default async function (fastify, opts) {
 			const refreshToken = await generateRefreshToken(user.id);
 			
 			// Return success response
-			reply.setCookie('token', refreshToken, {
-				httpOnly: true,
-				secure: true,
-				sameSite: 'None', //fix
-				path: '/',
-				maxAge: 3600,
-			});
-			reply.send({ success: true });
+			// reply.setCookie('token', refreshToken, {
+			// 	httpOnly: true,
+			// 	secure: true,
+			// 	sameSite: 'None', //fix
+			// 	path: '/',
+			// 	maxAge: 3600,
+			// });
+			// reply.send({ success: true });
 			return {
 				success: true,
 				token: accessToken, // JWT token for future requests
