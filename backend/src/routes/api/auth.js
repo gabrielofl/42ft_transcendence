@@ -45,13 +45,13 @@ export default async function (fastify, opts) {
 					properties: {
 						username: { type: 'string' },
 						password: { type: 'string' },
-						twoFactorCode: { type: 'string' } // Optional 2FA code
+						// twoFactorCode: { type: 'string' } // Optional 2FA code
 					}
 				}
 			}
 		}, async (request, reply) => {
 			// Extract data from request body
-			const { username, password, twoFactorCode } = request.body;
+			const { username, password } = request.body;
 			
 			// Query database for user (allow login with username OR email)
 			const user = await fastify.db.get(
@@ -103,6 +103,41 @@ export default async function (fastify, opts) {
 					);
 				}
 			}
+			// // Check if 2FA is enabled
+			// if (user.two_factor_enabled) {
+			// 	if (!twoFactorCode) {
+			// 		return reply.code(202).send({ 
+			// 			requiresTwoFactor: true,
+			// 			message: 'Two-factor authentication required'
+			// 		});
+			// 	}
+
+			// 	// Verify 2FA code
+			// 	const verified = speakeasy.totp.verify({
+			// 		secret: user.two_factor_secret,
+			// 		encoding: 'base32',
+			// 		token: twoFactorCode,
+			// 		window: 2 // Allow some time drift
+			// 	});
+
+			// 	// If TOTP fails, check backup codes
+			// 	if (!verified) {
+			// 		const backupCode = await fastify.db.get(
+			// 			'SELECT * FROM two_factor_backup_codes WHERE user_id = ? AND code = ? AND used_at IS NULL',
+			// 			[user.id, twoFactorCode.toUpperCase()]
+			// 		);
+
+			// 		if (!backupCode) {
+			// 			return reply.code(401).send({ error: 'Invalid two-factor code' });
+			// 		}
+
+			// 		// Mark backup code as used
+			// 		await fastify.db.run(
+			// 			'UPDATE two_factor_backup_codes SET used_at = datetime("now") WHERE id = ?',
+			// 			[backupCode.id]
+			// 		);
+			// 	}
+			// }
 			
 			// Update last login time
 			await fastify.db.run(
@@ -119,6 +154,14 @@ export default async function (fastify, opts) {
 			const refreshToken = await generateRefreshToken(user.id);
 			
 			// Return success response
+			reply.setCookie('token', refreshToken, {
+				httpOnly: true,
+				secure: true,
+				sameSite: 'None', //fix
+				path: '/',
+				maxAge: 3600,
+			});
+			reply.send({ success: true });
 			return {
 				success: true,
 				token: accessToken, // JWT token for future requests
@@ -206,7 +249,6 @@ export default async function (fastify, opts) {
 			}
 		}, async (request, reply) => {
 			const { firstName, lastName, username, email, password } = request.body;
-			
 			try {
 				// Hash password (never store plain text!)
 				const hashedPassword = await bcrypt.hash(
@@ -244,7 +286,28 @@ export default async function (fastify, opts) {
 						losses: 0,
 						twoFactorEnabled: false
 					}
+// 				reply.setCookie('token', refreshToken, {
+// 					httpOnly: true,
+// 					secure: true,
+// 					sameSite: 'None', //fix
+// 					path: '/',
+// 					maxAge: 3600,
 				});
+				reply.send({ success: true });
+				// reply.code(201).send({  // 201 = Created
+				// 	token: accessToken,
+				// 	refreshToken,
+				// 	user: {
+				// 		id: result.lastID,     // New user's ID
+				// 		username,
+				// 		email,
+				// 		display_name: display_name || username,
+				// 		avatar: 'default.jpg',
+				// 		wins: 0,
+				// 		losses: 0,
+				// 		twoFactorEnabled: false
+				// 	}
+				// });
 				
 			} catch (error) {
 				// Handle duplicate username/email
