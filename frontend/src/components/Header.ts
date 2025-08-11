@@ -13,12 +13,12 @@ export function renderHeader(): void {
 				<span class="material-symbols-outlined text-3xl">
 				swords
 				</span> Pong</div>
-                <div class="flex gap-2">
-                    <button id="nav-home" class="menu-tab text-[--primary-color] hover:bg-indigo-900/30">Play</button>
-                    <button id="nav-profile" class="menu-tab text-[--secondary-color] hover:bg-indigo-900/30">Profile</button>
-					<button id="nav-leaderboard" class="menu-tab text-[--secondary-color] hover:bg-indigo-900/30">Leaderboard</button>
-					<button id="nav-contact" class="menu-tab text-[--secondary-color] hover:bg-indigo-900/30">Contact</button>
-                    <button id="nav-logout" class="menu-tab border border-red-600 text-red-600 hover:bg-red-900/20">Logout</button>
+                <div class="flex gap-8">
+                    <button id="nav-home" class="menu-tab active">Play</button>
+                    <button id="nav-profile" class="menu-tab">Profile</button>
+					<button id="nav-leaderboard" class="menu-tab">Leaderboard</button>
+					<button id="nav-contact" class="menu-tab">Contact</button>
+                    <button id="nav-logout" class="menu-tab btn-secondary">Logout</button>
                 </div>
             </nav>
 					<!-- Divider -->

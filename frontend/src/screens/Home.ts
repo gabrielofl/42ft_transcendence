@@ -5,27 +5,28 @@ export function renderHome(): void {
 	if (!main) return;
 
 	main.innerHTML = `
-		<section class="text-center text-[--secondary-color] font-press px-4 pt-8 py-2 space-y-2">
-			<h1 class="text-5xl font-bold text-white">Pong Game</h1>
-			<h2 class="text-lg text-yellow-500 pb-4">THE LEGEND RETURNS</h2>
-			<p class="text-sm text-[--secondary-color] mx-auto leading-relaxed">
-				SMASH BALLS. BEAT FRIENDS. RULE THE RETRO COURT.<br>
-				Jump into the arcade classic that started it all. Simple, fast, and endlessly fun!
-			</p>
+	<section class="text-center text-[--secondary-color] font-press px-6  pt-8 py-2 space-y-2">
+		<h1 class="text-5xl font-bold text-white">Pong Game</h1>
+		<h2 class="text-lg text-yellow-500 pb-4">THE LEGEND RETURNS</h2>
+		<p class="text-sm text-[--secondary-color] mx-auto leading-relaxed">
+			SMASH BALLS. BEAT FRIENDS. RULE THE RETRO COURT.<br>
+			Jump into the arcade classic that started it all. Simple, fast, and endlessly fun!
+		</p>
 
 			<h3 class="mt-6 text-[--secondary-color] pt-6">Choose your match:</h3>
-			<hr class="border-t-2 border-[--secondary-color] w-1/3 mx-auto my-2" />
+		
 
-			<div class="flex flex-col items-center space-y-4">
-				<button id="local-btn" class="btn-primary w-1/4 rounded-lg">1P VS 1P</button>
-				<button id="ai-btn" class="btn-primary w-1/4 rounded-lg">1P VS AI</button>
-				<button id="tournament-btn" class="btn-primary w-1/4 rounded-lg">TOURNAMENT MODE</button>
-				<button id="multiplayer-btn" class="btn-primary w-1/4 rounded-lg">MULTIPLAYER MODE</button>
+			<div class="flex flex-col py-4 items-center gap-4">
+				<hr class="lg:w-2/5 w-2/3 h-px  bg-secondary border-0">
+				<button id="local-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS 1P</button>
+				<button id="ai-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS AI</button>
+				<button id="tournament-btn" class="btn-primary lg:w-1/4 w-2/4 ">TOURNAMENT MODE</button>
+				<button id="multiplayer-btn" class="btn-primary lg:w-1/4 w-2/4 ">MULTIPLAYER MODE</button>
+				<hr class="lg:w-2/5 w-2/3 h-px  bg-secondary border-0">
 			</div>
-
-			<hr class="border-t-2 border-[--secondary-color] w-1/3 mx-auto my-4" />
-
-			<div class="grid grid-cols-1 md:grid-cols-2 pt-8 gap-6 mx-auto text-left text-xs sm:text-sm text-white mt-6">
+			
+			
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left text-xs sm:text-sm text-white mt-6 px-6 pt-8  mx-auto ">
 				<div>
 					<h4 class="text-[--secondary-color] text-xs text-center font-bold mb-2">THE OG PONG VIBES</h4>
 					<p class="text-xs">

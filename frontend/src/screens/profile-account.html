@@ -1,0 +1,135 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-[200px]">
+	<div class="box-border ">
+		<!-- Avatar + Rank -->
+		<div class="flex items-center grid grid-cols-2 p-4  text-center shadow-lg">
+			<div class="block w-32 h-32 mx-auto rounded-full ">
+				<label for="avatar-upload" class="overlay rounded-full">
+					<svg class="plus" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+						<path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+						<path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+					</svg>
+				</label>
+				<img id="avatar-preview" src="${API_BASE_URL}/avatars/default.jpg"  class="w-32 h-32 mx-auto rounded-full border-4 border-blue-500 mb-4 ">
+				<input id="avatar-upload" type="file" accept="image/*" style="display:none" class="mb-2 w-full text-xs text-gray-300 plus" />
+			</div>
+			<div class="text-left grid gap-2">
+				<div id="profile-username" class="txt-body-base">username</div>
+				<div id="profile-display-name" class="txt-body-small">displayname</div>
+
+				<div class="txt-body-small color-warning">1526 Pts | 
+					<span class="txt-body-small color-warning">Battle Rank 6</span>
+				</div>
+				<div id="google-indicator" class="txt-body-small color-success hidden">Google Account</div>
+			</div>
+		</div>
+		
+		<!-- 2FA settings -->
+		<div class=" p-4  shadow-lg ">
+			<div  id="twofa-section" class="grid gap-4 ">
+				<span class="color-primary body-base">Two-factor authentication</span>
+				<button id="setup-2fa-btn"  class="btn-primary w-full">Enable 2FA</button>
+				<button id="disable-2fa-btn"  class="btn-secondary w-full hidden">Disable 2FA</button>
+				<div id="twofa-status" class="txt-body-small color-warning">2FA is currently disabled</div>
+			</div>
+			<hr class="h-px my-8 bg-secondary border-0">
+			
+			<!-- GDPR -->
+			<div class="grid gap-4 ">
+				<span class="color-primary body-base">Account data</span>
+				<button id="enable-2FA" class="btn-primary w-full ">Download data</button>
+				<div id="delete-my-data-section" class="grid grid-cols-2 align-middle gap-4">
+					<input id="delete-data-password" type="password" placeholder="Enter password" class="w-full retro-input" />
+					<button id="delete-data-btn" class="btn-secondary w-full ">Delete account</button>
+				</div>
+			</div>
+			<hr class="h-px my-8 bg-secondary border-0">
+			
+			<!-- Toggle for Data Collection -->
+			<div class="flex items-center my-4 ">
+				<input id="data-collection-toggle" type="checkbox" class="appearance-none retro-checkbox w- h-5  toggle-checkbox mr-4 checked:bg-white-800 ">
+				<label for="data-collection-toggle" class="txt-body color-primary">Allow Data Collection</label>
+			</div>
+			
+			<!-- Toggle for Data Processing -->
+			<div class="flex items-center my-4 ">
+				<input id="data-processing-toggle" type="checkbox" class="appearance-none retro-checkbox w- h-5  toggle-checkbox mr-4 checked:bg-white-800 ">
+				<label for="data-processing-toggle" class="txt-body color-primary">Allow Data Processing</label>
+			</div>
+			
+			<!-- Toggle for Data AI Improvement -->
+			<div class="flex items-center my-4 ">
+				<input id="data-ai-use-toggle" type="checkbox" class="appearance-none retro-checkbox w- h-5  toggle-checkbox mr-4 checked:bg-white-800 ">
+				<label for="data-ai-use-toggle" class="txt-body color-primary">My data trains AI opponents</label>
+			</div>
+			
+			<!-- Toggle for Data Sharing on Leaderboard -->
+			<div class="flex items-center my-4 ">
+				<input id="data-score-toggle" type="checkbox" class="appearance-none retro-checkbox w- h-5  toggle-checkbox mr-4 checked:bg-white-800 ">
+				<label for="data-score-toggle" class="txt-body color-primary">Show my scores publicly</label>
+			</div>
+			
+		</div>
+	</div>
+
+
+	<!-- User Info Edit -->
+	<div class="box-border p-4  shadow-lg grid gap-3" id="profile-edit-form">
+		<label for="edit-account-header" class="block txt-body-base">Edit account</label>
+
+		<div class="grid grid-cols-3  align-middle gap-4">
+			<label for="name" class="txt-body-base color-primary">Name</label>
+			<label for="lastname" class="txt-body-base color-primary">Last name</label>
+		</div> 
+		<div id="name-section" class="grid grid-cols-3 grid-row-2 align-middle gap-4">
+			<input id="name" type="text" placeholder="[name]" autocomplete="off" class="w-full retro-input"/>
+			<input id="lastname" type="text" placeholder="[lastname]" autocomplete="off" class="w-full retro-input"/>
+			<button id="update-name-btn" class="btn-primary w-full">update</button>
+		</div> 
+		<div class="grid grid-cols-1  align-middle gap-4">
+			<label for="username" class="txt-body-base color-primary">Username</label>
+		</div> 
+		<div id="username-section" class="grid grid-cols-3 grid-row-2 align-middle gap-4">
+			<input id="username" type="text" placeholder="[username]" autocomplete="off" class="w-full retro-input col-span-2"/>
+			<button id="update-username-btn" class="btn-primary w-full">update</button>
+		</div> 
+		<div class="grid grid-cols-1  align-middle gap-4">
+			<label for="email" class="txt-body-base color-primary">Email</label>
+		</div> 
+		<div id="email-section" class="grid grid-cols-3 grid-row-2 align-middle gap-4">
+			<input id="email" type="text" placeholder="[email]" autocomplete="off" class="w-full retro-input col-span-2"/>
+			<button id="update-email-btn" class="btn-primary w-full">update</button>
+		</div> 
+
+		<hr class="h-px my-8 bg-secondary border-0">
+		<div class="grid grid-cols-1  align-middle gap-4">
+			<label for="password" class="txt-body-base color-primary">Actual Password</label>
+		</div> 
+		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+			<input id="password" type="text" placeholder="[old password]" autocomplete="off" class="w-full retro-input col-span-2"/>
+		</div> 
+		<div class="grid grid-cols-1  align-middle gap-4">
+			<label for="new-password" class="txt-body-base color-primary">New Password</label>
+		</div> 
+		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+			<input id="new-password" type="text" placeholder="[new password]" autocomplete="off" class="w-full retro-input col-span-2"/>
+		</div> 
+		<div class="grid grid-cols-1  align-middle gap-4">
+			<label for="re-password" class="txt-body-base color-primary">Confirm password</label>
+		</div> 
+		<div id="re-password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+			<input id="re-password" type="text" placeholder="[re-password]" autocomplete="off" class="w-full retro-input col-span-2"/>
+		</div> 
+		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+			<button id="update-password-btn" class="btn-primary w-full">update password</button>
+		</div> 
+
+
+	</div>
+	
+	<!-- ********************************************************************************************* -->
+
+	
+
+
+	
+</div>

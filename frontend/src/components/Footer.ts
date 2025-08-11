@@ -7,16 +7,9 @@ export function renderFooter(): void {
 
 	footer.innerHTML = `
   			<!-- Divider -->
-		<div class="relative">
-			<div class="relative">
-				<div class="absolute inset-0 flex items-center">
-					<div class="w-full border-t border-[--primary-color]"></div>
-				</div>
-			</div>
-		</div>
-    <footer
-	class="font-press text-white px-6 py-4 flex justify-between items-start">
-                <div class="text-lg font-press font-bold tracking-wide flex items-center gap-2">
+<div class="relative">
+    <footer	class="w-full h-1/10 fixed bottom-0 bg-main border-t border-[--primary-color] font-press text-white px-6 py-4 flex justify-between items-start ">
+			<div class="text-lg font-press font-bold tracking-wide flex items-center gap-2">
 				<span class="material-symbols-outlined text-3xl">
 				swords
 				</span> Pong</div>
@@ -61,6 +54,8 @@ export function renderFooter(): void {
         </div>
       </div>
     </footer>
+		</div>
+
   `;
 
   const homeBtn = document.getElementById("nav-home");

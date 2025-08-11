@@ -10,7 +10,7 @@ export default async function (fastify, opts) {
 		}, async (request, reply) => {
 			// Get user data from database
 			const user = await fastify.db.get(
-				'SELECT id, username, email, display_name, avatar, wins, losses, online, two_factor_enabled, last_login FROM users WHERE id = ?',
+				'SELECT id, first_name, last_name, username, email, display_name, avatar, wins, losses, online, two_factor_enabled, last_login FROM users WHERE id = ?',
 				[request.user.id]
 			);
 			

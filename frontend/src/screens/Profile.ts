@@ -3,7 +3,21 @@ import '@toast-ui/chart/dist/toastui-chart.min.css';
 import { apiService } from '../services/api.js';
   
 
+// const API_BASE_URL = 'https://localhost:4444/api'; Work on cluster
 const API_BASE_URL = 'https://localhost:443/api';
+
+
+
+import profileAccount from "./profile-account.html?raw";
+import profilePerformance from "./profile-performance.html?raw";
+
+// to replace vars on html injected. Check to include once.
+export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
+return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
+}
+
+
+
 
 export function renderHistoryTab(matches: any[] = [], loading = false): string {
 	if (loading) {
@@ -64,109 +78,12 @@ export async function setupHistoryTab() {
 	}
 }
 
+// New account
   export function renderAccountTab(): string {
-	return `
-	  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-	  <div>
-		<!-- Avatar + Rank -->
-		<div class="btn-vs p-4  text-center shadow-lg">
-		  <img id="avatar-preview" src="${API_BASE_URL}/avatars/default.jpg" alt="Avatar" class="w-32 h-32 mx-auto rounded-full border-4 border-blue-500 mb-4">
-		  <input id="avatar-upload" type="file" accept="image/*" class="mb-2 w-full text-xs text-gray-300" />
-		  <div class="text-xs font-bold">Battle Rank <span class="text-yellow-400">6</span></div>
-		  <div id="profile-username" class="text-xs font-semibold mt-2">@username</div>
-		  <div id="profile-display-name" class="text-xs mt-2">displayname</div>
-		  <div id="google-indicator" class="text-xs text-green-400 hidden mt-1">Google Account</div>
-		</div>
-  
-		<!-- Match Stats -->
-		<div class="btn-vs p-4  shadow-lg mt-6">
-		  <div class="flex items-center justify-between mb-4">
-			<h3 class="text-xs font-semibold">Match Stats</h3>
-			<button id="edit-profile-btn" title="Edit Info" class="hover:text-yellow-400">
-			  <i class="fas fa-cog"></i>
-			</button>
-		  </div>
-		  <p>Wins: <span id="wins-count">0</span></p>
-		  <p>Losses: <span id="losses-count">0</span></p>
-		  <p>Leaderboard Rank: <span class="text-blue-400">#1482</span></p>
-		  <p>Last Login: <span id="last-login">Unknown</span></p>
-		</div>
-		</div>
 
-		<!-- User Info Edit -->
-		<div class="btn-vs p-4  shadow-lg" id="profile-edit-form">
-		  <label for="edit-account-header" class="block text-xs font-semibold mb-1">Edit account</label>
-		  <div id="display-name-section">
-		    <label for="display-name" class="block text-xs mt-4 mb-1">Change Display Name</label>
-		    <input id="display-name" type="text" placeholder="New display name" autocomplete="off" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
-		    <button id="update-display-btn" class="w-full btn-profile hover:btn-looser text-white py-2">Update</button>
-		 </div> 
-		  <div id="password-section">
-			<label for="new-password" class="block text-xs mt-4 mb-1">Change Password</label>
-			<input id="new-password" type="password" placeholder="New password" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
-			<input id="new-password-repeat" type="password" placeholder="Repeat new password" class="w-full px-3 py-2 bg-gray-700/50 text-white mb-2" />
-			<button id="change-password-btn" class="w-full btn-profile hover:btn-looser text-white py-2 ">Update</button>
-		  </div>
-		  <div id="email-section">
-			<label for="new-email" class="block text-xs mt-4 mb-1">Change e-mail</label>
-			<input id="new-email" type="text" placeholder="New e-mail" autocomplete="off" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
-			<button id="change-email-btn" class="w-full btn-profile hover:btn-looser text-white py-2 ">Update</button>
-		  </div>
-		  
-
-		  <!-- ESTO LO HIZO MIGUMORE PARA PODER PROBAR, CAMBIARLO POR EL DISEÑO QUE CORRESPONE -->
-		  <!-- Two-Factor Authentication Section -->
-		  <div id="twofa-section">
-			<label for="twofa-setup" class="block text-xs mt-4 mb-1">Two-Factor Authentication</label>
-			<div id="twofa-status" class="text-xs mb-2 text-gray-300">2FA is currently disabled</div>
-			<button id="setup-2fa-btn" class="w-full btn-profile hover:btn-looser text-white py-2 mb-2">Enable 2FA</button>
-			<button id="disable-2fa-btn" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 hidden">Disable 2FA</button>
-		  </div>
-
-<!-- ********************************************************************************************* -->
-
-
-		</div>
-
-		<!-- Account Data GDPR -->
-		<div class="btn-vs p-4  shadow-lg" id="user-data-form">
-		  <label for="account-data" class="block text-xs font-semibold mb-1">Data preferences</label>
-		  <div id="download-my-data-section">
-			<label for="download-data-word" class="block text-xs mt-4 mb-1">Account data</label>
-			<button id="download-data-btn" class="w-full btn-profile hover:btn-looser text-white py-2 ">Download my data</button>
-		  </div>
-			<!-- Toggle for Data Collection -->
-			<div class="flex items-center justify-between mt-4  btn-profile">
-				<label for="data-collection-toggle" class="text-xs ml-1">Allow Data Collection</label>
-				<input id="data-collection-toggle" type="checkbox" class="toggle-checkbox mr-4">
-			</div>
-
-			<!-- Toggle for Data Processing -->
-			<div class="flex items-center justify-between mt-4  btn-profile">
-				<label for="data-processing-toggle" class="text-xs ml-1">Allow Data Processing</label>
-				<input id="data-processing-toggle" type="checkbox" class="toggle-checkbox mr-4">
-			</div>
-
-			<!-- Toggle for Data AI Improvement -->
-			<div class="flex items-center justify-between mt-4  btn-profile">
-				<label for="data-ai-use-toggle" class="text-xs ml-1">My data trains AI opponents</label>
-				<input id="data-ai-use-toggle" type="checkbox" class="toggle-checkbox mr-4">
-			</div>
-
-			<!-- Toggle for Data Sharing on Leaderboard -->
-			<div class="flex items-center justify-between mt-4  btn-profile">
-				<label for="data-score-toggle" class="text-xs ml-1">Show my scores publicly</label>
-				<input id="data-score-toggle" type="checkbox" class="toggle-checkbox mr-4">
-			</div>
-
-		  <div id="delete-my-data-section">
-			<label for="delete-data-word" class="block text-xs mt-4 mb-1">Delete my account</label>
-			<input id="delete-data-password" type="password" placeholder="Enter password" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
-			<button id="delete-data-btn" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 ">Confirm</button>
-		  </div>
-		</div>
-	  </div>
-	`;
+		const rendered = replaceTemplatePlaceholders(profileAccount, {API_BASE_URL});
+	
+	return rendered;
   }
 
   export function setupAccountTab(username: string, isGoogle: boolean) {
@@ -176,12 +93,9 @@ export async function setupHistoryTab() {
 	const updateBtn = document.getElementById('update-display-btn') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordSection = document.getElementById('password-section');
-	const resultBox = document.getElementById('profile-username');
+	// const resultBox = document.getElementById('profile-username');
 
-	if (!resultBox) return;
-
-	resultBox.textContent = '@' + username;
-
+	
 	if (isGoogle) {
 		googleIndicator?.classList.remove('hidden');
 		passwordSection?.classList.add('hidden');
@@ -195,17 +109,30 @@ export async function setupHistoryTab() {
 	})
 		.then(res => res.json())
 		.then(data => {
-			document.getElementById('profile-display-name')!.textContent = data.display_name;
-			// const avatarUrl = `${data.avatar}?t=${Date.now()}`;
-			document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
-			document.getElementById('wins-count')!.textContent = data.wins;
-			document.getElementById('losses-count')!.textContent = data.losses;
-			document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
+			const profileUsername = document.getElementById('profile-username');
+			const profileName = document.getElementById('profile-display-name');
+			if (!profileUsername || !profileName) return;
+			
+			profileName.textContent = data.first_name + ' ' + data.last_name;
+			profileUsername.textContent = '@' + data.username;
 			
 			// Update 2FA status if available
 			if (data.twoFactorEnabled !== undefined) {
 				update2FAStatus(data.twoFactorEnabled);
 			}
+			// const avatarUrl = `${data.avatar}?t=${Date.now()}`;
+			document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
+			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
+			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
+			document.getElementById('username')?.setAttribute('placeholder', data.username);
+			document.getElementById('email')?.setAttribute('placeholder', data.email);
+
+			
+			document.getElementById('wins-count')!.textContent = data.wins;
+			document.getElementById('losses-count')!.textContent = data.losses;
+			document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
+			
+			
 		})
 		.catch(err => console.error('Error loading profile:', err));
 
@@ -272,30 +199,31 @@ export async function setupHistoryTab() {
 	document.getElementById('setup-2fa-btn')?.addEventListener('click', async () => {
 		try {
 			const data = await apiService.setup2FA();
-			
+			console.log(data);
 			if (data.success || data.qrCode) {
 				// Show QR code in a modal/popup
 				const qrModal = `
 					<div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-						<div class="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-							<h3 class="text-lg font-bold text-white mb-4">Set up Two-Factor Authentication</h3>
-							<p class="text-gray-300 text-sm mb-4">Scan this QR code with your authenticator app:</p>
-							<div class="flex justify-center mb-4">
+						<div class="retro-modal w-3/5 text-center">
+							<h3 class="block txt-subtitle color-text-light ">Set up Two-Factor Authentication</h3>
+							<p class="txt-subheading color-secondary my-4">Scan this QR code with your authenticator app:</p>
+							<div class="flex justify-center py-9 mb-4 ">
 								<img src="${data.qrCode}" alt="QR Code" class="border border-white rounded">
 							</div>
 							<input id="verify-2fa-code" type="text" placeholder="Enter 6-digit code" 
-								class="w-full px-3 py-2 bg-gray-700 text-white rounded mb-4">
+								class="w-full retro-input mb-4">
 							<div class="flex gap-2">
-								<button id="verify-2fa-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded">
+								<button id="verify-2fa-btn" class="btn-primary w-1/2">
 									Enable 2FA
 								</button>
-								<button id="cancel-2fa-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">
+								<button id="cancel-2fa-btn" class="btn-secondary w-1/2">
 									Cancel
 								</button>
 							</div>
 						</div>
 					</div>
 				`;
+		
 				document.body.insertAdjacentHTML('beforeend', qrModal);
 				
 				// Add event listeners for the modal
@@ -316,27 +244,30 @@ export async function setupHistoryTab() {
 						if (verifyData.backupCodes && verifyData.backupCodes.length > 0) {
 							const backupCodesModal = `
 								<div id="backup-codes-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-									<div class="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-										<h3 class="text-lg font-bold text-white mb-4">🎉 2FA Enabled Successfully!</h3>
-										<p class="text-gray-300 text-sm mb-4">Save these backup codes in a safe place. You can use them to log in if you lose access to your authenticator app:</p>
-										<div class="bg-gray-900 p-4 rounded mb-4 max-h-40 overflow-y-auto">
-											<div class="grid grid-cols-2 gap-2 text-sm font-mono text-white">
-												${verifyData.backupCodes.map(code => `<div class="p-1 bg-gray-700 rounded text-center">${code}</div>`).join('')}
-											</div>
+									<div class="retro-modal w-3/5 text-center">
+										<h3 class="block txt-subtitle color-text-light">🎉 2FA Enabled Successfully!</h3>
+										<p class="txt-subheading color-secondary my-4">Save these backup codes in a safe place. You can use them to log in if you lose access to your authenticator app:</p>
+										<div class=" bg-gray-900 p-4 rounded mb-4 overflow-y-auto">
+										
+										<caption class="caption-bottom">⚠️ These codes can only be used once each. Keep them secure! </caption>
+											 <div class="grid grid-cols-2  score-table ">
+													${verifyData.backupCodes.map(code => `<div class="td" >${code}</div>`).join('')}
+											</div>	
+											
+
 										</div>
-										<p class="text-yellow-400 text-xs mb-4">⚠️ These codes can only be used once each. Keep them secure!</p>
 										<div class="flex gap-2 mb-4">
-											<button id="copy-codes-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm">
+											<button id="copy-codes-btn" class="btn-primary w-1/2">
 												📋 Copy All
 											</button>
-											<button id="download-codes-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm">
+											<button id="download-codes-btn" class="btn-primary w-1/2">
 												💾 Download
 											</button>
 										</div>
-										<button id="backup-codes-ok-btn" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded">
+										<button id="backup-codes-ok-btn" class="w-full btn-secondary">
 											I've Saved My Backup Codes
 										</button>
-									</div>
+							</div>
 								</div>
 							`;
 							document.body.insertAdjacentHTML('beforeend', backupCodesModal);
@@ -349,11 +280,11 @@ export async function setupHistoryTab() {
 									const btn = document.getElementById('copy-codes-btn');
 									const originalText = btn?.textContent;
 									if (btn) {
-										btn.textContent = '✅ Copied!';
-										btn.className = 'flex-1 bg-green-600 text-white py-2 rounded text-sm';
+										btn.textContent = 'Copied!';
+										btn.className = 'btn-success w-1/2';
 										setTimeout(() => {
 											btn.textContent = originalText;
-											btn.className = 'flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm';
+											btn.className = 'btn-primary w-1/2';
 										}, 2000);
 									}
 								} catch (err) {
@@ -393,11 +324,11 @@ Do NOT share these codes with anyone.`;
 								const btn = document.getElementById('download-codes-btn');
 								const originalText = btn?.textContent;
 								if (btn) {
-									btn.textContent = '✅ Downloaded!';
-									btn.className = 'flex-1 bg-green-600 text-white py-2 rounded text-sm';
+									btn.textContent = 'Downloaded!';
+									btn.className = 'btn-success w-1/2';
 									setTimeout(() => {
 										btn.textContent = originalText;
-										btn.className = 'flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm';
+										btn.className = 'btn-primary w-1/2';
 									}, 2000);
 								}
 							});
@@ -458,6 +389,9 @@ Do NOT share these codes with anyone.`;
 	});
 }
 
+
+
+  
 // Helper function to update 2FA UI status
 function update2FAStatus(enabled: boolean) {
 	const statusEl = document.getElementById('twofa-status');
@@ -466,7 +400,7 @@ function update2FAStatus(enabled: boolean) {
 	
 	if (statusEl) {
 		statusEl.textContent = enabled ? '2FA is currently enabled' : '2FA is currently disabled';
-		statusEl.className = enabled ? 'text-xs mb-2 text-green-400' : 'text-xs mb-2 text-gray-300';
+		statusEl.className = enabled ? 'txt-body-small mb-2 color-success' : 'txt-body-small mb-2 color-warning';
 	}
 	
 	if (enableBtn) {
@@ -479,35 +413,22 @@ function update2FAStatus(enabled: boolean) {
 }
 
   export function renderPerformanceTab(): string {
-	return `
-	  <div class="text-white space-y-6">
-		<h2 class="text-2xl font-press font-bold mb-4">Dashboard</h2>
-
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-		  <!-- Left Panel: Key Stats -->
-		  <div class="bg-indigo-800 p-6  shadow-lg space-y-2">
-			<h3 class="text-xs font-semibold text-yellow-400">Match Highlights</h3>
-			<p>Missed Balls: <span id="missed-balls" class="font-bold text-red-400">--</span></p>
-			<p>Successful Intercepts: <span id="intercepts" class="font-bold text-green-400">--</span></p>
-			<p>Longest Rally: <span id="longest-rally" class="font-bold text-blue-400">--</span></p>
-			<p>Idle Time: <span id="idle-time" class="font-bold text-gray-300">--</span> sec</p>
-		  </div>
-
-		  <!-- Right Panel: Chart Preview -->
-		  <div class="bg-indigo-800 p-6  shadow-lg">
-			<h3 class="text-xs font-semibold text-yellow-400 mb-2">Match Accuracy</h3>
-			<div id="accuracy-chart" class="w-full max-w-sm mx-auto h-[300px]"></div>
-		  </div>
-		</div>
-	  </div>
-	`;
+	const rendered = replaceTemplatePlaceholders(profilePerformance, {API_BASE_URL});
+	
+	return rendered;
 }
 
 export async function setupPerformanceTab() {
 	try {
 
-		const res = await fetch(`${API_BASE_URL}/profile/ai-stats`, {
-			credentials: 'include', 
+		// const res = await fetch(`${API_BASE_URL}/profile/ai-stats`, {
+		// 	credentials: 'include', 
+		// });
+		const res = await fetch(`${API_BASE_URL}/users/me`, {
+			credentials: 'include',
+			headers: {
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
+			}
 		});
 
 		if (!res.ok) {
@@ -515,81 +436,73 @@ export async function setupPerformanceTab() {
 			throw new Error(`Backend error: ${text}`);
 		}
 
-		const data = await res.json();
-
-		document.getElementById('missed-balls')!.textContent = data.missed_balls;
-		document.getElementById('intercepts')!.textContent = data.intercepts;
-		document.getElementById('longest-rally')!.textContent = data.longest_rally;
-		document.getElementById('idle-time')!.textContent = data.idle_time;
-
 		const container = document.getElementById('accuracy-chart')!;
 		if (!container) {
 			console.error("Chart container not found!");
 			return;
 		}
 		container.style.width = '100%';
-        container.style.height = '300px';
+		container.style.height = '500px';
 		container.innerHTML = '';
 
-		const chart = Chart.pieChart({
-			el: container,
-			data: {
-				series: [
-					{
-						name: 'Intercepts',
-						data: data.intercepts,
-					},
-					{
-						name: 'Misses',
-						data: data.missed_balls,
-					},
-				],
+		// const data = await res.json();
+
+	 // Your data
+		
+	const chart = Chart.radarChart({
+		el: container,
+		data: {
+			categories: ['Wins', 'Losses', 'Rate', 'Matches', 'Time', 'Max Score'],
+			series: [
+			{
+				name: 'This Month',
+				data: [50, 30, 50, 70, 60, 40],
 			},
-			options: {
+			],
+		},
+		options: {
+			theme: {
 				chart: {
-					responsive: true,
-					height: 'auto',
+								backgroundColor: 'rgba(37, 0, 77, 1)',
+							},
+			plot: {
+				lineColor: '#ff00ff',   // background grid lines
+				lineWidth: 2,
+				backgroundColor:'rgba(60, 80, 180, 0.1)'
+			},
+			circularAxis: {
+				label: {
+				color: '#ffff66',     // category labels color
 				},
-				legend: {
-					visible: true, label: {
-						fontFamily: 'ui-sans-serif',
-						color: '#fff'
-					},
+				lineColor: '#fffcf2',   // circular lines (outer rings)
+			},
+			radialAxis: {
+				label: {
+				color: '#ffff66',     // angle axis labels (if shown)
 				},
-				series: {
-					doughnutRatio: 0.3,
-					colors: ['#0d9488', '#1e3a8a'],
-					dataLabels: {
-						visible: true,
-						useSeriesColor: true,
-						fontWeight: 'bold',
-						color: '#fff',
-					},
+				lineColor: '#fffcf2',   // radial lines
+			},
+			series: {
+				colors: ['#ff00ff'],    // radar shape color
+				areaOpacity: 0.5,       // semi-transparent fill
+				lineWidth: 3,
+				dot: {
+				radius: 4,
+				color: '#ff00ff',
 				},
-				theme: {
-					chart: {
-						backgroundColor: 'rgba(0, 0, 0, 0)',
-					},
-					label: {
-						color: '#ffffff',
-					},
-					series: {
-						colors: ['#0d9488', '#0a255f'],
-					},
-					legend: {
-						label: {
-							color: '#ffffff',
-						},
-					}
-				},
-			}
+			},
+			},
+			legend: {
+			visible: false,
+			},
+		},
 		});
 	} catch (err) {
 		console.error('Error loading stats:', err);
 	}
 }
 
-  export function renderPowerupsTab(): string {
+  export function renderFriendsTab(): string {
 	return `
 	  <div class="text-white space-y-6">
 		<h2 class="text-2xl font-bold mb-4">Powerup Store</h2>
@@ -601,7 +514,7 @@ export async function setupPerformanceTab() {
 	`;
 }
 
-  export async function setupPowerupsTab() {
+  export async function setupFriendsTab() {
 	fetch(`${API_BASE_URL}/store/powerups`, {
 		credentials: 'include', 
 	})
@@ -646,24 +559,30 @@ export function renderProfile() {
 const main = document.getElementById('main');
   if (!main) return;
 
+
   main.innerHTML = `
 	<div class="flex p-10 text-white font-press mx-auto shadow-lg min-h-[600px] max-h-[720px] h-full">
 		<!-- Sidebar -->
 		<div class="w-64 btn-vs flex flex-col p-4 space-y-4">
-		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="account">Account</button>
-		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="history">Match History</button>
-		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="performance">Performance</button>
-		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="powerups">Powerups</button>
+		  <button class="sidebar-tab text-left menu-tab " data-tab="account">Account</button>
+		  <button class="sidebar-tab text-left menu-tab" data-tab="history">Match History</button>
+		  <button class="sidebar-tab text-left menu-tab" data-tab="performance">Performance</button>
+		  <button class="sidebar-tab text-left menu-tab" data-tab="friends">Friends</button>
 		</div>
   
 		<!-- Main Content -->
-		<div class="flex-1 p-4 overflow-y-auto" id="profile-content">
+		<div class="flex-1 px-4 h-9/10" id="profile-content">
 		  <!-- Dynamic content will be injected here -->
 		</div>
 	  </div>
 	`;
-
+	// API to DB or cookie
 	setupProfile('alice', false);
+
+	setTimeout(() => {
+    document.querySelector('[data-tab="performance"]')?.dispatchEvent(new Event('click'));
+  	}, 0);
+
 }
   
 export function setupProfile(username: string, isGoogle: boolean) {
@@ -673,22 +592,22 @@ export function setupProfile(username: string, isGoogle: boolean) {
 			const container = document.getElementById('profile-content');
 			
 			document.querySelectorAll('.sidebar-tab').forEach(b =>
-				b.classList.remove('bg-[--secondary-color]', 'text-[--primary-color]')
+				b.classList.remove('active')
 			);
 
-			(e.currentTarget as HTMLElement).classList.add('bg-[--secondary-color]', 'text-[--primary-color]');
+			(e.currentTarget as HTMLElement).classList.add('active');
 
 			switch (tab) {
+				case 'friends':
+					container!.innerHTML = renderFriendsTab();
+					await setupFriendsTab();
+					break;
 				case 'performance':
 					container!.innerHTML = renderPerformanceTab();
 					await setupPerformanceTab();
 					break;
 				case 'history':
 					await setupHistoryTab()
-					break;
-				case 'powerups':
-					container!.innerHTML = renderPowerupsTab();
-					await setupPowerupsTab();
 					break;
 				default:
 					container!.innerHTML = renderAccountTab();
@@ -765,13 +684,25 @@ export const mockPowerups = {
 };
 
 
-export const mockProfile = {
-  display_name: 'Alice the Ace',
-  avatar: 'https://example.com/avatars/alice.jpg',
-  wins: 42,
-  losses: 18,
-  last_login: new Date().toISOString(),
-};
+// export const mockProfile = {
+//   display_name: 'Alice the Ace',
+//   avatar: 'https://example.com/avatars/alice.jpg',
+//   wins: 42,
+//   losses: 18,
+//   last_login: new Date().toISOString(),
+// };
+
+// export const mockProfile = {
+//   name: 'David',
+//   lastname: 'Aviles',
+//   username: 'daviles-',
+//   email: 'dm.daviles@gmail.com',
+//   password: 'lalalala',
+//   avatar: 'https://www.shutterstock.com/image-vector/duck-head-vector-illustration-design-600nw-2399558539.jpg',
+//   wins: 42,
+//   losses: 18,
+//   last_login: new Date().toISOString(),
+// };
 
 
 // globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
