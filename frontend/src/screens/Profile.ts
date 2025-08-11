@@ -64,7 +64,419 @@ export async function setupHistoryTab() {
 	}
 }
 
+// New account
+
+
   export function renderAccountTab(): string {
+	return `
+	  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+	  <div class="box-border ">
+		<!-- Avatar + Rank -->
+		<div class="flex items-center grid grid-cols-2 p-4  text-center shadow-lg">
+		  <div class="block w-32 h-32 mx-auto rounded-full ">
+				<label for="avatar-upload" class="overlay rounded-full">
+				<svg class="plus" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+					<path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+					<path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+				</svg>
+				</label>
+			<img id="avatar-preview" src="${API_BASE_URL}/avatars/default.jpg"  class="w-32 h-32 mx-auto rounded-full border-4 border-blue-500 mb-4 ">
+		  	<input id="avatar-upload" type="file" accept="image/*" style="display:none" class="mb-2 w-full text-xs text-gray-300 plus" />
+			</div>
+		<div class="text-left">
+		<div id="profile-username" class="text-s mt-2 uppercase">username</div>
+			<div class="text-xs font-bold text-red-400">1526 Pts</div>
+			<div class="text-xs font-bold">Battle Rank <span class="text-yellow-400">6</span></div>
+			<div id="profile-display-name" class="text-xs mt-2">displayname</div>
+			<div id="google-indicator" class="text-xs text-green-400 hidden mt-1">Google Account</div>
+		</div>
+		</div>
+  
+		<!-- Match Stats -->
+		<div class=" p-4  shadow-lg mt-6">
+		  <div class="block mb-4">
+			<span class="color-primary body-base">Two-factor authentication</span>
+			<button id="edit-profile-btn" title="Edit Info" class="hover:text-yellow-400">
+			  <i class="fas fa-cog">asd</i>
+			</button>
+		  </div>
+		  <p>Wins: <span id="wins-count">0</span></p>
+		  <p>Losses: <span id="losses-count">0</span></p>
+		  <p>Leaderboard Rank: <span class="text-blue-400">#1482</span></p>
+		  <p>Last Login: <span id="last-login">Unknown</span></p>
+		</div>
+		</div>
+
+		<!-- User Info Edit -->
+		<div class="box-border p-4  shadow-lg" id="profile-edit-form">
+		  <label for="edit-account-header" class="block text-xs font-semibold mb-1">Edit account</label>
+		  <div id="display-name-section">
+		    <label for="display-name" class="block text-xs mt-4 mb-1">Change Display Name</label>
+		    <input id="display-name" type="text" placeholder="New display name" autocomplete="off" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
+		    <button id="update-display-btn" class="w-full btn-profile hover:btn-looser text-white py-2">Update</button>
+		 </div> 
+		  <div id="password-section">
+			<label for="new-password" class="block text-xs mt-4 mb-1">Change Password</label>
+			<input id="new-password" type="password" placeholder="New password" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
+			<input id="new-password-repeat" type="password" placeholder="Repeat new password" class="w-full px-3 py-2 bg-gray-700/50 text-white mb-2" />
+			<button id="change-password-btn" class="w-full btn-profile hover:btn-looser text-white py-2 ">Update</button>
+		  </div>
+		  <div id="email-section">
+			<label for="new-email" class="block text-xs mt-4 mb-1">Change e-mail</label>
+			<input id="new-email" type="text" placeholder="New e-mail" autocomplete="off" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
+			<button id="change-email-btn" class="w-full btn-profile hover:btn-looser text-white py-2 ">Update</button>
+		  </div>
+		  
+
+		  <!-- ESTO LO HIZO MIGUMORE PARA PODER PROBAR, CAMBIARLO POR EL DISEÑO QUE CORRESPONE -->
+		  <!-- Two-Factor Authentication Section -->
+		  <div id="twofa-section">
+			<label for="twofa-setup" class="block text-xs mt-4 mb-1">Two-Factor Authentication</label>
+			<div id="twofa-status" class="text-xs mb-2 text-gray-300">2FA is currently disabled</div>
+			<button id="setup-2fa-btn" class="w-full btn-profile hover:btn-looser text-white py-2 mb-2">Enable 2FA</button>
+			<button id="disable-2fa-btn" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 hidden">Disable 2FA</button>
+		  </div>
+
+<!-- ********************************************************************************************* -->
+
+
+		</div>
+
+		<!-- Account Data GDPR -->
+		<div class="box-border p-4  shadow-lg" id="user-data-form">
+		  <label for="account-data" class="block text-xs font-semibold mb-1">Data preferences</label>
+		  <div id="download-my-data-section">
+			<label for="download-data-word" class="block text-xs mt-4 mb-1">Account data</label>
+			<button id="download-data-btn" class="w-full btn-profile hover:btn-looser text-white py-2 ">Download my data</button>
+		  </div>
+			<!-- Toggle for Data Collection -->
+			<div class="flex items-center justify-between mt-4  btn-profile">
+				<label for="data-collection-toggle" class="text-xs ml-1">Allow Data Collection</label>
+				<input id="data-collection-toggle" type="checkbox" class="toggle-checkbox mr-4">
+			</div>
+
+			<!-- Toggle for Data Processing -->
+			<div class="flex items-center justify-between mt-4  btn-profile">
+				<label for="data-processing-toggle" class="text-xs ml-1">Allow Data Processing</label>
+				<input id="data-processing-toggle" type="checkbox" class="toggle-checkbox mr-4">
+			</div>
+
+			<!-- Toggle for Data AI Improvement -->
+			<div class="flex items-center justify-between mt-4  btn-profile">
+				<label for="data-ai-use-toggle" class="text-xs ml-1">My data trains AI opponents</label>
+				<input id="data-ai-use-toggle" type="checkbox" class="toggle-checkbox mr-4">
+			</div>
+
+			<!-- Toggle for Data Sharing on Leaderboard -->
+			<div class="flex items-center justify-between mt-4  btn-profile">
+				<label for="data-score-toggle" class="text-xs ml-1">Show my scores publicly</label>
+				<input id="data-score-toggle" type="checkbox" class="toggle-checkbox mr-4">
+			</div>
+
+		  <div id="delete-my-data-section">
+			<label for="delete-data-word" class="block text-xs mt-4 mb-1">Delete my account</label>
+			<input id="delete-data-password" type="password" placeholder="Enter password" class="w-full px-3 py-2  bg-gray-700/50 text-white mb-2" />
+			<button id="delete-data-btn" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 ">Confirm</button>
+		  </div>
+		</div>
+	  </div>
+	`;
+  }
+
+  export function setupAccountTab(username: string, isGoogle: boolean) {
+
+	const avatarInput = document.getElementById('avatar-upload') as HTMLInputElement | null;
+	const displayInput = document.getElementById('display-name') as HTMLInputElement | null;
+	const updateBtn = document.getElementById('update-display-btn') as HTMLButtonElement | null;
+	const googleIndicator = document.getElementById('google-indicator');
+	const passwordSection = document.getElementById('password-section');
+	const resultBox = document.getElementById('profile-username');
+
+	if (!resultBox) return;
+
+	resultBox.textContent = '@' + username;
+
+	if (isGoogle) {
+		googleIndicator?.classList.remove('hidden');
+		passwordSection?.classList.add('hidden');
+	}
+
+	fetch(`${API_BASE_URL}/users/me`, {
+		credentials: 'include',
+		headers: {
+			'Authorization': `Bearer ${localStorage.getItem('token')}`
+		}
+	})
+		.then(res => res.json())
+		.then(data => {
+			document.getElementById('profile-display-name')!.textContent = data.display_name;
+			// const avatarUrl = `${data.avatar}?t=${Date.now()}`;
+			document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
+			document.getElementById('wins-count')!.textContent = data.wins;
+			document.getElementById('losses-count')!.textContent = data.losses;
+			document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
+			
+			// Update 2FA status if available
+			if (data.twoFactorEnabled !== undefined) {
+				update2FAStatus(data.twoFactorEnabled);
+			}
+		})
+		.catch(err => console.error('Error loading profile:', err));
+
+	avatarInput?.addEventListener('change', async () => {
+		const file = avatarInput.files?.[0];
+		if (!file) return;
+
+		const reader = new FileReader();
+		reader.onload = () => {
+			(document.getElementById('avatar-preview') as HTMLImageElement).src = reader.result as string;
+		};
+		reader.readAsDataURL(file);
+
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
+			method: 'POST',
+			credentials: 'include', 
+			body: formData
+		});
+		const result = await res.json();
+		if (!result.success) alert('Avatar upload failed');
+	});
+
+	updateBtn?.addEventListener('click', async () => {
+		const displayName = displayInput?.value.trim();
+		if (!displayName || displayName.length < 2) return alert('Name too short');
+
+		const res = await fetch(`${API_BASE_URL}/profile/display-name`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			credentials: 'include', 
+			body: JSON.stringify({ displayName }),
+		});
+		const result = await res.json();
+		if (result.success) alert('Profile updated!');
+		else alert(result.error || 'Failed to update');
+	});
+
+	document.getElementById('change-password-btn')?.addEventListener('click', async () => {
+		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
+		if (newPassword.length < 4) return alert('Password too short');
+
+		const currentPassword = prompt('Enter current password:');
+		if (!currentPassword) return;
+
+		const res = await fetch(`${API_BASE_URL}/profile/password`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			credentials: 'include', 
+			body: JSON.stringify({ currentPassword, newPassword }),
+		});
+		const result = await res.json();
+		if (result.success) alert('Password changed!');
+		else alert(result.error || 'Failed to update password');
+	});
+
+	// 2FA Event Listeners
+	document.getElementById('setup-2fa-btn')?.addEventListener('click', async () => {
+		try {
+			const data = await apiService.setup2FA();
+			
+			if (data.success || data.qrCode) {
+				// Show QR code in a modal/popup
+				const qrModal = `
+					<div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+						<div class="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+							<h3 class="text-lg font-bold text-white mb-4">Set up Two-Factor Authentication</h3>
+							<p class="text-gray-300 text-sm mb-4">Scan this QR code with your authenticator app:</p>
+							<div class="flex justify-center mb-4">
+								<img src="${data.qrCode}" alt="QR Code" class="border border-white rounded">
+							</div>
+							<input id="verify-2fa-code" type="text" placeholder="Enter 6-digit code" 
+								class="w-full px-3 py-2 bg-gray-700 text-white rounded mb-4">
+							<div class="flex gap-2">
+								<button id="verify-2fa-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded">
+									Enable 2FA
+								</button>
+								<button id="cancel-2fa-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">
+									Cancel
+								</button>
+							</div>
+						</div>
+					</div>
+				`;
+				document.body.insertAdjacentHTML('beforeend', qrModal);
+				
+				// Add event listeners for the modal
+				document.getElementById('verify-2fa-btn')?.addEventListener('click', async () => {
+					const code = (document.getElementById('verify-2fa-code') as HTMLInputElement)?.value;
+					if (!code || code.length !== 6) {
+						alert('Please enter a valid 6-digit code');
+						return;
+					}
+					
+					const verifyData = await apiService.verify2FA({ token: code });
+					
+					if (verifyData.success) {
+						// Remove QR modal first
+						document.getElementById('qr-modal')?.remove();
+						
+						// Show backup codes if available
+						if (verifyData.backupCodes && verifyData.backupCodes.length > 0) {
+							const backupCodesModal = `
+								<div id="backup-codes-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+									<div class="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+										<h3 class="text-lg font-bold text-white mb-4">🎉 2FA Enabled Successfully!</h3>
+										<p class="text-gray-300 text-sm mb-4">Save these backup codes in a safe place. You can use them to log in if you lose access to your authenticator app:</p>
+										<div class="bg-gray-900 p-4 rounded mb-4 max-h-40 overflow-y-auto">
+											<div class="grid grid-cols-2 gap-2 text-sm font-mono text-white">
+												${verifyData.backupCodes.map(code => `<div class="p-1 bg-gray-700 rounded text-center">${code}</div>`).join('')}
+											</div>
+										</div>
+										<p class="text-yellow-400 text-xs mb-4">⚠️ These codes can only be used once each. Keep them secure!</p>
+										<div class="flex gap-2 mb-4">
+											<button id="copy-codes-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm">
+												📋 Copy All
+											</button>
+											<button id="download-codes-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm">
+												💾 Download
+											</button>
+										</div>
+										<button id="backup-codes-ok-btn" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded">
+											I've Saved My Backup Codes
+										</button>
+									</div>
+								</div>
+							`;
+							document.body.insertAdjacentHTML('beforeend', backupCodesModal);
+							
+							// Copy button functionality
+							document.getElementById('copy-codes-btn')?.addEventListener('click', async () => {
+								const codesText = verifyData.backupCodes.join('\n');
+								try {
+									await navigator.clipboard.writeText(codesText);
+									const btn = document.getElementById('copy-codes-btn');
+									const originalText = btn?.textContent;
+									if (btn) {
+										btn.textContent = '✅ Copied!';
+										btn.className = 'flex-1 bg-green-600 text-white py-2 rounded text-sm';
+										setTimeout(() => {
+											btn.textContent = originalText;
+											btn.className = 'flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm';
+										}, 2000);
+									}
+								} catch (err) {
+									alert('Failed to copy codes to clipboard');
+								}
+							});
+
+							// Download button functionality
+							document.getElementById('download-codes-btn')?.addEventListener('click', () => {
+								const codesText = `Two-Factor Authentication Backup Codes
+Generated: ${new Date().toLocaleString()}
+
+⚠️ IMPORTANT: Keep these codes secure and private!
+Each code can only be used once to log in if you lose access to your authenticator app.
+
+Backup Codes:
+${verifyData.backupCodes.map((code, index) => `${index + 1}. ${code}`).join('\n')}
+
+Store these codes in a safe place such as:
+- A password manager
+- A secure notes app
+- Print and store in a safe location
+
+Do NOT share these codes with anyone.`;
+
+								const blob = new Blob([codesText], { type: 'text/plain' });
+								const url = URL.createObjectURL(blob);
+								const a = document.createElement('a');
+								a.href = url;
+								a.download = `2FA-Backup-Codes-${new Date().toISOString().split('T')[0]}.txt`;
+								document.body.appendChild(a);
+								a.click();
+								document.body.removeChild(a);
+								URL.revokeObjectURL(url);
+
+								// Update button to show success
+								const btn = document.getElementById('download-codes-btn');
+								const originalText = btn?.textContent;
+								if (btn) {
+									btn.textContent = '✅ Downloaded!';
+									btn.className = 'flex-1 bg-green-600 text-white py-2 rounded text-sm';
+									setTimeout(() => {
+										btn.textContent = originalText;
+										btn.className = 'flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm';
+									}, 2000);
+								}
+							});
+							
+							document.getElementById('backup-codes-ok-btn')?.addEventListener('click', () => {
+								document.getElementById('backup-codes-modal')?.remove();
+								update2FAStatus(true);
+							});
+						} else {
+							alert('2FA enabled successfully!');
+							update2FAStatus(true);
+						}
+					} else {
+						alert(verifyData.error || 'Invalid code');
+					}
+				});
+				
+				document.getElementById('cancel-2fa-btn')?.addEventListener('click', () => {
+					document.getElementById('qr-modal')?.remove();
+				});
+			} else {
+				alert(data.error || '2FA setup failed');
+			}
+		} catch (error) {
+			console.error('2FA setup error:', error);
+			alert('Failed to set up 2FA');
+		}
+	});
+
+	document.getElementById('disable-2fa-btn')?.addEventListener('click', async () => {
+		const password = prompt('Enter your password to disable 2FA:');
+		if (!password) return;
+		
+		try {
+			// Note: The API service doesn't have a disable2FA method, so we'll use direct fetch with proper auth
+			const token = localStorage.getItem('token');
+			const response = await fetch(`${API_BASE_URL}/auth/2fa/disable`, {
+				method: 'POST',
+				headers: { 
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`
+				},
+				credentials: 'include',
+				body: JSON.stringify({ password })
+			});
+			const data = await response.json();
+			
+			if (data.success) {
+				alert('2FA disabled successfully!');
+				update2FAStatus(false);
+			} else {
+				alert(data.error || 'Failed to disable 2FA');
+			}
+		} catch (error) {
+			console.error('2FA disable error:', error);
+			alert('Failed to disable 2FA');
+		}
+	});
+}
+
+
+
+// OLD Account
+
+  export function renderOldAccountTab(): string {
 	return `
 	  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 	  <div>
@@ -169,7 +581,7 @@ export async function setupHistoryTab() {
 	`;
   }
 
-  export function setupAccountTab(username: string, isGoogle: boolean) {
+  export function setupOldAccountTab(username: string, isGoogle: boolean) {
 
 	const avatarInput = document.getElementById('avatar-upload') as HTMLInputElement | null;
 	const displayInput = document.getElementById('display-name') as HTMLInputElement | null;
@@ -651,6 +1063,7 @@ const main = document.getElementById('main');
 		<!-- Sidebar -->
 		<div class="w-64 btn-vs flex flex-col p-4 space-y-4">
 		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="account">Account</button>
+		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="oldaccount">Old Account</button>
 		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="history">Match History</button>
 		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="performance">Performance</button>
 		  <button class="sidebar-tab text-left px-3 py-2 hover:bg-indigo-700" data-tab="powerups">Powerups</button>
@@ -679,6 +1092,10 @@ export function setupProfile(username: string, isGoogle: boolean) {
 			(e.currentTarget as HTMLElement).classList.add('bg-[--secondary-color]', 'text-[--primary-color]');
 
 			switch (tab) {
+				case 'oldaccount':
+					container!.innerHTML = renderOldAccountTab();
+					await setupOldAccountTab(username, isGoogle);
+					break;
 				case 'performance':
 					container!.innerHTML = renderPerformanceTab();
 					await setupPerformanceTab();

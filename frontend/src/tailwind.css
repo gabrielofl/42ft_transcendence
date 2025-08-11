@@ -5,13 +5,33 @@
 body {
 	@apply bg-gradient-to-b to-purple-600 from-yellow-500 text-white font-sans min-h-screen;
 }
-
+/* 
 .menu-tab {
 	@apply px-1 py-1.5 rounded-md text-xs font-medium hover:bg-[#2f4e50] transition;
 }
 
 .menu-tab.active {
 	@apply bg-[#2f4e50] text-white;
+} */
+
+.menu-tab {
+	font-size: 14px;
+	line-height: 140%;
+	padding: 8px;
+	color: var(--secondary-color);
+}
+
+.menu-tab:hover {
+  transform: scale(1.05);
+  /* box-shadow: 0 0 12px var(--primary-color), 0 0 20px var(--secondary-color); */
+}
+
+.menu-tab.active {
+	color:var(--primary-color);
+}
+
+.active:hover {
+	  transform: scale(1);
 }
 
 .tui-chart-wrapper {
@@ -172,6 +192,100 @@ body{
   
 }
 
+/* Text styles */
+
+.txt-title-hero{
+	font-size: 72px;
+	line-height: 120%;
+}
+
+.txt-title{
+	font-size: 32px;
+	line-height: 64;
+	font-weight: 400;
+	letter-spacing: -0.25;
+}
+
+.txt-subtitle{
+	font-size: 24px;
+	line-height: 120%;
+}
+
+.txt-subheading{
+	font-size: 16px;
+	line-height: 120%;
+}
+
+.txt-button{
+	font-size: 14px;
+	line-height: 100%;
+	text-transform: uppercase;
+}
+
+.txt-body-base{
+	font-size: 16px;
+	line-height: 140%;
+}
+
+.txt-input-textholder{
+	font-size: 12px;
+	line-height: 100%;
+}
+
+.txt-body-small{
+	font-size: 14px;
+	line-height: 140%;
+}
+
+.txt-body-link{
+	font-size: 16px;
+	line-height: 140%;
+	color: var(--secondary-color);
+	text-decoration: underline;
+}
+
+.txt-body-link-small{
+	font-size: 12px;
+	line-height: 140%;
+	color: var(--secondary-color);
+	text-decoration: underline;
+}
+
+.txt-icons{
+	font-size: 20px;
+	line-height: auto;
+}
+
+.txt-bold-tiny{
+	font-size: 12px;
+	line-height: 140%;
+}
+
+.txt-game-score{
+	font-size: 48px;
+	line-height: 120%;
+	font-weight: 400;
+}
+
+
+.color-primary{
+	color: var(--primary-color);
+}
+
+.color-secondary{
+	color: var(--secondary-color);
+}
+
+.box-border {
+  color: white;
+  border: 1px solid var(--secondary-color);
+  font-family: 'Press Start 2P', cursive;
+  padding: 10px 20px;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
 .btn-winner {
   color: white;
   border: 2px solid var(--success-color);
@@ -218,10 +332,14 @@ body{
 
 .btn-primary {
   background: var(--primary-color);
-  color: white;
+  color: var(--text-light);
   border: 2px solid var(--secondary-color);
+  border-radius: 8px;
   font-family: 'Press Start 2P', cursive;
-  padding: 5px;
+  font-size: 14px;
+  line-height: 100%;
+  text-transform: uppercase;
+  padding: 10px 20px;
   cursor: pointer;
   text-shadow: 1px 1px 0 #000;
   box-shadow: 0 0 8px var(--primary-color);
@@ -241,10 +359,14 @@ body{
 
 .btn-secondary {
   background: var(--secondary-color);
-  color: #000;
-  border: 2px solid var(--primary-color);
+  color: var(--bg-color);
+  border: 2px solid var(--secondary-color);
+  border-radius: 8px;
   font-family: 'Press Start 2P', cursive;
-  padding: 10px 10px;
+  font-size: 14px;
+  line-height: 100%;
+  text-transform: uppercase;
+  padding: 10px 20px;
   cursor: pointer;
   text-shadow: 1px 1px 0 #fffcf2;
   box-shadow: 0 0 6px var(--secondary-color);
@@ -253,7 +375,9 @@ body{
 
 .btn-secondary:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 12px var(--secondary-color), 0 0 20px var(--primary-color);
+  background-color: var(--bg-color);
+  color: var(--text-light);
+  box-shadow: 0 0 12px var(--secondary-color), 0 0 20px var(--secondary-color);
 }
 
 .btn-secondary:active {
@@ -294,6 +418,51 @@ body{
   text-shadow: 1px 1px 0 #000;
   box-shadow: 0 0 8px var(--primary-color);
   transition: transform 0.1s ease;
+}
+
+/* Hover upload img */
+.block {
+    position: relative; /* so the .plus knows what to be relative to */
+}
+
+.overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0; left: 0;
+}
+
+.block:hover .overlay {
+    background-color: rgba(0,0,0,.3);
+		cursor: pointer;
+		display: inline-block;
+}
+
+.block .plus {
+    display: none;
+}
+
+.block:hover .plus {
+    display: inline-block;
+}
+
+ label svg {
+    width: 25%;
+    height: 25%;
+	text-align: center;
+	cursor: pointer;
+  }
+
+  input[type="file"] {
+    display: none;
+    visibility: hidden;
+  }
+
+.plus {
+	background-color: rgba(0,0,0,.2);
+    position: absolute;
+    top: 40%;
+	left: 40%;
 }
 
 
