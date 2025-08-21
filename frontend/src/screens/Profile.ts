@@ -1,5 +1,9 @@
-import Chart from '@toast-ui/chart';
-import '@toast-ui/chart/dist/toastui-chart.min.css';
+// import Chart from '@toast-ui/chart';
+// import '@toast-ui/chart/dist/toastui-chart.min.css';
+
+// import {CategoryScale, Chart, LinearScale, LineController, LineElement, PointElement} from 'chart.js';
+import Chart from 'chart.js/auto'
+
 import { apiService } from '../services/api.js';
   
 
@@ -79,27 +83,26 @@ export async function setupHistoryTab() {
 }
 
 // New account
-  export function renderAccountTab(): string {
+  export function renderAccountTab() {
 
-		const rendered = replaceTemplatePlaceholders(profileAccount, {API_BASE_URL});
-	
-	return rendered;
+		const container = document.getElementById('profile-content');
+		if (!container) return ;
+
+		container.innerHTML = replaceTemplatePlaceholders(profileAccount, {API_BASE_URL});
+		setupAccountTab();
   }
 
-  export function setupAccountTab(username: string, isGoogle: boolean) {
+  export function setupAccountTab() {
 
 	const avatarInput = document.getElementById('avatar-upload') as HTMLInputElement | null;
-	const displayInput = document.getElementById('display-name') as HTMLInputElement | null;
-	const updateBtn = document.getElementById('update-display-btn') as HTMLButtonElement | null;
+	const usernameInput = document.getElementById('username') as HTMLInputElement | null;
+	const updateUsernameBtn = document.getElementById('update-username-btn') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordSection = document.getElementById('password-section');
 	// const resultBox = document.getElementById('profile-username');
 
 	
-	if (isGoogle) {
-		googleIndicator?.classList.remove('hidden');
-		passwordSection?.classList.add('hidden');
-	}
+	
 
 	fetch(`${API_BASE_URL}/users/me`, {
 		credentials: 'include',
@@ -127,9 +130,14 @@ export async function setupHistoryTab() {
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
 			document.getElementById('email')?.setAttribute('placeholder', data.email);
 
-			
-			document.getElementById('wins-count')!.textContent = data.wins;
-			document.getElementById('losses-count')!.textContent = data.losses;
+			// if (isGoogle) {
+			// 	googleIndicator?.classList.remove('hidden');
+			// 	passwordSection?.classList.add('hidden');
+			// }
+
+
+			// document.getElementById('wins-count')!.textContent = data.wins;
+			// document.getElementById('losses-count')!.textContent = data.losses;
 			document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
 			
 			
@@ -158,29 +166,38 @@ export async function setupHistoryTab() {
 		if (!result.success) alert('Avatar upload failed');
 	});
 
-	updateBtn?.addEventListener('click', async () => {
-		const displayName = displayInput?.value.trim();
-		if (!displayName || displayName.length < 2) return alert('Name too short');
+	updateUsernameBtn?.addEventListener('click', async () => {
+		const username = usernameInput?.value.trim();
+		if (!username || username.length < 2) return alert('Name too short');
 
-		const res = await fetch(`${API_BASE_URL}/profile/display-name`, {
+		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
 			},
 			credentials: 'include', 
-			body: JSON.stringify({ displayName }),
+			body: JSON.stringify({ username }),
 		});
-		const result = await res.json();
-		if (result.success) alert('Profile updated!');
-		else alert(result.error || 'Failed to update');
+
+		if (!res.ok)
+			alert('Failed to update');
+		else
+			renderAccountTab();
+		// const result = await res.json();
+		// result.error.code 
+		// if (result.success) alert('Profile updated!');
+		// else alert(result.error || 'Failed to update');
 	});
 
-	document.getElementById('change-password-btn')?.addEventListener('click', async () => {
+	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
+		const password = (document.getElementById('password') as HTMLInputElement).value;
 		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
+		const rePassword = (document.getElementById('re-password') as HTMLInputElement).value;
 		if (newPassword.length < 4) return alert('Password too short');
 
-		const currentPassword = prompt('Enter current password:');
-		if (!currentPassword) return;
+		// const currentPassword = prompt('Enter current password:');
+		// if (!currentPassword) return;
 
 		const res = await fetch(`${API_BASE_URL}/profile/password`, {
 			method: 'POST',
@@ -447,56 +464,198 @@ export async function setupPerformanceTab() {
 
 		// const data = await res.json();
 
-	 // Your data
+
+// tui.chart
+// const data = {
+//  categories: ['Wins', 'Losses', 'Rate', 'Matches', 'Time', 'Max Score'],
+// 			series: [
+// 			{
+// 				name: 'This Month',
+// 				data: [50, 30, 50, 70, 60, 40],
+// 			},
+// 			],
+// };
+
+// const myRadarTheme = {
+//   series: {
+//     colors: ['#FF6347']  // customize main color(s)
+//   }
+  
+// };
+
+// // register the theme
+// // Chart.registerTheme('myRadarTheme', myRadarTheme);
+
+// const options = {
+//   chart: {
+//     width: 500,
+//     height: 400,
+//   },
+//   theme: 'myRadarTheme',
+//   legend: {
+//     visible: false, // hide legend
+//   },
+  
+// };
+
+// // // // create the radar chart
+// const chart = new Chart.RadarChart({
+//   el: container, // ✅ matches your "accuracy-chart"
+//   data,
+//   options,
+// });
+
+
+// Chart.js
+
+// const data = {
+//   labels: [
+//     'Eating',
+//     'Drinking',
+//     'Sleeping',
+//     'Designing',
+//     'Coding',
+//     'Cycling',
+//     'Running'
+//   ],
+//   datasets: [{
+//     label: 'My First Dataset',
+//     data: [65, 59, 90, 81, 56, 55, 40],
+//     fill: true,
+//     backgroundColor: 'rgba(255, 99, 132, 0.2)',
+//     borderColor: 'rgb(255, 99, 132)',
+//     pointBackgroundColor: 'rgb(255, 99, 132)',
+//     pointBorderColor: '#fff',
+//     pointHoverBackgroundColor: '#fff',
+//     pointHoverBorderColor: 'rgb(255, 99, 132)'
+//   }, {
+//     label: 'My Second Dataset',
+//     data: [28, 48, 40, 19, 96, 27, 100],
+//     fill: true,
+//     backgroundColor: 'rgba(54, 162, 235, 0.2)',
+//     borderColor: 'rgb(54, 162, 235)',
+//     pointBackgroundColor: 'rgb(54, 162, 235)',
+//     pointBorderColor: '#fff',
+//     pointHoverBackgroundColor: '#fff',
+//     pointHoverBorderColor: 'rgb(54, 162, 235)'
+//   }]
+// };
+
+// const config = {
+//   type: 'radar',
+//   data: data,
+//   options: {
+//     elements: {
+//       line: {
+//         borderWidth: 3
+//       }
+//     }
+//   },
+// };
+
+//  new Chart(
+//     document.getElementById('accuracy-chart'),
+//     {
+//         type: 'radar',
+// 		data: data,
+// 		options: {
+// 			elements: {
+// 			line: {
+// 				borderWidth: 3
+// 			}
+// 			}
+// 		},
+//     }
+//   );
+
+// (async function() {
+//   const data = [
+//     { year: 2010, count: 10 },
+//     { year: 2011, count: 20 },
+//     { year: 2012, count: 15 },
+//     { year: 2013, count: 25 },
+//     { year: 2014, count: 22 },
+//     { year: 2015, count: 30 },
+//     { year: 2016, count: 28 },
+//   ];
+
+//   new Chart(
+//     document.getElementById('accuracy-chart'),
+//     {
+//       type: 'bar',
+//       data: {
+//         labels: data.map(row => row.year),
+//         datasets: [
+//           {
+//             label: 'Acquisitions by year',
+//             data: data.map(row => row.count)
+//           }
+//         ]
+//       }
+//     }
+//   );
+// })();
+
+ 
+
+ 
+
+
+
+
+
+
+
+	 // tui.chart
 		
-	const chart = Chart.radarChart({
-		el: container,
-		data: {
-			categories: ['Wins', 'Losses', 'Rate', 'Matches', 'Time', 'Max Score'],
-			series: [
-			{
-				name: 'This Month',
-				data: [50, 30, 50, 70, 60, 40],
-			},
-			],
-		},
-		options: {
-			theme: {
-				chart: {
-								backgroundColor: 'rgba(37, 0, 77, 1)',
-							},
-			plot: {
-				lineColor: '#ff00ff',   // background grid lines
-				lineWidth: 2,
-				backgroundColor:'rgba(60, 80, 180, 0.1)'
-			},
-			circularAxis: {
-				label: {
-				color: '#ffff66',     // category labels color
-				},
-				lineColor: '#fffcf2',   // circular lines (outer rings)
-			},
-			radialAxis: {
-				label: {
-				color: '#ffff66',     // angle axis labels (if shown)
-				},
-				lineColor: '#fffcf2',   // radial lines
-			},
-			series: {
-				colors: ['#ff00ff'],    // radar shape color
-				areaOpacity: 0.5,       // semi-transparent fill
-				lineWidth: 3,
-				dot: {
-				radius: 4,
-				color: '#ff00ff',
-				},
-			},
-			},
-			legend: {
-			visible: false,
-			},
-		},
-		});
+	// const chart = Chart.radarChart({
+	// 	el: container,
+	// 	data: {
+	// 		categories: ['Wins', 'Losses', 'Rate', 'Matches', 'Time', 'Max Score'],
+	// 		series: [
+	// 		{
+	// 			name: 'This Month',
+	// 			data: [50, 30, 50, 70, 60, 40],
+	// 		},
+	// 		],
+	// 	},
+	// 	options: {
+	// 		theme: {
+	// 			chart: {
+	// 								backgroundColor: 'rgba(0, 0, 0, 0)',
+	// 							},
+	// 			plot: {
+	// 				lineColor: '#fffcf2',   // background grid lines
+	// 				lineWidth: 2,
+	// 				backgroundColor:'rgba(0, 80, 180, 0.1)'
+	// 			},
+	// 			circularAxis: {
+	// 				label: {
+	// 				color: '#ffff66',     // category labels color
+	// 				},
+	// 				lineColor: '#fffcf2',   // circular lines (outer rings)
+	// 			},
+	// 			radialAxis: {
+	// 				label: {
+	// 				color: '#ffff66',     // angle axis labels (if shown)
+	// 				},
+	// 				lineColor: '#fffcf2',   // radial lines
+	// 			},
+	// 			series: {
+	// 				colors: ['#ff00ff'],    // radar shape color
+	// 				areaOpacity: 0.5,       // semi-transparent fill
+	// 				lineWidth: 3,
+	// 				dot: {
+	// 				radius: 4,
+	// 				color: '#ff00ff',
+	// 				},
+	// 			},
+	// 		},
+	// 		legend: {
+	// 		visible: false,
+	// 		},
+	// 	},
+	// 	});
 	} catch (err) {
 		console.error('Error loading stats:', err);
 	}
@@ -610,8 +769,8 @@ export function setupProfile(username: string, isGoogle: boolean) {
 					await setupHistoryTab()
 					break;
 				default:
-					container!.innerHTML = renderAccountTab();
-					setupAccountTab(username, isGoogle);
+					renderAccountTab();
+					// setupAccountTab();
 			}
 		});
 	});

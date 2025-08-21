@@ -25,28 +25,28 @@ export default async function (fastify, opts) {
 		});
 		
 		// Update user profile - PUT /api/users/me
-		fastify.put('/me', {
+		fastify.post('/me', {
 			preHandler: authenticate,
 			schema: {
 				body: {
 					type: 'object',
 					properties: {
-						display_name: { type: 'string', minLength: 1, maxLength: 50 },
+						username: { type: 'string', minLength: 1, maxLength: 50 },
 						email: { type: 'string', format: 'email' }
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { display_name, email } = request.body;
+			const { username, email } = request.body;
 			
 			try {
 				// Build dynamic query based on provided fields
 				const updates = [];
 				const values = [];
 				
-				if (display_name !== undefined) {
-					updates.push('display_name = ?');
-					values.push(display_name);
+				if (username !== undefined) {
+					updates.push('username = ?');
+					values.push(username);
 				}
 				
 				if (email !== undefined) {
@@ -66,12 +66,13 @@ export default async function (fastify, opts) {
 				);
 				
 				// Return updated user
-				const updatedUser = await fastify.db.get(
-					'SELECT id, username, email, display_name, avatar, wins, losses FROM users WHERE id = ?',
-					[request.user.id]
-				);
+				// const updatedUser = await fastify.db.get(
+				// 	'SELECT id, username, email, avatar, wins, losses FROM users WHERE id = ?',
+				// 	[request.user.id]
+				// );
 				
-				return updatedUser;
+				// return updatedUser;
+				return 
 				
 			} catch (error) {
 				if (error.code === 'SQLITE_CONSTRAINT') {
