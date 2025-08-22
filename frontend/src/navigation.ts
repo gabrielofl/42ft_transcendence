@@ -3,7 +3,7 @@ import { renderHeader } from './components/Header.js';
 import { renderFooter } from './components/Footer.js';
 import { renderAuthContainer } from './screens/AuthContainer.js';
 import { renderHome } from './screens/Home.js';
-import { renderGame } from './screens/Game/GameScreen.js';
+import { renderGame } from './screens/GameScreen.js';
 import { renderTournament } from './screens/Tournament.js';
 import { renderProfile } from './screens/Profile.js';
 import { renderLeaderboard } from './screens/Leaderboard.js';
@@ -41,6 +41,14 @@ export async function navigateTo(screen: string) {
 	}
 
 	switch (screen) {
+		case 'login':
+			renderAuthContainer();
+			break;
+
+		case 'home':
+			renderHome();
+			break;
+		
 		case 'game':
 			renderGame("Jorge", "Miguel", "local");
 			break;

@@ -420,6 +420,37 @@ if (googleLoginBtn) {
 			alert('Something went wrong. Try again.');
 		}
 	});
+// 		loginBtn.addEventListener('click', async () => {
+// 			const username = (document.getElementById('email') as HTMLInputElement)?.value;
+// 			const password = (document.getElementById('password') as HTMLInputElement)?.value;
+// 			const loginResult = document.getElementById('login-result');
+			
+// 			try {
+// 				const response = await fetch(`https://localhost:443/api/auth/login`, { //or direct to backend port?
+// 					method: 'POST',
+// 					headers: { 'Content-Type': 'application/json' },
+// 					body: JSON.stringify({ username, password }),
+// 					credentials: 'include',
+// 				});
+
+// 				const data = await response.json();
+// 				if (!response.ok) {
+// 					try {
+// 						if (loginResult) loginResult.innerText = data?.error;
+// 					}
+// 					catch {
+// 						if (loginResult) loginResult.innerText = 'Login failed.';
+// 					}
+// 					return;
+// 				}
+// 				show2FA(false);
+// 				// navigateTo('home');
+// 			} catch (err) {
+// 				if (loginResult) loginResult.innerText = 'Something went wrong. Try again.';
+// 			}
+// 			// show2FA(false);
+// 			// navigateTo('home');
+// 		});
 	}
 
 const registerBtn = document.getElementById('submit-register-btn');
@@ -465,6 +496,33 @@ const registerBtn = document.getElementById('submit-register-btn');
 			console.error('Registration error:', err);
 			alert('Something went wrong. Try again.');
 		}
+// 		try {
+// 			console.log('Request body:', JSON.stringify({ username, email, password, firstName, lastName }));
+
+// 			const response = await fetch(`https://localhost:443/api/auth/register`, { //or direct to backend port?
+// 				method: 'POST',
+// 				headers: { 'Content-Type': 'application/json' },
+// 				body: JSON.stringify({ username, email, password, firstName, lastName }),
+// 				credentials: 'include',
+// 			});
+
+// 			const data = await response.json();
+// 			if (!response.ok) {
+// 				// try {
+// 				// 	loginResult!.innerText = data?.error;
+// 				// }
+// 				// catch {
+// 				// 	loginResult!.innerText = 'Register failed.';
+// 				// }
+// 				return;
+// 			}
+// 			//login function?
+// 			show2FA(true);
+// 			// navigateTo('home');
+// 		} catch (err) {
+// 			// loginResult!.innerText = 'Something went wrong. Try again.';
+// 		}
+// 		// navigateTo('home');
 	});
 	}
 
