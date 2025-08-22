@@ -33,6 +33,18 @@ export function renderHeader(): void {
     `;
 
 	const homeBtn = document.getElementById('nav-home')!;
+// <<<<<<< HEAD
+// 	// homeBtn?.addEventListener('click', () => {
+// 	// 		navigateTo('home');
+// 	// });
+	
+// 	const logoutBtn = document.getElementById('nav-logout')!;
+// 	// logoutBtn?.addEventListener('click', () => {
+// 	// 	navigateTo('login');
+// 		//disconnect
+// 		//remove token
+// 		// });
+// =======
 	homeBtn?.addEventListener('click', () => {
 			navigateTo('home');
 	});
@@ -57,5 +69,6 @@ export function renderHeader(): void {
 	const leaderboardBtn = document.getElementById('nav-leaderboard')!;
 	leaderboardBtn?.addEventListener('click', () => {
 		navigateTo('leaderboard');
-	});
+		});
+// >>>>>>> feat.-(login/register-events)
 }

@@ -53,6 +53,7 @@ async function databasePlugin(fastify, opts) {
 			player1_score INTEGER  DEFAULT 0,
 			player2_score INTEGER  DEFAULT 0,
 			status        TEXT     DEFAULT 'pending',			-- pending/active/finished
+			tournament_id INTEGER,								-- References tournaments.id (optional)
 			created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
 			finished_at   DATETIME,
 			FOREIGN KEY (
@@ -66,7 +67,11 @@ async function databasePlugin(fastify, opts) {
 			FOREIGN KEY (
 				winner_id
 			)
-			REFERENCES users (id) 
+			REFERENCES users (id),
+			FOREIGN KEY (
+				tournament_id
+			)
+			REFERENCES tournaments (id) ON DELETE SET NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS tournaments (
