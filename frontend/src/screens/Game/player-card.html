@@ -1,0 +1,21 @@
+<div id="${name}-box" class="group flex flex-col items-center bg-[#1a1d26] rounded-xl px-4 py-3 shadow-md relative">
+    <div class="text-base font-semibold">${name}</div>
+    <div id="${name}-score" class="text-3xl font-extrabold animate-none transition-transform">0</div>
+    <div class="absolute bottom-2 flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        ${controls}
+    </div>
+
+    <!-- Inventory -->
+    <div class="mt-2 flex gap-2" id="${name}-inventory">
+        <div id="0" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-md"></div>
+        <div id="1" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-md"></div>
+        <div id="2" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-md"></div>
+    </div>
+
+    <!-- Effects -->
+    <div class="mt-2 flex gap-1 flex-wrap justify-center" id="${name}-effects">
+        <!-- Aquí se van apilando dinámicamente los efectos -->
+        <!-- Se coloca un div para reservar el espacio -->
+        <div class="w-5 h-5" style="visibility: hidden;"></div>
+    </div>
+</div>
