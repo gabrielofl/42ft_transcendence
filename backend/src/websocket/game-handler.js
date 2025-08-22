@@ -19,7 +19,7 @@ export function startGameLoop(room, fastify) {
   if (room.isTournament) {
     resetGame({
       isTournament: true,
-      timeLimit: 180, // 3 minutos para torneos (sin límite de puntos)
+      timeLimit: MATCH_TIME_LIMIT, // 3 minutos para torneos (sin límite de puntos)
       scoreLimit: null, // Sin límite de puntos en torneos
       startTime: Date.now()
     });
@@ -31,20 +31,24 @@ export function startGameLoop(room, fastify) {
     if (room.status === ROOM_STATUS.PLAYING) {
       gameTick();
       const state = getState();
-      
+  
       // Detectar si alguien puntuó
       const currentScores = {
         player1: state.players.player1.score,
         player2: state.players.player2.score
       };
-      
+  
       // Verificar si player1 puntuó
       if (currentScores.player1 > previousScores.player1) {
         const scoreEvent = {
           event: 'player_scored',
           player: 'player1',
           score: currentScores.player1,
-          scores: currentScores
+          scores: currentScores,
+          roomId: room.id,
+          tournamentId: room.tournamentId ?? null,
+          round: room.roundNumber ?? null,
+          matchIndex: room.matchIndex ?? null
         };
         sendToBoth(room, scoreEvent);
         console.log(`🎯 Player1 scored! New score: ${currentScores.player1}-${currentScores.player2}`);
@@ -56,7 +60,11 @@ export function startGameLoop(room, fastify) {
           event: 'player_scored',
           player: 'player2',
           score: currentScores.player2,
-          scores: currentScores
+          scores: currentScores,
+          roomId: room.id,
+          tournamentId: room.tournamentId ?? null,
+          round: room.roundNumber ?? null,
+          matchIndex: room.matchIndex ?? null
         };
         sendToBoth(room, scoreEvent);
         console.log(`🎯 Player2 scored! New score: ${currentScores.player1}-${currentScores.player2}`);
@@ -97,10 +105,14 @@ export function startGameLoop(room, fastify) {
         ]).then(([winner, loser]) => {
           const gameEndEvent = {
             event: 'game_ended',
+            roomId: room.id,
+            tournamentId: room.tournamentId ?? null,
+            round: room.roundNumber ?? null,
+            matchIndex: room.matchIndex ?? null,
             winner,
             loser,
             reason: room.isTournament ? 'time_limit' : 'score_limit',
-            isTournament: room.isTournament || false
+            isTournament: !!room.isTournament
           };
           
           sendToBoth(room, gameEndEvent);
@@ -120,6 +132,30 @@ export function startGameLoop(room, fastify) {
               if (match) {
                 match.winner = winner.userId;
                 match.endTime = Date.now();
+
+                const everyone = new Set();
+                tournament.bracket.flat().forEach(m => {
+                  if (m.player1) everyone.add(m.player1);
+                  if (m.player2) everyone.add(m.player2);
+                });
+
+                const matchFinishedPayload = {
+                  event: 'tournament_match_finished',
+                  tournamentId: room.tournamentId,
+                  roomId: room.id,
+                  round: tournament.currentRound + 1,
+                  matchIndex: currentRound.indexOf(match),
+                  winner: winner.userId,
+                  loser: loser.userId,
+                  scores: { ...gameResult.scores },
+                  endedAt: Date.now()
+                };
+
+                for (const uid of everyone) {
+                  const c = getUserConnection(uid);
+                  if (c) c.send(JSON.stringify(matchFinishedPayload));
+                }
+
                 console.log(`✅ Match ${room.id} actualizado: ganador = ${winner.userId}`);
                 
                 // Verificar si todos los matches de la ronda actual han terminado
@@ -176,19 +212,22 @@ export function startGameLoop(room, fastify) {
                       // Asignar jugadores a la sala
                       newRoom.players.player1 = {
                         userId: match.player1,
-                        connection: null,
-                        ready: false
+                        connection: getUserConnection(match.player1) || null,
+                        ready: true
                       };
                       newRoom.players.player2 = {
                         userId: match.player2,
-                        connection: null,
-                        ready: false
+                        connection: getUserConnection(match.player2) || null,
+                        ready: true
                       };
                       
                       // Guardar referencia de la sala en el match
                       match.roomId = roomId;
                       
                       console.log(`🎯 Sala ${roomId} creada para ${match.player1} vs ${match.player2}`);
+                      if (newRoom.players.player1.connection || newRoom.players.player2.connection) {
+                        startCountdown(newRoom, 3, fastify);
+                      }
                     }
                     
                     // Notificar a todos los jugadores sobre la nueva ronda
@@ -201,7 +240,7 @@ export function startGameLoop(room, fastify) {
                     for (const playerUserId of allPlayers) {
                       const playerConnection = getUserConnection(playerUserId);
                       if (playerConnection) {
-                        const roundName = updatedTournament.currentRound === 1 ? 'Semifinales' : 'Final';
+                        const roundName = updatedTournament.currentRound === 1 ? 'Semifinales' : updatedTournament.currentRound === 2 ? 'Final' : `Ronda ${updatedTournament.currentRound + 1}`;
                         playerConnection.send(JSON.stringify({
                           event: 'tournament_next_round_created',
                           tournamentId: room.tournamentId,
@@ -237,7 +276,7 @@ export function startGameLoop(room, fastify) {
                          if (playerMatch) {
                            const slot = playerMatch.player1 === playerUserId ? 'player1' : 'player2';
                            const opponent = playerMatch.player1 === playerUserId ? playerMatch.player2 : playerMatch.player1;
-                           const roundName = updatedTournament.currentRound === 1 ? 'Semifinales' : 'Final';
+                           const roundName = updatedTournament.currentRound === 1 ? 'Semifinales' : updatedTournament.currentRound === 2 ? 'Final' : `Ronda ${updatedTournament.currentRound + 1}`;
                            
                            playerConnection.send(JSON.stringify({
                              event: 'tournament_next_round',
@@ -291,7 +330,12 @@ export function startGameLoop(room, fastify) {
       for (const slot of ['player1', 'player2']) {
         const player = room.players[slot];
         if (player && player.connection && player.connection.readyState === 1) {
-          player.connection.send(JSON.stringify({ event: "game_state", state }));
+          player.connection.send(JSON.stringify({
+            event: 'game_state',
+            roomId: room.id,
+            tournamentId: room.tournamentId ?? null,
+            state
+          }));
         }
       }
     }
@@ -301,24 +345,24 @@ export function startGameLoop(room, fastify) {
 export function pauseGame(room, reason = 'opponent_disconnected') {
   room.status = ROOM_STATUS.PAUSED;
   if (room.interval) clearInterval(room.interval);
-  sendToBoth(room, { event: "game_paused", reason });
+  sendToBoth(room, { event: 'game_paused', reason, roomId: room.id, tournamentId: room.tournamentId ?? null });
 }
 
 export function startCountdown(room, seconds = 5, fastify) {
   let countdown = seconds;
   const countdownInterval = setInterval(() => {
-    sendToBoth(room, { event: 'countdown', seconds: countdown });
+    sendToBoth(room, { event: 'countdown', seconds: countdown, roomId: room.id, tournamentId: room.tournamentId ?? null });
     countdown--;
     
     if (countdown < 0) {
       clearInterval(countdownInterval);
       room.status = ROOM_STATUS.PLAYING;
       startGameLoop(room, fastify);
-      sendToBoth(room, { event: 'game_start' });
+      sendToBoth(room, { event: 'game_start', roomId: room.id, tournamentId: room.tournamentId ?? null });
       for (const slot of ['player1', 'player2']) {
         const player = room.players[slot];
         if (player && player.connection && player.connection.readyState === 1) {
-          player.connection.send(JSON.stringify({ event: "state", state: room.status }));
+          player.connection.send(JSON.stringify({ event: 'state', state: room.status, roomId: room.id, tournamentId: room.tournamentId ?? null }));
         }
       }
       console.log(`Game started with countdown for room ${room.id}`);
@@ -332,13 +376,7 @@ export function handleAction({ data, assignedRoom, playerSlot, connection, fasti
     if ((room.status === ROOM_STATUS.READY || room.status === ROOM_STATUS.PAUSED) && 
         room.players.player1 && room.players.player2 &&
         room.players.player1.userId && room.players.player2.userId) {
-      if (room.status === ROOM_STATUS.READY) {
-        // Nuevo juego - usar cuenta atrás
         startCountdown(room, 3, fastify);
-      } else if (room.status === ROOM_STATUS.PAUSED) {
-        // Reanudar juego pausado - usar cuenta atrás
-        startCountdown(room, 3, fastify);
-      }
     } else {
       connection.send(JSON.stringify({ error: 'Ambos jugadores deben estar listos para empezar.' }));
     }
@@ -346,14 +384,14 @@ export function handleAction({ data, assignedRoom, playerSlot, connection, fasti
     room.status = data.action === "end" ? ROOM_STATUS.ENDED : ROOM_STATUS.PAUSED;
     if (room.interval) clearInterval(room.interval);
     if (data.action === "end") {
-      sendToBoth(room, { event: 'game_over' });
+      sendToBoth(room, { event: 'game_over', roomId: room.id, tournamentId: room.tournamentId ?? null });
     } else {
-      sendToBoth(room, { event: 'game_paused' });
+      sendToBoth(room, { event: 'game_paused', roomId: room.id, tournamentId: room.tournamentId ?? null });
     }
     for (const slot of ['player1', 'player2']) {
       const player = room.players[slot];
       if (player && player.connection && player.connection.readyState === 1) {
-        player.connection.send(JSON.stringify({ event: "state", state: room.status }));
+        player.connection.send(JSON.stringify({ event: 'state', state: room.status, roomId: room.id, tournamentId: room.tournamentId ?? null }));
       }
     }
     console.log(`Game state for room ${room.id} changed to: ${room.status}`);

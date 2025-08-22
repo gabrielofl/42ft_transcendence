@@ -67,10 +67,23 @@ import {
   unregisterUserConnection 
 } from './utils.js';
 
+function patchSocketLogging(fastify, connection) {
+  const rawSend = connection.send.bind(connection);
+  connection.send = (data) => {
+    try {
+      fastify.log.info({ wsOut: JSON.parse(data) }, 'WS →');
+    } catch {
+      fastify.log.info({ wsOut: data }, 'WS →');
+    }
+    return rawSend(data);
+  };
+}
+
 // --- Main WebSocket registration ---
 export default async function registerWebsocket(fastify) {
   try {
     fastify.get('/ws', { websocket: true }, (connection, req) => {
+	  patchSocketLogging(fastify, connection);  
       let _userId = null;
       let _assignedRoom = null;
       let _playerSlot = null;
@@ -405,12 +418,12 @@ export default async function registerWebsocket(fastify) {
                               // Iniciar el juego automáticamente
                               room.status = ROOM_STATUS.PLAYING;
                               startGameLoop(room, fastify);
-                              sendToBoth(room, { event: 'tournament_game_start' });
+                              sendToBoth(room, { event: 'tournament_game_start', roomId: room.id });
                               
                               for (const slot of ['player1', 'player2']) {
                                 const player = room.players[slot];
                                 if (player && player.connection && player.connection.readyState === 1) {
-                                  player.connection.send(JSON.stringify({ event: "state", state: room.status }));
+                                  player.connection.send(JSON.stringify({ event: "state", state: room.status, roomId: room.id }));
                                 }
                               }
                             }
@@ -488,12 +501,12 @@ export default async function registerWebsocket(fastify) {
                        // Iniciar el juego automáticamente
                        room.status = ROOM_STATUS.PLAYING;
                        startGameLoop(room, fastify);
-                       sendToBoth(room, { event: 'tournament_game_start' });
+                       sendToBoth(room, { event: 'tournament_game_start', roomId: room.id });
                        
                        for (const slot of ['player1', 'player2']) {
                          const player = room.players[slot];
                          if (player && player.connection && player.connection.readyState === 1) {
-                           player.connection.send(JSON.stringify({ event: "state", state: room.status }));
+                           player.connection.send(JSON.stringify({ event: "state", state: room.status, roomId: room.id }));
                          }
                        }
                      }

@@ -21,7 +21,7 @@ const initialState = (options = {}) => ({
   winner: null,
   // Opciones para torneos
   isTournament: options.isTournament || false,
-  timeLimit: options.timeLimit || null, // Tiempo límite en milisegundos
+  timeLimit: options.timeLimit ?? null, // Tiempo límite en milisegundos
   startTime: options.startTime || null,
   goldenGoal: false, // Para gol de oro en empates
 });
@@ -77,7 +77,7 @@ function checkGameEnd() {
   // Verificar tiempo límite para torneos
   if (state.isTournament && state.timeLimit && state.startTime) {
     const elapsed = Date.now() - state.startTime;
-    if (elapsed >= state.timeLimit * 1000) { // timeLimit está en segundos, convertir a ms
+    if (elapsed >= state.timeLimit) { // timeLimit está en segundos, convertir a ms
       // Tiempo agotado, verificar empate
       if (state.players.player1.score === state.players.player2.score) {
         // Empate - activar gol de oro
