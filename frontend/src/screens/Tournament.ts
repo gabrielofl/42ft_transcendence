@@ -1,6 +1,7 @@
 const MOCK_TOURNAMENT_ID = 'MOCK123';
 const MOCK_USER = 'You';
 
+
 let tournamentState = {
   status: 'idle',
   players: [],
@@ -13,6 +14,16 @@ let tournamentState = {
 };
 
 export function renderTournament() {
+  const socket = new WebSocket(`${API_BASE_URL.replace('https', 'wss')}/ws`);
+  //const socket = new WebSocket(`wss://127.0.0.1:443/ws`);
+  socket.addEventListener('open', () => {
+    socket.send(JSON.stringify({
+      userId: 1,
+      //type: 'message',
+      joinOrCreateTournament: 'true',
+    }));
+  });
+  socket.send(JSON.stringify({type: 'message', userId: 1, joinOrCreateTournament: 'true'}));
   const main = document.getElementById('main');
   if (!main) return;
 

@@ -7,9 +7,9 @@ export function renderFooter(): void {
 
 	footer.innerHTML = `
   			<!-- Divider -->
-<div class="relative">
+		<div class="relative">
     <footer	class="w-full h-1/10 fixed bottom-0 bg-main border-t border-[--primary-color] font-press text-white px-6 py-4 flex justify-between items-start ">
-			<div class="text-lg font-press font-bold tracking-wide flex items-center gap-2">
+                <div class="text-lg font-press font-bold tracking-wide flex items-center gap-2">
 				<span class="material-symbols-outlined text-3xl">
 				swords
 				</span> Pong</div>
