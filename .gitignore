@@ -3,3 +3,5 @@ frontend/node_modules
 backend/.env
 frontend/.env.production
 frontend/package-lock.json
+
+/.vs

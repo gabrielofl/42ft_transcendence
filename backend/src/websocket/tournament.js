@@ -1,7 +1,7 @@
 // Estructura básica para torneos 1v1 de hasta 8 jugadores
 
 const MAX_PLAYERS = 8;
-const MATCH_TIME_LIMIT = 3 * 60 * 1000; // 3 minutos en milisegundos
+const MATCH_TIME_LIMIT = 3 * 6 * 1000; // 3 minutos en milisegundos
 const TOURNAMENT_STATUS = {
   WAITING: 'waiting', // Esperando jugadores
   READY: 'ready',     // Listo para empezar
