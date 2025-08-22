@@ -1,4 +1,5 @@
 import { navigateTo } from "../navigation";
+import { apiService } from "../services/api.js";
 
 export function renderHeader(): void {
 	const header = document.getElementById('header');
@@ -7,29 +8,54 @@ export function renderHeader(): void {
 	header.innerHTML = `
 		<div>
             <!-- Header -->
-            <nav class="font-press text-purple-900 px-6 py-4 flex justify-between rounded-sm items-center shadow-md">
-                <div class="text-xl font-press font-bold tracking-wide flex items-center gap-2">
+            <nav class="font-press bg-indigo-900/10 text-white px-6 py-4 flex justify-between items-center">
+                <div class="text-lg font-press font-bold tracking-wide flex items-center gap-2">
 				<span class="material-symbols-outlined text-3xl">
-				sports_esports
-				</span> ft_transcendence</div>
-                <div class="flex gap-2">
-                    <button id="nav-home" class="menu-tab border border-purple-900 hover:bg-purple-900/20">Home</button>
-                    <button id="nav-profile" class="menu-tab border border-purple-900 hover:bg-purple-900/20">User</button>
-                    <button id="nav-logout" class="menu-tab border border-red-600 text-red-600 hover:bg-red-900/20">Logout</button>
+				swords
+				</span> Pong</div>
+                <div class="flex gap-8">
+                    <button id="nav-home" class="menu-tab active">Play</button>
+                    <button id="nav-profile" class="menu-tab">Profile</button>
+					<button id="nav-leaderboard" class="menu-tab">Leaderboard</button>
+					<button id="nav-contact" class="menu-tab">Contact</button>
+                    <button id="nav-logout" class="menu-tab btn-secondary">Logout</button>
                 </div>
             </nav>
+					<!-- Divider -->
+		<div class="relative">
+			<div class="relative">
+				<div class="absolute inset-0 flex items-center">
+					<div class="w-full border-t border-[--secondary-color]"></div>
+				</div>
+			</div>
+		</div>
 	        </div>
     `;
 
 	const homeBtn = document.getElementById('nav-home')!;
-	// homeBtn?.addEventListener('click', () => {
-	// 		navigateTo('home');
-	// });
+	homeBtn?.addEventListener('click', () => {
+			navigateTo('home');
+	});
+
+	const profileBtn = document.getElementById('nav-profile')!;
+	profileBtn?.addEventListener('click', () => {
+			navigateTo('profile');
+	});
 	
 	const logoutBtn = document.getElementById('nav-logout')!;
-	// logoutBtn?.addEventListener('click', () => {
-	// 	navigateTo('login');
-		//disconnect
-		//remove token
-		// });
+	logoutBtn?.addEventListener('click', async () => {
+		try {
+			await apiService.logout();
+			navigateTo('login');
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Even if logout fails, clear local auth state
+			apiService.clearAuth();
+			navigateTo('login');
+		}
+	});
+	const leaderboardBtn = document.getElementById('nav-leaderboard')!;
+	leaderboardBtn?.addEventListener('click', () => {
+		navigateTo('leaderboard');
+	});
 }

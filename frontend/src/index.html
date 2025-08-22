@@ -5,15 +5,14 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>PONG</title>
 		<script src="https://accounts.google.com/gsi/client?hl=en" async defer></script>
-		<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-
+		<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&family=Press+Start+2P&family=Sixtyfour+Convergence&display=swap" rel="stylesheet">
 </head>
-	<body>
-		<div id="app" class="container mx-auto p-4">
-			<header id="header"></header>
-			<main id="main"></main>
-			<footer id="footer"></footer>
-		</div>
+<body class="min-h-screen flex flex-col">
+	<div id="app" class="flex flex-col flex-grow w-full">
+		<header id="header" class="h-16 md:h-20"></header>
+		<main id="main" class="flex-grow"></main>
+		<footer id="footer" class="h-24 md:h-32"></footer>
 		<script type="module" src="main.ts"></script>
-	</body>
+	</div>
+</body>
 </html>

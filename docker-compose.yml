@@ -10,7 +10,7 @@ services:
           - /app/node_modules
           - frontend-dist:/app/dist
       env_file:
-        - ./.env.production
+        - ./frontend/.env.production
       environment:
         - HOST=0.0.0.0
       networks:
@@ -22,10 +22,12 @@ services:
         context: ./backend
       ports:
         - '443:443'
+        # - '4444:4444' Work on cluster
       volumes:
         - frontend-dist:/app/static
+        - ./backend/pong.db:/app/pong.db
       env_file:
-        - ./.env
+        - ./backend/.env
       networks:
         - ft_transcendence
 
