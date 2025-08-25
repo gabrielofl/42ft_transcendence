@@ -1,6 +1,5 @@
 const MOCK_USER = 1;
 const API_BASE_URL = 'https://localhost:443';
-const API_BASE_URL = 'https://localhost:443';
 
 let socket: WebSocket | null = null;
 let currentTournamentId: string | null = null;
@@ -412,7 +411,6 @@ export function renderTournament() {
   socket.addEventListener('error', (e) => console.log('[ws] error', e));
   socket.addEventListener('close', (e) => console.log('[ws] close', e.code, e.reason));
     send({ userId: MOCK_USER, listTournaments: true });
-    }));
   // socket.send(JSON.stringify({type: 'message', userId: 1, joinOrCreateTournament: 'true'}));
   const main = document.getElementById('main');
   if (!main) return;
@@ -427,7 +425,7 @@ export function renderTournament() {
 
   renderTournamentStage();
   setupTournamentButtons();
-}
+};
 
 function setupTournamentButtons() {
   document.getElementById('btn-join')?.addEventListener('click', joinTournament);
