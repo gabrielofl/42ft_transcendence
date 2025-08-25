@@ -3,17 +3,16 @@
 
 // import {CategoryScale, Chart, LinearScale, LineController, LineElement, PointElement} from 'chart.js';
 import Chart from 'chart.js/auto'
-
+import sidebar from "../components/profile-sidebar.html?raw";
 import { apiService } from '../services/api.js';
-  
+import profileAccount from "./profile-account.html?raw";
+import profilePerformance from "./profile-performance.html?raw";
+import { setupProfileSidebar } from '../components/profile-sidebar';
+import { AppStore } from '../redux/AppStore';
+import { updateLangue } from '../redux/reducers/langueReducer';
 
 // const API_BASE_URL = 'https://localhost:4444/api'; Work on cluster
 const API_BASE_URL = 'https://localhost:443/api';
-
-
-
-import profileAccount from "./profile-account.html?raw";
-import profilePerformance from "./profile-performance.html?raw";
 
 // to replace vars on html injected. Check to include once.
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
@@ -431,7 +430,6 @@ function update2FAStatus(enabled: boolean) {
 
   export function renderPerformanceTab(): string {
 	const rendered = replaceTemplatePlaceholders(profilePerformance, {API_BASE_URL});
-	
 	return rendered;
 }
 
@@ -718,16 +716,10 @@ export function renderProfile() {
 const main = document.getElementById('main');
   if (!main) return;
 
-
   main.innerHTML = `
 	<div class="flex p-10 text-white font-press mx-auto shadow-lg min-h-[600px] max-h-[720px] h-full">
 		<!-- Sidebar -->
-		<div class="w-64 btn-vs flex flex-col p-4 space-y-4">
-		  <button class="sidebar-tab text-left menu-tab " data-tab="account">Account</button>
-		  <button class="sidebar-tab text-left menu-tab" data-tab="history">Match History</button>
-		  <button class="sidebar-tab text-left menu-tab" data-tab="performance">Performance</button>
-		  <button class="sidebar-tab text-left menu-tab" data-tab="friends">Friends</button>
-		</div>
+		${sidebar}
   
 		<!-- Main Content -->
 		<div class="flex-1 px-4 h-9/10" id="profile-content">
@@ -736,44 +728,12 @@ const main = document.getElementById('main');
 	  </div>
 	`;
 	// API to DB or cookie
-	setupProfile('alice', false);
-
+	// setupProfile('alice', false);
+	setupProfileSidebar();
 	setTimeout(() => {
     document.querySelector('[data-tab="performance"]')?.dispatchEvent(new Event('click'));
   	}, 0);
 
-}
-  
-export function setupProfile(username: string, isGoogle: boolean) {
-	document.querySelectorAll('.sidebar-tab').forEach(btn => {
-		btn.addEventListener('click', async e => {
-			const tab = (e.currentTarget as HTMLElement).dataset.tab;
-			const container = document.getElementById('profile-content');
-			
-			document.querySelectorAll('.sidebar-tab').forEach(b =>
-				b.classList.remove('active')
-			);
-
-			(e.currentTarget as HTMLElement).classList.add('active');
-
-			switch (tab) {
-				case 'friends':
-					container!.innerHTML = renderFriendsTab();
-					await setupFriendsTab();
-					break;
-				case 'performance':
-					container!.innerHTML = renderPerformanceTab();
-					await setupPerformanceTab();
-					break;
-				case 'history':
-					await setupHistoryTab()
-					break;
-				default:
-					renderAccountTab();
-					// setupAccountTab();
-			}
-		});
-	});
 }
   
 export const mockMatchHistory = {

@@ -1,59 +1,22 @@
 import { navigateTo } from "../navigation";
+import { AppStore } from "../redux/AppStore";
+import { langues, updateLangue } from "../redux/reducers/langueReducer";
 import { apiService } from "../services/api.js";
+import header_html from "./header.html?raw";
 
 export function renderHeader(): void {
 	const header = document.getElementById('header');
-  	if (!header) return;
+  	if (!header)
+		return;
 
-	header.innerHTML = `
-		<div>
-            <!-- Header -->
-            <nav class="font-press bg-indigo-900/10 text-white px-6 py-4 flex justify-between items-center">
-                <div class="text-lg font-press font-bold tracking-wide flex items-center gap-2">
-				<span class="material-symbols-outlined text-3xl">
-				swords
-				</span> Pong</div>
-                <div class="flex gap-8">
-                    <button id="nav-home" class="menu-tab active">Play</button>
-                    <button id="nav-profile" class="menu-tab">Profile</button>
-					<button id="nav-leaderboard" class="menu-tab">Leaderboard</button>
-					<button id="nav-contact" class="menu-tab">Contact</button>
-                    <button id="nav-logout" class="menu-tab btn-secondary">Logout</button>
-                </div>
-            </nav>
-					<!-- Divider -->
-		<div class="relative">
-			<div class="relative">
-				<div class="absolute inset-0 flex items-center">
-					<div class="w-full border-t border-[--secondary-color]"></div>
-				</div>
-			</div>
-		</div>
-	        </div>
-    `;
+	header.innerHTML = header_html;
 
-	const homeBtn = document.getElementById('nav-home')!;
-// <<<<<<< HEAD
-// 	// homeBtn?.addEventListener('click', () => {
-// 	// 		navigateTo('home');
-// 	// });
-	
-// 	const logoutBtn = document.getElementById('nav-logout')!;
-// 	// logoutBtn?.addEventListener('click', () => {
-// 	// 	navigateTo('login');
-// 		//disconnect
-// 		//remove token
-// 		// });
-// =======
-	homeBtn?.addEventListener('click', () => {
-			navigateTo('home');
-	});
+	  // navegación
+	document.getElementById("nav-home")?.addEventListener("click", () => navigateTo("home"));
+	document.getElementById("nav-profile")?.addEventListener("click", () => navigateTo("profile"));
+	document.getElementById("nav-leaderboard")?.addEventListener("click", () => navigateTo("leaderboard"));
+	document.getElementById("nav-contact")?.addEventListener("click", () => navigateTo("contact"));
 
-	const profileBtn = document.getElementById('nav-profile')!;
-	profileBtn?.addEventListener('click', () => {
-			navigateTo('profile');
-	});
-	
 	const logoutBtn = document.getElementById('nav-logout')!;
 	logoutBtn?.addEventListener('click', async () => {
 		try {
@@ -66,9 +29,25 @@ export function renderHeader(): void {
 			navigateTo('login');
 		}
 	});
-	const leaderboardBtn = document.getElementById('nav-leaderboard')!;
-	leaderboardBtn?.addEventListener('click', () => {
-		navigateTo('leaderboard');
-		});
-// >>>>>>> feat.-(login/register-events)
+
+	// const langSwitch = document.getElementById("lang-switch") as HTMLSelectElement;
+	// limpiar antes (por si se vuelve a renderizar header)
+	// langSwitch.innerHTML = "";
+
+	// poblar dinámicamente las opciones
+	// langues.forEach((l) => {
+	// 	const option = document.createElement("option");
+	// 	option.value = l;
+	// 	option.textContent = l.toUpperCase();
+	// 	langSwitch.appendChild(option);
+	// });
+
+	// lang switch
+	// langSwitch.value = AppStore.LangueStore.GetState();
+	// langSwitch.addEventListener("change", () => {
+	// 	AppStore.LangueStore.Dispatch({ type: "CHANGE_LANG", payload: langSwitch.value.toLowerCase() as any });
+	// });
+
+	// traducir contenido
+	// updateLangue(header, AppStore.LangueStore.GetState());
 }
