@@ -178,7 +178,7 @@ export default async function (fastify, opts) {
 					// Note: Never send password back!
 				}
 			};
-		}});
+		});
 
 		// Refresh token endpoint - POST /api/auth/refresh
 		fastify.post('/refresh', {
