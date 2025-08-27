@@ -68,17 +68,45 @@ export function renderHistoryTab(matches: any[] = [], loading = false): string {
 // }
 
 export async function setupHistoryTab() {
-	const container = document.getElementById('profile-content');
-	if (!container) return;
+  const container = document.getElementById('profile-content');
+  if (!container) return;
 
-	container.innerHTML = renderHistoryTab([]);
-	// setupFriendModal();
+  try {
+    // Render the tab
+    container.innerHTML = renderHistoryTab([]);
 
-//friends modal
+    // After rendering, set up listeners
+    setupProfileLinks();
 
-async function openUserProfile(user_id) {
+  } catch (err) {
+    console.error('Failed to load match history:', err);
+    container.innerHTML = `<p class="text-red-500">Failed to load match history.</p>`;
+  }
+}
+
+// -------------------------------
+// Modular reusable function
+// -------------------------------
+function setupProfileLinks() {
+  document.querySelectorAll('.open-profile').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const username = link.getAttribute('data-user');
+      if (username) openUserProfile(username);
+    });
+  });
+}
+
+// -------------------------------
+// Reusable modal component
+// -------------------------------
+async function openUserProfile(username: string | number) {
+
+	console.log("openUserProfile called with username:", username);
+
+
   const modal = document.getElementById('user-profile-modal');
-  const avatar = document.getElementById('profile-avatar');
+  const avatar = document.getElementById('profile-avatar') as HTMLImageElement;
   const profileUsername = document.getElementById('profile-username');
   const profilePoints = document.getElementById('profile-points');
   const statMatches = document.getElementById('stat-matches');
@@ -89,18 +117,18 @@ async function openUserProfile(user_id) {
   const friendBtn = document.getElementById('friend-action-btn');
 
   try {
-    const res = await fetch(`${API_BASE_URL}/users/${user_id}`, {
+    const res = await fetch(`${API_BASE_URL}/users/username?username=${encodeURIComponent(username)}`, {
       credentials: 'include',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     });
 
-    if (!res.ok) throw new Error(`Failed to fetch profile for ${user_id}`);
+    if (!res.ok) throw new Error(`Failed to fetch profile for ${username}`);
 
     const data = await res.json();
 
-    // Fill modal with data
+    // Fill modal
     avatar.src = data.avatar || 'https://via.placeholder.com/100';
     profileUsername.textContent = data.username;
     profilePoints.textContent = `${data.points} pts`;
@@ -113,42 +141,40 @@ async function openUserProfile(user_id) {
     // Friendship check
     if (data.isFriend) {
       friendBtn.textContent = "Remove Friend";
-      friendBtn.classList.remove("bg-pink-500");
-      friendBtn.classList.add("bg-red-500");
+      friendBtn.classList.replace("bg-pink-500", "bg-red-500");
     } else {
       friendBtn.textContent = "Add Friend";
-      friendBtn.classList.remove("bg-red-500");
-      friendBtn.classList.add("bg-pink-500");
+      friendBtn.classList.replace("bg-red-500", "bg-pink-500");
     }
 
     // Show modal
     modal.classList.remove('hidden');
 
-    // Friend action handler
-    friendBtn.onclick = async () => {
-      try {
-        const action = data.isFriend ? "remove" : "add";
-        const res = await fetch(`${API_BASE_URL}/friends/${action}`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ username: user_id })
-        });
+    // Friend action
+    // friendBtn.onclick = async () => {
+    //   try {
+    //     const action = data.isFriend ? "remove" : "add";
+    //     const res = await fetch(`${API_BASE_URL}/friends/${action}`, {
+    //       method: "POST",
+    //       credentials: "include",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "Authorization": `Bearer ${localStorage.getItem('token')}`
+    //       },
+    //       body: JSON.stringify({ username: username })
+    //     });
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || "Failed to update friendship");
+    //     const result = await res.json();
+    //     if (!res.ok) throw new Error(result.error || "Failed to update friendship");
 
-        alert(result.message || `Friendship ${action}ed!`);
-        data.isFriend = !data.isFriend; // toggle
-        openUserProfile(user_id); // reload modal with updated state
-      } catch (err) {
-        console.error("Friendship error:", err);
-        alert("Could not update friendship. Please try again.");
-      }
-    };
+    //     alert(result.message || `Friendship ${action}ed!`);
+    //     data.isFriend = !data.isFriend;
+    //     openUserProfile(username); // reload modal
+    //   } catch (err) {
+    //     console.error("Friendship error:", err);
+    //     alert("Could not update friendship. Please try again.");
+    //   }
+    // };
 
   } catch (err) {
     console.error("Profile modal error:", err);
@@ -156,61 +182,10 @@ async function openUserProfile(user_id) {
   }
 }
 
-// Close button
+// Close modal
 document.getElementById('close-profile-btn')?.addEventListener('click', () => {
   document.getElementById('user-profile-modal')?.classList.add('hidden');
 });
-
-// Example: attach event listener to username elements
-document.querySelectorAll('.username-link').forEach(el => {
-  el.addEventListener('click', () => {
-    const username = el.dataset.username;
-    if (username) openUserProfile(username);
-  });
-});
-
-
-
-
-
-
-
-
-
-	try {
-		// const res = await fetch(`${API_BASE_URL}/profile/match-history`, {
-			// 	credentials: 'include',
-			// });
-			
-		// const res = await fetch(`${API_BASE_URL}/users/me`, {
-		// 	credentials: 'include',
-		// 	headers: {
-		// 		'Authorization': `Bearer ${localStorage.getItem('token')}`
-		// 		}
-		// })
-
-		// if (!res.ok) throw new Error(await res.text());
-
-		// const data = await res.json();
-		container.innerHTML = renderHistoryTab([]);
-		
-
-	} catch (err) {
-		console.error('Failed to load match history:', err);
-		container.innerHTML = `<p class="text-red-500">Failed to load match history.</p>`;
-	}
-}
-
-
-/// Listener for modal friends
-document.querySelectorAll('.open-profile').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault(); // stop page jump
-    const username = link.dataset.user; 
-    openUserProfile(username); 
-  });
-});
-
 
 
 
