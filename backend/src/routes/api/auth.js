@@ -3,6 +3,7 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { authenticate } from '../../middleware/auth.js';
+import { OAuth2Client } from 'google-auth-library';
 
 export default async function (fastify, opts) {
 	// Add /auth prefix to all routes in this file
@@ -317,6 +318,160 @@ export default async function (fastify, opts) {
 				}
 				// Re-throw other errors
 				throw error;
+			}
+		});
+
+		// Google OAuth endpoint - POST /api/auth/google
+		fastify.post('/google', {
+			schema: {
+				body: {
+					type: 'object',
+					required: ['credential'],
+					properties: {
+						credential: { type: 'string' } // Google ID token
+					}
+				}
+			}
+		}, async (request, reply) => {
+			try {
+				const { credential } = request.body;
+
+				// Initialize Google OAuth2 client with your client ID
+				const client = new OAuth2Client('723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com');
+
+				// Verify the Google ID token
+				const ticket = await client.verifyIdToken({
+					idToken: credential,
+					audience: '723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com'
+				});
+
+				const payload = ticket.getPayload();
+				if (!payload) {
+					return reply.code(400).send({ error: 'Invalid Google token' });
+				}
+
+				const { sub: googleId, email, name, picture } = payload;
+
+				// Check if user already exists with this Google ID or email
+				let user = await fastify.db.get(
+					'SELECT * FROM users WHERE google_id = ? OR email = ?',
+					[googleId, email]
+				);
+
+				if (user) {
+					// User exists - update Google ID if not set
+					if (!user.google_id) {
+						await fastify.db.run(
+							'UPDATE users SET google_id = ? WHERE id = ?',
+							[googleId, user.id]
+						);
+					}
+				} else {
+					// Create new user (password is NULL for Google users)
+					const firstName = name.split(' ')[0] || name;
+					const lastName = name.split(' ')[1] || '';
+					
+					// Generate username as firstname + lastname in lowercase
+					let baseUsername = (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '');
+					
+					// Ensure username is not empty and has minimum length
+					if (!baseUsername || baseUsername.length < 3) {
+						baseUsername = email.split('@')[0].toLowerCase();
+					}
+					
+					// Check if username already exists and make it unique if needed
+					let username = baseUsername;
+					let counter = 1;
+					while (await fastify.db.get('SELECT id FROM users WHERE username = ?', [username])) {
+						username = `${baseUsername}${counter}`;
+						counter++;
+					}
+
+					const result = await fastify.db.run(
+						'INSERT INTO users (google_id, email, username, display_name, avatar, first_name, last_name, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+						[googleId, email, username, name, picture, firstName, lastName, 'GOOGLE_USER']
+					);
+
+					user = {
+						id: result.lastID,
+						google_id: googleId,
+						email,
+						username: username,
+						display_name: name,
+						avatar: picture,
+						first_name: firstName,
+						last_name: lastName,
+						wins: 0,
+						losses: 0,
+						two_factor_enabled: false
+					};
+				}
+
+				// Create JWT tokens
+				const accessToken = fastify.jwt.sign({
+					id: user.id,
+					username: user.username || user.email
+				});
+
+				const refreshToken = await generateRefreshToken(user.id);
+
+				// Set secure HTTP-only cookies
+				reply.setCookie('accessToken', accessToken, {
+					httpOnly: true,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 3 * 60 * 60 // 3 hours
+				});
+
+				reply.setCookie('refreshToken', refreshToken, {
+					httpOnly: true,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 7 * 24 * 60 * 60 // 7 days
+				});
+
+				// Generate CSRF token
+				const csrfCrypto = await import('crypto');
+				const csrfToken = csrfCrypto.randomBytes(32).toString('hex');
+
+				reply.setCookie('csrfToken', csrfToken, {
+					httpOnly: false,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 3 * 60 * 60
+				});
+
+				// Update last login time
+				await fastify.db.run(
+					'UPDATE users SET last_login = datetime("now") WHERE id = ?',
+					[user.id]
+				);
+
+				// Return success response with user data
+				return {
+					success: true,
+					user: {
+						id: user.id,
+						username: user.username || user.email,
+						email: user.email,
+						display_name: user.display_name,
+						avatar: user.avatar,
+						wins: user.wins,
+						losses: user.losses,
+						twoFactorEnabled: !!user.two_factor_enabled,
+						isGoogleUser: true
+					}
+				};
+
+			} catch (error) {
+				fastify.log.error(error);
+				return reply.code(400).send({ 
+					error: 'Google authentication failed',
+					message: error.message 
+				});
 			}
 		});
 
