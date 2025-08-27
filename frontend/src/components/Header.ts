@@ -24,8 +24,6 @@ export function renderHeader(): void {
 			navigateTo('login');
 		} catch (error) {
 			console.error('Logout error:', error);
-			// Even if logout fails, clear local auth state
-			apiService.clearAuth();
 			navigateTo('login');
 		}
 	});
