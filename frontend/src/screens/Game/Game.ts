@@ -38,6 +38,12 @@ export class Game implements IDisposable {
 	private materialFact: MaterialFactory;
 	private players: APlayer[] = [];
 
+	private ws: WebSocket | null = null;
+	private mySlot: 'player1' | 'player2' | null = null;
+	private roomId: string | null = null;
+	private lastMoveSentAt = 0;
+	private readonly MOVE_INTERVAL_MS = 33;
+
     private constructor(canvas: HTMLCanvasElement) {
         // Inicializar motor, escena y gui
         this.engine = new BABYLON.Engine(canvas, true);
@@ -136,6 +142,103 @@ export class Game implements IDisposable {
 	 */
 	public GetMaterial(name: string): BABYLON.Material {
 		return this.materialFact.GetMaterial(name);
+	}
+
+	private openWS(userId: number) {
+		this.ws = new WebSocket(`wss://localhost:443/ws`);
+		this.ws.addEventListener('open', () => {
+			this.ws?.send(JSON.stringify({ userId }));
+		});
+		this.ws.addEventListener('message', this.onWSMessage.bind(this));
+		this.ws.addEventListener('error', (e) => console.log('[ws] error', e));
+		this.ws.addEventListener('close', (e) => console.log('[ws] close', (e as CloseEvent).code, (e as CloseEvent).reason));
+	}
+
+	private onWSMessage(evt: MessageEvent) {
+		let msg: any; try { msg = JSON.parse((evt as any).data); } catch { return; }
+		switch (msg?.event) {
+			case 'room_info': {
+				// Recibe información de la sala cuando se conecta
+				// msg.roomId: ID de la sala asignada
+				// msg.slot: 'player1' o 'player2' - tu posición en el juego
+				// msg.players: información de ambos jugadores (nombres, IDs)
+				this.roomId = msg.roomId;
+				this.mySlot = msg.slot;
+				console.log(`🎮 Conectado a sala ${msg.roomId} como ${msg.slot}`);
+				break;
+			}
+			case 'countdown': {
+				// Cuenta regresiva antes de iniciar la partida
+				// msg.seconds: segundos restantes (3, 2, 1, 0)
+				// msg.roomId: ID de la sala
+				console.log(`⏰ Iniciando en ${msg.seconds} segundos...`);
+				// Aquí puedes mostrar UI de cuenta regresiva si quieres
+				break;
+			}
+			case 'game_start': {
+				// La partida ha comenzado oficialmente
+				// msg.roomId: ID de la sala
+				console.log(`🚀 ¡Partida iniciada!`);
+				// Aquí puedes activar animaciones o UI del juego
+				break;
+			}
+			case 'game_state': {
+				// Estado completo del juego (pelota, palas, puntuaciones)
+				// msg.state: objeto con toda la información del juego
+				// Se recibe cada ~16ms (60 FPS) para movimiento fluido
+				this.applyGameState(msg.state);
+				break;
+			}
+			case 'player_scored': {
+				// Alguien anotó un punto
+				// msg.player: 'player1' o 'player2' - quien anotó
+				// msg.score: nueva puntuación del jugador
+				// msg.scores: puntuaciones actuales de ambos {player1: X, player2: Y}
+				console.log(`🎯 ${msg.player} anotó! ${msg.scores.player1}-${msg.scores.player2}`);
+				// Aquí puedes actualizar UI del marcador inmediatamente
+				break;
+			}
+			case 'game_paused': {
+				// El juego se pausó
+				// msg.reason: razón de la pausa (ej: 'opponent_disconnected')
+				// msg.roomId: ID de la sala
+				console.log(`⏸️ Juego pausado: ${msg.reason}`);
+				// Aquí puedes mostrar UI de pausa
+				break;
+			}
+			case 'game_ended': {
+				// La partida terminó
+				// msg.winner: objeto con info del ganador {userId, name, score}
+				// msg.loser: objeto con info del perdedor {userId, name, score}
+				// msg.reason: por qué terminó ('score_limit', 'time_limit', etc.)
+				console.log(`🏁 Partida terminada. Ganador: ${msg.winner?.name}`);
+				// Aquí puedes mostrar pantalla de fin de juego
+				break;
+			}
+		}
+	}
+
+	private applyGameState(state: any) {
+		const balls = PongTable.Balls.GetAll();
+		if (balls.length && state?.ball) {
+			const ballMesh = balls[0].GetMesh();
+			ballMesh.position.x = (state.ball.x ?? 0) / 40;
+			ballMesh.position.z = (state.ball.y ?? 0) / 40;
+		}
+
+		const players = this.GetPlayers();
+		const p1y = state?.players?.player1?.y ?? 0;
+		const p2y = state?.players?.player2?.y ?? 0;
+		if (players[0]) players[0].GetPaddle().GetMesh().position.x = p1y / 40;
+		if (players[1]) players[1].GetPaddle().GetMesh().position.x = p2y / 40;
+	}
+
+	private sendMove(delta: number) {
+		if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.mySlot) return;
+		const now = Date.now();
+		if (now - this.lastMoveSentAt < this.MOVE_INTERVAL_MS) return;
+		this.ws.send(JSON.stringify({ player: this.mySlot, move: delta }));
+		this.lastMoveSentAt = now;
 	}
 
 	/**
