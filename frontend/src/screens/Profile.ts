@@ -15,8 +15,8 @@ import { setupProfileSidebar } from '../components/profile-sidebar';
 import { AppStore } from '../redux/AppStore';
 import { updateLangue } from '../redux/reducers/langueReducer';
 
-// const API_BASE_URL = 'https://localhost:4444/api'; Work on cluster
-const API_BASE_URL = 'https://localhost:443/api';
+const API_BASE_URL = 'https://localhost:4444/api'; //Work on cluster
+// const API_BASE_URL = 'https://localhost:443/api';
 
 // to replace vars on html injected. Check to include once.
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
@@ -129,22 +129,37 @@ async function openUserProfile(username: string | number) {
     const data = await res.json();
 
     // Fill modal
-    avatar.src = data.avatar || 'https://via.placeholder.com/100';
-    profileUsername.textContent = data.username;
-    profilePoints.textContent = `${data.points} pts`;
+    // avatar.src = data.avatar || 'https://via.placeholder.com/100';
+    avatar.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3vQPQCznDHkGhIRUUpomLFTW7p6c9BNVSaw&s'; //test only
+    profileUsername.textContent = data.username.toUpperCase();
+	data.points = 123;
+    profilePoints.textContent = data.points ? `${data.points} pts` : `0 pts` ;
     statMatches.textContent = data.matches ?? 0;
     statWins.textContent = data.wins ?? 0;
     statLosses.textContent = data.losses ?? 0;
-    statWinRate.textContent = data.win_rate ? `${data.win_rate}%` : '0%';
     statMaxScore.textContent = data.max_score ?? 0;
+	
+	// calculate win rate
+	// data.wins = 4;
+	// data.losses = 0
+	const totalGames = data.wins + data.losses;
+	const winRate = totalGames > 0 ? (data.wins / totalGames) * 100 : 0;
+	
+	statWinRate.textContent = `${winRate.toFixed(2)}%`;
 
-    // Friendship check
-    if (data.isFriend) {
+
+    // Friendship check: 0 = no; 1 = request send; 2 = yes;
+    if (data.isFriend === 2) {
       friendBtn.textContent = "Remove Friend";
-      friendBtn.classList.replace("bg-pink-500", "bg-red-500");
-    } else {
+      friendBtn.classList.replace("btn-primary", "btn-secondary");
+    } 
+	else if (data.isFriend === 1) {
+		friendBtn.textContent = "Request sended";
+		friendBtn.classList.replace("btn-primary", "btn-disabled");
+	  }
+	else {
       friendBtn.textContent = "Add Friend";
-      friendBtn.classList.replace("bg-red-500", "bg-pink-500");
+      friendBtn.classList.replace("btn-secondary" && "btn-disabled", "btn-primary");
     }
 
     // Show modal
@@ -175,6 +190,13 @@ async function openUserProfile(username: string | number) {
     //     alert("Could not update friendship. Please try again.");
     //   }
     // };
+
+	// Close modal
+	document.getElementById('close-profile-btn')?.addEventListener('click', () => {
+		document.getElementById('user-profile-modal')?.classList.add('hidden');
+	});
+	
+  
 
   } catch (err) {
     console.error("Profile modal error:", err);
