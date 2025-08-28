@@ -100,6 +100,14 @@ function setupProfileLinks() {
 // -------------------------------
 // Reusable modal component
 // -------------------------------
+
+
+// Close modal - added inside function
+// document.getElementById('close-profile-btn')?.addEventListener('click', () => {
+// 	document.getElementById('user-profile-modal')?.classList.add('hidden');
+//   });
+
+  
 async function openUserProfile(username: string | number) {
 
 	console.log("openUserProfile called with username:", username);
@@ -204,10 +212,6 @@ async function openUserProfile(username: string | number) {
   }
 }
 
-// Close modal
-document.getElementById('close-profile-btn')?.addEventListener('click', () => {
-  document.getElementById('user-profile-modal')?.classList.add('hidden');
-});
 
 
 
