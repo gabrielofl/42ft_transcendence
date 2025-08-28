@@ -9,6 +9,7 @@ services:
           - ./frontend:/app 
           - /app/node_modules
           - frontend-dist:/app/dist
+          - ./shared:/app/src/shared
       env_file:
         - ./frontend/.env.production
       environment:
@@ -25,6 +26,7 @@ services:
         # - '4444:4444' #Work on cluster
       volumes:
         - frontend-dist:/app/static
+        - ./shared:/app/src/shared
         - ./backend/db:/app/db
         - ./backend/uploads/avatars:/app/uploads/avatars
       env_file:
