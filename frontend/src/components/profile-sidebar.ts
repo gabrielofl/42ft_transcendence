@@ -1,4 +1,6 @@
-import { renderAccountTab, renderFriendsTab, renderPerformanceTab, setupFriendsTab, setupHistoryTab, setupPerformanceTab } from "../screens/Profile";
+import { renderAccountTab, renderFriendsTab, renderPerformanceTab, setupFriendsTab, setupPerformanceTab } from "../screens/Profile";
+import { setupHistoryTab } from "../screens/ProfileHistory";
+
 
 export function setupProfileSidebar() {
   const sidebar = document.getElementById("profile-sidebar");

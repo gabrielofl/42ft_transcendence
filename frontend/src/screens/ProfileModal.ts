@@ -1,4 +1,5 @@
 import profileModalHtml from "./profile-modal.html?raw";
+import { API_BASE_URL } from "./config";
 
 export function initProfileModal() {
   // Only append once
@@ -40,6 +41,7 @@ async function openUserProfile(username: string | number) {
 
     // Fill modal
     avatar.src = data.avatar || "https://via.placeholder.com/100";
+    // avatar.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3vQPQCznDHkGhIRUUpomLFTW7p6c9BNVSaw&s'; //test only
     profileUsername.textContent = data.username.toUpperCase();
     profilePoints.textContent = data.points ? `${data.points} pts` : `0 pts`;
     statMatches.textContent = data.matches ?? 0;
@@ -51,9 +53,52 @@ async function openUserProfile(username: string | number) {
     const winRate = totalGames > 0 ? (data.wins / totalGames) * 100 : 0;
     statWinRate.textContent = `${winRate.toFixed(2)}%`;
 
+
+    // Friendship check: 0 = no; 1 = request send; 2 = yes;
+	// data.isFriend = 2;
+    if (data.isFriend === 2) {
+		friendBtn.textContent = "Remove Friend";
+		friendBtn.classList.replace("btn-primary", "btn-secondary");
+	  } 
+	  else if (data.isFriend === 1) {
+		  friendBtn.textContent = "Request sended";
+		  friendBtn.classList.replace("btn-primary", "btn-disabled");
+		}
+	  else {
+		friendBtn.textContent = "Add Friend";
+		friendBtn.classList.replace("btn-secondary" && "btn-disabled", "btn-primary");
+	  }
+	 // Friend action
+    // friendBtn.onclick = async () => {
+    //   try {
+    //     const action = data.isFriend ? "remove" : "add";
+    //     const res = await fetch(`${API_BASE_URL}/friends/${action}`, {
+    //       method: "POST",
+    //       credentials: "include",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "Authorization": `Bearer ${localStorage.getItem('token')}`
+    //       },
+    //       body: JSON.stringify({ username: username })
+    //     });
+
+    //     const result = await res.json();
+    //     if (!res.ok) throw new Error(result.error || "Failed to update friendship");
+
+    //     alert(result.message || `Friendship ${action}ed!`);
+    //     data.isFriend = !data.isFriend;
+    //     openUserProfile(username); // reload modal
+    //   } catch (err) {
+    //     console.error("Friendship error:", err);
+    //     alert("Could not update friendship. Please try again.");
+    //   }
+    // };
+
+
     // Show modal
     modal?.classList.remove("hidden");
 
+	// Close modal
     document.getElementById("close-profile-btn")?.addEventListener("click", () => {
       modal?.classList.add("hidden");
     });

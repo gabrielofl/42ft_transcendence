@@ -1,9 +1,7 @@
 import profileMatchHistory from "./profile-match-history.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
-import { setupProfileLinks } from "./ProfileModal";
-import { initProfileModal } from "./ProfileModal";
-
-const API_BASE_URL = 'https://localhost:4444/api'; //Work on cluster
+import { initProfileModal, setupProfileLinks } from "./ProfileModal";
+import { API_BASE_URL } from "./config";
 
 
 export function renderHistoryTab(matches: any[] = [], loading = false): string {
