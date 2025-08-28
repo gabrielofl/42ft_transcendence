@@ -1,7 +1,7 @@
 #backend
 FROM node:24.2.0-bullseye
 
-RUN apt update && apt install -y net-tools
+RUN apt-get update && apt-get upgrade -y && apt-get install -y net-tools && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
