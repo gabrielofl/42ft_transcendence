@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';  // Password hashing library
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
+import { authenticate } from '../../middleware/auth.js';
 
 export default async function (fastify, opts) {
 	// Add /auth prefix to all routes in this file
@@ -45,7 +46,6 @@ export default async function (fastify, opts) {
 					properties: {
 						username: { type: 'string' },
 						password: { type: 'string' },
-						// twoFactorCode: { type: 'string' } // Optional 2FA code
 					}
 				}
 			}
@@ -55,7 +55,7 @@ export default async function (fastify, opts) {
 			
 			// Query database for user (allow login with username OR email)
 			const user = await fastify.db.get(
-				'SELECT * FROM users WHERE username = ? OR email = ?',  // SQL query
+				'SELECT * FROM users WHERE username = ? OR email = ?',
 				[username, username]  // Check both username and email fields
 			);
 			
@@ -103,41 +103,6 @@ export default async function (fastify, opts) {
 					);
 				}
 			}
-			// // Check if 2FA is enabled
-			// if (user.two_factor_enabled) {
-			// 	if (!twoFactorCode) {
-			// 		return reply.code(202).send({ 
-			// 			requiresTwoFactor: true,
-			// 			message: 'Two-factor authentication required'
-			// 		});
-			// 	}
-
-			// 	// Verify 2FA code
-			// 	const verified = speakeasy.totp.verify({
-			// 		secret: user.two_factor_secret,
-			// 		encoding: 'base32',
-			// 		token: twoFactorCode,
-			// 		window: 2 // Allow some time drift
-			// 	});
-
-			// 	// If TOTP fails, check backup codes
-			// 	if (!verified) {
-			// 		const backupCode = await fastify.db.get(
-			// 			'SELECT * FROM two_factor_backup_codes WHERE user_id = ? AND code = ? AND used_at IS NULL',
-			// 			[user.id, twoFactorCode.toUpperCase()]
-			// 		);
-
-			// 		if (!backupCode) {
-			// 			return reply.code(401).send({ error: 'Invalid two-factor code' });
-			// 		}
-
-			// 		// Mark backup code as used
-			// 		await fastify.db.run(
-			// 			'UPDATE two_factor_backup_codes SET used_at = datetime("now") WHERE id = ?',
-			// 			[backupCode.id]
-			// 		);
-			// 	}
-			// }
 			
 			// Update last login time
 			await fastify.db.run(
@@ -153,19 +118,38 @@ export default async function (fastify, opts) {
 
 			const refreshToken = await generateRefreshToken(user.id);
 			
-			// Return success response
-			// reply.setCookie('token', refreshToken, {
-			// 	httpOnly: true,
-			// 	secure: true,
-			// 	sameSite: 'None', //fix
-			// 	path: '/',
-			// 	maxAge: 3600,
-			// });
-			// reply.send({ success: true });
+			// Set secure HTTP-only cookies
+			reply.setCookie('accessToken', accessToken, {
+				httpOnly: true,           // Cannot be accessed by JavaScript (XSS protection)
+				secure: true,             // Only sent over HTTPS
+				sameSite: 'None',         // Allows cross-origin requests (frontend/backend on different ports)
+				path: '/',                // Available for all routes
+				maxAge: 3 * 60 * 60       // 3 hours in seconds (matches JWT expiry)
+			});
+
+			reply.setCookie('refreshToken', refreshToken, {
+				httpOnly: true,           // Cannot be accessed by JavaScript
+				secure: true,             // Only sent over HTTPS
+				sameSite: 'None',         // Allows cross-origin requests
+				path: '/',                // Available for all routes
+				maxAge: 7 * 24 * 60 * 60  // 7 days in seconds
+			});
+
+			// Generate CSRF token for additional security against CSRF attacks
+			const crypto = await import('crypto');
+			const csrfToken = crypto.randomBytes(32).toString('hex');
+
+			// Set CSRF token cookie (NOT httpOnly - JavaScript needs to read this)
+			reply.setCookie('csrfToken', csrfToken, {
+				httpOnly: false,          // JavaScript CAN read this (needed for CSRF protection)
+				secure: true,             // Only sent over HTTPS
+				sameSite: 'None',         // Allows cross-origin requests
+				path: '/',                // Available for all routes
+				maxAge: 3 * 60 * 60       // Same as access token
+			});
+
 			return {
 				success: true,
-				token: accessToken, // JWT token for future requests
-				refreshToken,
 				user: {
 					id: user.id,
 					username: user.username,
@@ -175,44 +159,52 @@ export default async function (fastify, opts) {
 					wins: user.wins,
 					losses: user.losses,
 					twoFactorEnabled: !!user.two_factor_enabled
-					// Note: Never send password back!
 				}
 			};
 		});
 
 		// Refresh token endpoint - POST /api/auth/refresh
-		fastify.post('/refresh', {
-			schema: {
-				body: {
-					type: 'object',
-					required: ['refreshToken'],
-					properties: {
-						refreshToken: { type: 'string' }
-					}
+		fastify.post('/refresh', async (request, reply) => {
+			try {
+				// Get refresh token from cookie
+				const refreshToken = request.cookies.refreshToken;
+
+				if (!refreshToken) {
+					return reply.code(401).send({ error: 'No refresh token found' });
 				}
+
+				// Validate refresh token
+				const tokenRecord = await fastify.db.get(
+					`SELECT rt.*, u.id, u.username FROM refresh_tokens rt
+					 JOIN users u ON rt.user_id = u.id
+					 WHERE rt.token = ? AND rt.expires_at > datetime('now') AND rt.revoked_at IS NULL`,
+					[refreshToken]
+				);
+
+				if (!tokenRecord) {
+					return reply.code(401).send({ error: 'Invalid refresh token' });
+				}
+
+				// Generate new access token
+				const newAccessToken = fastify.jwt.sign({
+					id: tokenRecord.user_id,
+					username: tokenRecord.username
+				});
+
+				// Set new access token cookie
+				reply.setCookie('accessToken', newAccessToken, {
+					httpOnly: true,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 3 * 60 * 60 // 3 hours
+				});
+
+				return { success: true, message: 'Token refreshed successfully' };
+			} catch (error) {
+				fastify.log.error(error);
+				return reply.code(500).send({ error: 'Failed to refresh token' });
 			}
-		}, async (request, reply) => {
-			const { refreshToken } = request.body;
-
-			// Validate refresh token
-			const tokenRecord = await fastify.db.get(
-				`SELECT rt.*, u.id, u.username FROM refresh_tokens rt
-				 JOIN users u ON rt.user_id = u.id
-				 WHERE rt.token = ? AND rt.expires_at > datetime('now') AND rt.revoked_at IS NULL`,
-				[refreshToken]
-			);
-
-			if (!tokenRecord) {
-				return reply.code(401).send({ error: 'Invalid refresh token' });
-			}
-
-			// Generate new access token
-			const newAccessToken = fastify.jwt.sign({
-				id: tokenRecord.user_id,
-				username: tokenRecord.username
-			});
-
-			return { token: newAccessToken };
 		});
 
 		// Register endpoint - POST /api/auth/register
@@ -263,7 +255,7 @@ export default async function (fastify, opts) {
 					[firstName, lastName, username, email, hashedPassword]
 				);
 				
-				// Create JWT token for immediate login
+				// Create JWT tokens for immediate login after registration
 				const accessToken = fastify.jwt.sign({
 					id: result.lastID,
 					username: username
@@ -271,13 +263,40 @@ export default async function (fastify, opts) {
 
 				const refreshToken = await generateRefreshToken(result.lastID);
 				
-				// Send success response
+				// Set secure HTTP-only cookies
+				reply.setCookie('accessToken', accessToken, {
+					httpOnly: true,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 3 * 60 * 60 // 3 hours
+				});
+
+				reply.setCookie('refreshToken', refreshToken, {
+					httpOnly: true,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 7 * 24 * 60 * 60 // 7 days
+				});
+
+				// Generate CSRF token
+				const crypto = await import('crypto');
+				const csrfToken = crypto.randomBytes(32).toString('hex');
+
+				reply.setCookie('csrfToken', csrfToken, {
+					httpOnly: false,
+					secure: true,
+					sameSite: 'None',
+					path: '/',
+					maxAge: 3 * 60 * 60
+				});
+
+				// Send success response with user data (NO TOKENS in body)
 				reply.code(201).send({  // 201 = Created
 					success: true,
-					token: accessToken,
-					refreshToken,
 					user: {
-						id: result.lastID,     // New user's ID
+						id: result.lastID,
 						firstName,
 						lastName,
 						username,
@@ -287,28 +306,7 @@ export default async function (fastify, opts) {
 						losses: 0,
 						twoFactorEnabled: false
 					}
-// 				reply.setCookie('token', refreshToken, {
-// 					httpOnly: true,
-// 					secure: true,
-// 					sameSite: 'None', //fix
-// 					path: '/',
-// 					maxAge: 3600,
 				});
-				reply.send({ success: true });
-				// reply.code(201).send({  // 201 = Created
-				// 	token: accessToken,
-				// 	refreshToken,
-				// 	user: {
-				// 		id: result.lastID,     // New user's ID
-				// 		username,
-				// 		email,
-				// 		display_name: display_name || username,
-				// 		avatar: 'default.jpg',
-				// 		wins: 0,
-				// 		losses: 0,
-				// 		twoFactorEnabled: false
-				// 	}
-				// });
 				
 			} catch (error) {
 				// Handle duplicate username/email
@@ -324,13 +322,7 @@ export default async function (fastify, opts) {
 
 		// Setup 2FA endpoint - POST /api/auth/2fa/setup
 		fastify.post('/2fa/setup', {
-			preHandler: async (request, reply) => {
-				try {
-					await request.jwtVerify();
-				} catch (err) {
-					return reply.code(401).send({ error: 'Invalid token' });
-				}
-			}
+			preHandler: authenticate
 		}, async (request, reply) => {
 			const user = await fastify.db.get(
 				'SELECT * FROM users WHERE id = ?',
@@ -365,13 +357,7 @@ export default async function (fastify, opts) {
 
 		// Verify and enable 2FA - POST /api/auth/2fa/verify
 		fastify.post('/2fa/verify', {
-			preHandler: async (request, reply) => {
-				try {
-					await request.jwtVerify();
-				} catch (err) {
-					return reply.code(401).send({ error: 'Invalid token' });
-				}
-			},
+			preHandler: authenticate,
 			schema: {
 				body: {
 					type: 'object',
@@ -422,13 +408,7 @@ export default async function (fastify, opts) {
 
 		// Disable 2FA - POST /api/auth/2fa/disable
 		fastify.post('/2fa/disable', {
-			preHandler: async (request, reply) => {
-				try {
-					await request.jwtVerify();
-				} catch (err) {
-					return reply.code(401).send({ error: 'Invalid token' });
-				}
-			},
+			preHandler: authenticate,
 			schema: {
 				body: {
 					type: 'object',
@@ -482,44 +462,55 @@ export default async function (fastify, opts) {
 		});
 
 		// Logout endpoint - POST /api/auth/logout
-		fastify.post('/logout', {
-			preHandler: async (request, reply) => {
-				try {
-					await request.jwtVerify();
-				} catch (err) {
-					return reply.code(401).send({ error: 'Invalid token' });
+		fastify.post('/logout', async (request, reply) => {
+			try {
+				// Get refresh token from cookie
+				const refreshToken = request.cookies.refreshToken;
+				
+				if (refreshToken) {
+					// Revoke refresh token in database
+					await fastify.db.run(
+						'UPDATE refresh_tokens SET revoked_at = datetime("now") WHERE token = ?',
+						[refreshToken]
+					);
 				}
-			},
-			schema: {
-				body: {
-					type: 'object',
-					required: ['refreshToken'],
-					properties: {
-						refreshToken: { type: 'string' }
-					}
-				}
+
+				// Clear all authentication cookies
+				reply.clearCookie('accessToken', {
+					path: '/',
+					secure: true,
+					sameSite: 'None'
+				});
+				
+				reply.clearCookie('refreshToken', {
+					path: '/',
+					secure: true,
+					sameSite: 'None'
+				});
+
+				reply.clearCookie('csrfToken', {
+					path: '/',
+					secure: true,
+					sameSite: 'None'
+				});
+
+				return { 
+					success: true, 
+					message: 'Logged out successfully' 
+				};
+				
+			} catch (err) {
+				fastify.log.error(err);
+				return reply.code(500).send({ 
+					error: 'Internal Server Error',
+					message: 'Failed to logout'
+				});
 			}
-		}, async (request, reply) => {
-			const { refreshToken } = request.body;
-
-			// Revoke refresh token
-			await fastify.db.run(
-				'UPDATE refresh_tokens SET revoked_at = datetime("now") WHERE token = ?',
-				[refreshToken]
-			);
-
-			return { success: true, message: 'Logged out successfully' };
 		});
 
 		// Token verification endpoint
 		fastify.get('/verify', {
-			preHandler: async (request, reply) => {
-				try {
-					await request.jwtVerify();
-				} catch (err) {
-					return reply.code(401).send({ error: 'Invalid token' });
-				}
-			}
+			preHandler: authenticate
 		}, async (request, reply) => {
 			const user = await fastify.db.get(
 				'SELECT id, username, email, display_name, avatar, wins, losses, two_factor_enabled FROM users WHERE id = ?',
@@ -537,29 +528,6 @@ export default async function (fastify, opts) {
 				}
 			};
 		});
-
-		// // Token verification endpoint - GET /api/auth/verify
-		// fastify.get('/verify', {
-		// 	preHandler: async (request, reply) => {
-		// 		try {
-		// 			await request.jwtVerify();
-		// 		} catch (err) {
-		// 			return reply.code(401).send({ error: 'Invalid token' });
-		// 		}
-		// 	}
-		// }, async (request, reply) => {
-		// 	// Get current user data
-		// 	const user = await fastify.db.get(
-		// 		'SELECT id, username, email, display_name, avatar, wins, losses FROM users WHERE id = ?',
-		// 		[request.user.id]
-		// 	);
-			
-		// 	if (!user) {
-		// 		return reply.code(404).send({ error: 'User not found' });
-		// 	}
-			
-		// 	return { user };
-		// });
 
 	}, { prefix: '/auth' }); // Add prefix here
 }

@@ -78,8 +78,6 @@ export function renderFooter(): void {
       navigateTo("login");
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local auth state
-      apiService.clearAuth();
       navigateTo("login");
     }
   });
