@@ -128,6 +128,22 @@ export class ApiService {
     }
   }
 
+  async googleLogin(credential: string): Promise<LoginResponse> {
+    try {
+      const response = await this.makeRequest('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ credential })
+      });
+
+      const result = await response.json();
+      
+      return result;
+    } catch (error) {
+      console.error('Google login error:', error);
+      return { success: false, error: 'Google authentication failed' };
+    }
+  }
+
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     try {
       const response = await this.makeRequest('/auth/register', {
