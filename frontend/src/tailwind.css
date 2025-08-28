@@ -176,7 +176,7 @@ body {
   --primary-color: #ff00ff;     /* Bright magenta */
   --secondary-color: #ffff66;   /* Neon yellow */
   --success-color: #00ff99;     /* Bright green */
-  --error-color: #ff0033;       /* Bright red */
+  --error-color: #ff0033;       /* Bright red   - as alternative color use text-red-500*/
   --warning-color: #ffaa00;     /* Orange-yellow */
   --bg-color: #25004d;          /* Deep purple background */
   --text-light: #fffcf2;        /* Off-white */
@@ -316,6 +316,10 @@ body{
   transition: transform 0.1s ease;
 }
 
+.neon-border {
+    box-shadow: 0 0 5px var(--primary-color), 0 0 10px var(--primary-color);
+  }
+
 .btn-winner {
   color: white;
   border: 2px solid var(--success-color);
@@ -384,6 +388,22 @@ body{
 .btn-primary:active {
   transform: scale(0.95);
   box-shadow: 0 0 6px var(--primary-color);
+}
+
+.btn-disabled {
+  background: var(--bg-color);
+  color: var(--text-light);
+  border: 2px solid var(--secondary-color);
+  border-radius: 8px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  line-height: 100%;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  cursor: default;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
 }
 
 
@@ -742,3 +762,9 @@ body{
 	0%, 19% { opacity: 0; }
 	20%, 100% { opacity: 1; }
 }
+
+/* user card template */
+  .player-card {
+    @apply relative flex items-center w-72 h-20 px-3 border-2 rounded-md neon-border bg-purple-900;
+  }
+

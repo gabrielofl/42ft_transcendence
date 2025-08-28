@@ -5,7 +5,7 @@ import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
 import { renderGame } from "./screens/Game/GameScreen.js";
-import { renderHeader } from "./components/header.js";
+import { renderHeader } from "./components/Header.js";
 import { AppStore } from "./redux/AppStore.js";
 import { Screen } from "./redux/reducers/navigationReducer.js";
 
@@ -57,6 +57,7 @@ function renderScreen(screen: Screen) {
 
   switch (screen) {
     case "login":
+    //   renderProfile();
       renderAuthContainer();
       break;
     case "home":
