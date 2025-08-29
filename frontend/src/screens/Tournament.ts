@@ -1,3 +1,8 @@
+import { navigateTo } from '../navigation';
+import { renderPreTournamentView, PreMatch } from './pre-tournament-view';
+import { avatarImgHTML } from './fallback-avatar';
+import { showResultOverlay } from './match-result-view';
+
 const MOCK_USER = 1;
 const API_BASE_URL = 'https://localhost:443';
 
@@ -27,6 +32,39 @@ function scheduleUIFor(key: string, fn: () => void, delay = 0) {
 }
 
 const STATE_ORDER = { assigned: 0, waiting: 1, playing: 2, finished: 3 } as const;
+
+let PRE_MODE = false;
+function setPreMode(on: boolean) {
+  PRE_MODE = on;
+  const wr = document.getElementById('waitroom');
+  if (!wr) return;
+
+    const playersGrid = wr.querySelector('#players-grid') as HTMLElement | null;
+	const readyBar = wr.querySelector('#ready-bar') as HTMLElement | null;
+	const waitingTitle = wr.querySelector('#waiting-title') as HTMLElement | null;
+	const waitingSubtitle = wr.querySelector('#waiting-subtitle') as HTMLElement | null;
+
+    if (playersGrid) playersGrid.classList.toggle('hidden', on);
+	if (readyBar) readyBar.classList.toggle('hidden', on);
+	if (waitingTitle) waitingTitle.classList.toggle('hidden', on);
+	if (waitingSubtitle) waitingSubtitle.classList.toggle('hidden', on);
+}
+
+let IN_GAME_ROOM_ID: string | null = null;
+
+function beginGameNav(roomId: string) {
+  if (IN_GAME_ROOM_ID) return;
+  IN_GAME_ROOM_ID = roomId;
+  navigateTo('game');
+
+}
+
+function endGameNav(roomId: string) {
+  if (IN_GAME_ROOM_ID !== roomId) return;
+  IN_GAME_ROOM_ID = null;
+  navigateTo('tournament');
+}
+
 
 function setMatchState(key: string, next: keyof typeof STATE_ORDER): boolean {
   const curr = (tournamentState.matchStates[key] as keyof typeof STATE_ORDER) ?? 'assigned';
@@ -163,13 +201,30 @@ function onSocketMessage(evt: MessageEvent) {
     }
 
     case 'tournament_bracket_created': {
+	PRE_MODE = true;
+	renderTournamentStage();
+	setPreMode(true);
+
       const matches = msg.matches || [];
+	const pre: PreMatch[] = matches.map((m: any, i: number) => ({
+		p1: m.player1, p2: m.player2,
+	}));
+
+	renderPreTournamentView(pre, {
+		mountIn: 'pre-view',
+		autoStartMs: 10000,
+		getDisplayName,
+		onStart: () => {
+		setPreMode(false);
+		const pv = document.getElementById('pre-view'); if (pv) pv.innerHTML = '';
+
       startTournamentFromMatches(matches);
       matches.forEach((m: any, idx: number) => {
         if (m.roomId) rememberRoom(m.roomId, 0, idx, m.player1, m.player2);
       });
       const mine = matches.find((m: any) => m.player1 === MOCK_USER || m.player2 === MOCK_USER);
       if (mine) {
+			console.log('[ME] id=%d name=%s | myMatch=%o', MOCK_USER, getDisplayName(MOCK_USER), myMatch);
         myMatch.roomId = mine.roomId;
         myMatch.roundIndex = 0;
         myMatch.matchIndex = matches.indexOf(mine);
@@ -177,6 +232,8 @@ function onSocketMessage(evt: MessageEvent) {
         myMatch.opponent = (mine.player1 === MOCK_USER) ? mine.player2 : mine.player1;
         send({ userId: MOCK_USER, joinTournamentRoom: myMatch.roomId });
       }
+      },
+	});
       break;
     }
 
@@ -199,24 +256,26 @@ function onSocketMessage(evt: MessageEvent) {
 	}
 
     case 'joined_tournament_room': {
-	if (myMatch.roomId && msg.roomId === myMatch.roomId) {
-		const key = `${myMatch.roundIndex}-${myMatch.matchIndex}`;
-		scheduleUIFor(key, () => {
-		if (setMatchState(key, 'waiting')) renderTournamentStage();
-		}, UI_DELAY.assign);
+		if (myMatch.roomId && msg.roomId === myMatch.roomId) {
+			const key = `${myMatch.roundIndex}-${myMatch.matchIndex}`;
+			scheduleUIFor(key, () => {
+			if (setMatchState(key, 'waiting')) renderTournamentStage();
+			}, UI_DELAY.assign);
+		}
+		break;
 	}
-	break;
-	}
-
 
 	case 'tournament_game_start': {
 		const key = keyForRoom(msg.roomId);
-	if (key) {
-		scheduleUIFor(key, () => {
-		if (setMatchState(key, 'playing')) renderTournamentStage();
-		}, 0);
-	}
-	break;
+		if (key) {
+			scheduleUIFor(key, () => {
+			if (setMatchState(key, 'playing')) renderTournamentStage();
+			}, 0);
+		}
+		const info = roomIndexById[msg.roomId];
+		const isMine = !!info && (info.p1 === MOCK_USER || info.p2 === MOCK_USER);
+		if (isMine) beginGameNav(msg.roomId);
+		break;
 	}
 
 	case 'game_start': {
@@ -249,41 +308,60 @@ function onSocketMessage(evt: MessageEvent) {
     }
 
 	case 'tournament_next_round_created': {
-	const roundIndex = (msg.round ?? 2) - 1;
-	const nextFlat: any[] = [];
-	(msg.matches || []).forEach((m: any, idx: number) => {
-		nextFlat.push(m.player1, m.player2);
-		rememberRoom(m.roomId, roundIndex, idx, m.player1, m.player2);
-	});
+		const roundIndex = (msg.round ?? 2) - 1;
+		const nextFlat: any[] = [];
+		(msg.matches || []).forEach((m: any, idx: number) => {
+			nextFlat.push(m.player1, m.player2);
+			rememberRoom(m.roomId, roundIndex, idx, m.player1, m.player2);
+		});
 
-  scheduleUIFor(`round-${roundIndex}`, () => {
-    clearRoundVisualQueue(roundIndex - 1);
-    tournamentState.bracket[roundIndex] = nextFlat;
-    tournamentState.currentRoundIndex = roundIndex;
-    renderTournamentStage();
-  }, UI_DELAY.nextRound);
-  break;
-}
+	scheduleUIFor(`round-${roundIndex}`, () => {
+		clearRoundVisualQueue(roundIndex - 1);
+		tournamentState.bracket[roundIndex] = nextFlat;
+		tournamentState.currentRoundIndex = roundIndex;
+		renderTournamentStage();
+	}, UI_DELAY.nextRound);
+	break;
+	}
 
     case 'tournament_next_round': {
-      const roundIndex = (msg.round ?? 2) - 1;
-      myMatch = {
-        roomId: msg.roomId,
-        roundIndex,
-        matchIndex: msg.matchIndex ?? 0,
-        slot: msg.slot,
-        opponent: msg.opponent,
-      };
-      rememberRoom(
-        msg.roomId,
-        roundIndex,
-        myMatch.matchIndex,
-        msg.slot === 'player1' ? MOCK_USER : msg.opponent,
-        msg.slot === 'player1' ? msg.opponent : MOCK_USER
-      );
-      send({ userId: MOCK_USER, joinTournamentRoom: msg.roomId });
-      break;
-    }
+		const roundIndex = (msg.round ?? 2) - 1;
+
+		const p1 = msg.player1 ?? msg.p1;
+		const p2 = msg.player2 ?? msg.p2;
+
+		if (p1 !== MOCK_USER && p2 !== MOCK_USER) break;
+
+		const slot: 'player1' | 'player2' =
+			(msg.slot === 'player1' || msg.slot === 'player2')
+			? msg.slot
+			: (msg.player1 === MOCK_USER || msg.p1 === MOCK_USER) ? 'player1' : 'player2';
+
+		const opponent =
+			msg.opponent ??
+			(slot === 'player1'
+			? (msg.player2 ?? msg.p2)
+			: (msg.player1 ?? msg.p1));
+
+		myMatch = {
+			roomId: msg.roomId,
+			roundIndex,
+			matchIndex: msg.matchIndex ?? 0,
+			slot,
+			opponent,
+		};
+
+		rememberRoom(
+			msg.roomId,
+			roundIndex,
+			myMatch.matchIndex,
+			slot === 'player1' ? MOCK_USER : opponent,
+			slot === 'player1' ? opponent : MOCK_USER
+		);
+
+		send({ userId: MOCK_USER, joinTournamentRoom: msg.roomId });
+		break;
+		}
 
 	case 'tournament_finished': {
 	scheduleUIFor('champion', () => {
@@ -380,20 +458,41 @@ if (setMatchState(key, 'playing')) {
     setMatchState(key, 'finished');
     renderTournamentStage();
   }, UI_DELAY.toFinished);
+	
+	if (payload.roomId === myMatch.roomId) {
+		const info = roomIndexById[payload.roomId];
+		const { roundIndex, matchIndex } = info;
+		const winnerId = payload.winner ?? setMatchWinner(roundIndex, matchIndex);
+		const iWon = winnerId === MOCK_USER;
 
-  scheduleUIFor(`${key}-promote`, () => {
-    const winnerId = payload.winner ?? guessWinnerFromScores(roundIndex, matchIndex);
-    if (!tournamentState.bracket[roundIndex + 1]) {
-      tournamentState.bracket[roundIndex + 1] = new Array(
-        Math.ceil((tournamentState.bracket[roundIndex]?.length || 0) / 2)
-      ).fill('');
-    }
-    tournamentState.bracket[roundIndex + 1][matchIndex] = winnerId;
-    renderTournamentStage();
-  }, UI_DELAY.betweenMatches);
+		if (IN_GAME_ROOM_ID === payload.roomId) {
+			showResultOverlay({
+				outcome: iWon ? 'win' : 'lose',
+				scope: 'match',
+				frameLabel: iWon ? 'Frame 52' : 'Frame 51',
+				// frameImgUrl: '/assets/frames/frame52.png',
+				pointsEarned: iWon ? 150 : 10,
+				onContinue: () => {
+					endGameNav(payload.roomId);
+				},
+			});
+		}
+		myMatch = { roomId: null, roundIndex: 0, matchIndex: 0, slot: null, opponent: null };
+
+		scheduleUIFor(`${key}-promote`, () => {
+			const winnerId = payload.winner ?? setMatchWinner(roundIndex, matchIndex);
+			if (!tournamentState.bracket[roundIndex + 1]) {
+			tournamentState.bracket[roundIndex + 1] = new Array(
+				Math.ceil((tournamentState.bracket[roundIndex]?.length || 0) / 2)
+			).fill('');
+			}
+			tournamentState.bracket[roundIndex + 1][matchIndex] = winnerId;
+			renderTournamentStage();
+		}, UI_DELAY.betweenMatches);
+		}
 }
 
-function guessWinnerFromScores(roundIndex: number, matchIndex: number) {
+function setMatchWinner(roundIndex: number, matchIndex: number) {
   const key = `${roundIndex}-${matchIndex}`;
   const round = tournamentState.bracket[roundIndex] || [];
   const p1 = round[matchIndex * 2];
@@ -439,12 +538,21 @@ function setupTournamentButtons() {
 function renderTournamentStage() {
   const stage = document.getElementById('tournament-stage');
   if (!stage) return;
+
+  if (PRE_MODE) {
+    if (!document.getElementById('waitroom')) {
+      stage.innerHTML = renderWaitingRoom(tournamentState.players);
+    }
+    setPreMode(true);
+    return;
+  }
+
   stage.innerHTML = '';
 
   if (tournamentState.status === 'idle') {
     stage.innerHTML = `
       <div class="w-full h-full flex items-center justify-center bg-black/40">
-        <button id="btn-join" class="bg-indigo-600 text-white text-xl font-bold px-6 py-3 shadow-lg hover:bg-indigo-900 transition">
+        <button id="btn-join" class="bg-[--primary-color] text-white text-xl font-bold px-6 py-3 shadow-lg hover:bg-magenta-600 transition">
           Join Tournament
         </button>
       </div>
@@ -493,13 +601,15 @@ function renderTournamentStage() {
 
 function renderWaitingRoom(players: any) {
   return `
-    <div class="w-full h-full border border-[--primary-color] p-6 flex flex-col items-center justify-center text-center text-white space-y-6">
+    <div id="waitroom" class="w-full h-full border border-[--primary-color] p-6 flex flex-col items-center justify-center text-center text-white space-y-6">
       <h1 class="text-[--primary-color] text-3xl font-bold tracking-wide">Welcome to the Tournament</h1>
-      <div class="text-white text-lg">Waiting room</div>
-      <div class="text-yellow-300 font-bold text-lg">Waiting to start your match</div>
+      <div id="waiting-title" class="text-white text-lg ${PRE_MODE ? 'hidden' : ''}">Waiting room</div>
+      <div id="waiting-subtitle" class="text-yellow-300 font-bold text-lg ${PRE_MODE ? 'hidden' : ''}">Waiting to start your match</div>
       <div class="text-sm mt-2">${players.length} / 8 players Ready</div>
 
-      <div class="flex flex-wrap justify-center items-center gap-4 mt-4">
+      <div id="pre-view" class="w-full max-w-5xl mx-auto"></div>
+
+      <div id="players-grid" class="flex flex-wrap justify-center items-center gap-4 mt-4 ${PRE_MODE ? 'hidden' : ''}">
         ${players.map((p: any, i: any) => {
           const isCurrent = p === MOCK_USER;
           const isReady = i % 2 === 0;
@@ -508,7 +618,7 @@ function renderWaitingRoom(players: any) {
 
           return `
             <div class="flex items-center gap-4 px-4 py-2 border-2 ${border} shadow-md min-w-[220px]">
-              <div class="w-10 h-10 bg-gray-300"></div>
+			${avatarImgHTML(undefined, getDisplayName(p))}
               <div class="flex flex-col items-start text-left">
                 <div class="text-white font-bold text-sm">${getDisplayName(p).toUpperCase()}</div>
                 <div class="text-red-700 text-xs">1258 pts</div>
@@ -519,7 +629,7 @@ function renderWaitingRoom(players: any) {
         }).join('')}
       </div>
 
-      <div class="flex gap-6 mt-8">
+      <div id="ready-bar" class="flex gap-6 mt-8 ${PRE_MODE ? 'hidden' : ''}">
         <button id="btn-ready" class="bg-yellow-400 text-black px-6 py-2  shadow-lg font-bold text-sm hover:bg-yellow-500">
           READY
         </button>
@@ -719,7 +829,7 @@ function resetTournament() {
   };
   currentTournamentId = null;
   myMatch = { roomId: null, roundIndex: 0, matchIndex: 0, slot: null, opponent: null };
-
+  IN_GAME_ROOM_ID = null;
   renderTournamentStage();
 }
 
@@ -744,22 +854,16 @@ function renderMatchPreview() {
   container.innerHTML = '';
 
   if (tournamentState.status === 'finished') {
-  const main = document.getElementById('main');
-  main!.innerHTML = `
-    <div class="relative w-full flex justify-center items-center h-[700px] bg-gradient-to-br from-purple-800 via-indigo-900 to-black shadow-lg border-4 border-yellow-400 animate-pulse">
-      <div class="absolute inset-0 animate-confetti pointer-events-none z-0"></div>
-
-      <div class="relative z-10 text-center px-10">
-        <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 animate-text-glow drop-shadow-lg">
-          🎉 CHAMPION 🎉
-        </h1>
-        <div class="mt-4 text-4xl font-bold text-white animate-bounce">${getDisplayName(tournamentState.winner)}</div>
-      </div>
-    </div>
-  `;
+	showResultOverlay({
+	outcome: 'final',
+	scope: 'tournament',
+	frameLabel: getDisplayName(tournamentState.winner),
+	// frameImgUrl: '/assets/frames/champion.png',
+	pointsEarned: 1000,
+	onContinue: () => {},
+	});
   return;
 }
-
 
   const roundIndex = getPreviewRoundIndex();
   const round = tournamentState.bracket[roundIndex] ?? [];

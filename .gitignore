@@ -3,6 +3,7 @@ frontend/node_modules
 backend/.env
 frontend/.env.production
 frontend/package-lock.json
-
+backend/pong.db
 /.vs
 /.vscode
+/client_secret_723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com.json

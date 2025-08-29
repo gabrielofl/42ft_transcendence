@@ -19,9 +19,18 @@ export interface RegisterRequest {
 
 export interface LoginResponse {
   success: boolean;
-  token?: string;
   requires2FA?: boolean;
   error?: string;
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+    display_name: string;
+    avatar?: string;
+    wins: number;
+    losses: number;
+    twoFactorEnabled: boolean;
+  };
 }
 
 export interface RegisterResponse {
@@ -61,18 +70,41 @@ export class ApiService {
     return ApiService.instance;
   }
 
+  // Helper method to get CSRF token from cookies
+  private getCSRFToken(): string | null {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrfToken') {
+        return value;
+      }
+    }
+    return null;
+  }
+
   // Helper method to make authenticated requests
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
-    const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {
+      ...options.headers as Record<string, string>
+    };
+
+    // Only set Content-Type if we have a body
+    if (options.body && typeof options.body === 'string') {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Add CSRF token for state-changing requests
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method?.toUpperCase() || 'GET')) {
+      const csrfToken = this.getCSRFToken();
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
     
     const config: RequestInit = {
       ...options,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      }
+      credentials: 'include', // Always include cookies
+      headers
     };
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
@@ -89,14 +121,26 @@ export class ApiService {
 
       const result = await response.json();
       
-      if (result.success && result.token) {
-        localStorage.setItem('token', result.token);
-      }
-      
       return result;
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Network error occurred' };
+    }
+  }
+
+  async googleLogin(credential: string): Promise<LoginResponse> {
+    try {
+      const response = await this.makeRequest('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ credential })
+      });
+
+      const result = await response.json();
+      
+      return result;
+    } catch (error) {
+      console.error('Google login error:', error);
+      return { success: false, error: 'Google authentication failed' };
     }
   }
 
@@ -137,10 +181,6 @@ export class ApiService {
 
       const result = await response.json();
       
-      if (result.success && result.token) {
-        localStorage.setItem('token', result.token);
-      }
-      
       return result;
     } catch (error) {
       console.error('2FA verify error:', error);
@@ -151,12 +191,11 @@ export class ApiService {
   async logout(): Promise<void> {
     try {
       await this.makeRequest('/auth/logout', {
-        method: 'POST'
+        method: 'POST',
+        body: JSON.stringify({}) // Send empty JSON object to satisfy content-type
       });
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('token');
     }
   }
 
@@ -199,17 +238,21 @@ export class ApiService {
 
   async uploadAvatar(file: File): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('file', file);
 
+      // Add CSRF token for file upload
+      const csrfToken = this.getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: formData
+        credentials: 'include', // Include cookies for authentication
+        headers,
+        body: formData // Don't set Content-Type for FormData - browser sets it automatically
       });
 
       return await response.json();
@@ -221,15 +264,9 @@ export class ApiService {
 
   // Utility methods
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('token');
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  }
-
-  clearAuth(): void {
-    localStorage.removeItem('token');
+    // Check if we have the authentication cookies
+    const cookies = document.cookie.split(';');
+    return cookies.some(cookie => cookie.trim().startsWith('accessToken='));
   }
 }
 
