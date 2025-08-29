@@ -12,6 +12,8 @@ import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
 import { SpotMarker } from "../Player/SpotMarker";
 import { WindCompass } from "./WindCompass";
+import { EventBus } from "../../services/EventBus";
+import { gameWebSocketConfig } from "../../config/websocket";
 // import "@babylonjs/loaders/glTF";
 
 export class Game implements IDisposable {
@@ -38,7 +40,7 @@ export class Game implements IDisposable {
 	private materialFact: MaterialFactory;
 	private players: APlayer[] = [];
 
-	private ws: WebSocket | null = null;
+	private eventBus: EventBus;
 	private mySlot: 'player1' | 'player2' | null = null;
 	private roomId: string | null = null;
 	private lastMoveSentAt = 0;
@@ -76,6 +78,13 @@ export class Game implements IDisposable {
 		MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
 
 		this.materialFact = new MaterialFactory();
+		
+		// Inicializar sistema de WebSocket refactorizado
+		this.eventBus = EventBus.getInstance();
+		
+		// Suscribirse a eventos del juego
+		this.setupGameEventListeners();
+		
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
     }
 
@@ -144,78 +153,95 @@ export class Game implements IDisposable {
 		return this.materialFact.GetMaterial(name);
 	}
 
-	private openWS(userId: number) {
-		this.ws = new WebSocket(`wss://localhost:443/ws`);
-		this.ws.addEventListener('open', () => {
-			this.ws?.send(JSON.stringify({ userId }));
-		});
-		this.ws.addEventListener('message', this.onWSMessage.bind(this));
-		this.ws.addEventListener('error', (e) => console.log('[ws] error', e));
-		this.ws.addEventListener('close', (e) => console.log('[ws] close', (e as CloseEvent).code, (e as CloseEvent).reason));
+	/**
+	 * Configura los event listeners para el juego
+	 */
+	private setupGameEventListeners(): void {
+		// Suscribirse a eventos del juego
+		this.eventBus.subscribe('game_room_joined', this.handleRoomJoined.bind(this));
+		this.eventBus.subscribe('game_state_updated', this.handleGameStateUpdated.bind(this));
+		this.eventBus.subscribe('game_countdown', this.handleCountdown.bind(this));
+		this.eventBus.subscribe('game_started', this.handleGameStarted.bind(this));
+		this.eventBus.subscribe('player_scored', this.handlePlayerScored.bind(this));
+		this.eventBus.subscribe('game_paused', this.handleGamePaused.bind(this));
+		this.eventBus.subscribe('game_ended', this.handleGameEnded.bind(this));
+		this.eventBus.subscribe('websocket_status_updated', this.handleWebSocketStatus.bind(this));
 	}
 
-	private onWSMessage(evt: MessageEvent) {
-		let msg: any; try { msg = JSON.parse((evt as any).data); } catch { return; }
-		switch (msg?.event) {
-			case 'room_info': {
-				// Recibe información de la sala cuando se conecta
-				// msg.roomId: ID de la sala asignada
-				// msg.slot: 'player1' o 'player2' - tu posición en el juego
-				// msg.players: información de ambos jugadores (nombres, IDs)
-				this.roomId = msg.roomId;
-				this.mySlot = msg.slot;
-				console.log(`🎮 Conectado a sala ${msg.roomId} como ${msg.slot}`);
-				break;
-			}
-			case 'countdown': {
-				// Cuenta regresiva antes de iniciar la partida
-				// msg.seconds: segundos restantes (3, 2, 1, 0)
-				// msg.roomId: ID de la sala
-				console.log(`⏰ Iniciando en ${msg.seconds} segundos...`);
-				// Aquí puedes mostrar UI de cuenta regresiva si quieres
-				break;
-			}
-			case 'game_start': {
-				// La partida ha comenzado oficialmente
-				// msg.roomId: ID de la sala
-				console.log(`🚀 ¡Partida iniciada!`);
-				// Aquí puedes activar animaciones o UI del juego
-				break;
-			}
-			case 'game_state': {
-				// Estado completo del juego (pelota, palas, puntuaciones)
-				// msg.state: objeto con toda la información del juego
-				// Se recibe cada ~16ms (60 FPS) para movimiento fluido
-				this.applyGameState(msg.state);
-				break;
-			}
-			case 'player_scored': {
-				// Alguien anotó un punto
-				// msg.player: 'player1' o 'player2' - quien anotó
-				// msg.score: nueva puntuación del jugador
-				// msg.scores: puntuaciones actuales de ambos {player1: X, player2: Y}
-				console.log(`🎯 ${msg.player} anotó! ${msg.scores.player1}-${msg.scores.player2}`);
-				// Aquí puedes actualizar UI del marcador inmediatamente
-				break;
-			}
-			case 'game_paused': {
-				// El juego se pausó
-				// msg.reason: razón de la pausa (ej: 'opponent_disconnected')
-				// msg.roomId: ID de la sala
-				console.log(`⏸️ Juego pausado: ${msg.reason}`);
-				// Aquí puedes mostrar UI de pausa
-				break;
-			}
-			case 'game_ended': {
-				// La partida terminó
-				// msg.winner: objeto con info del ganador {userId, name, score}
-				// msg.loser: objeto con info del perdedor {userId, name, score}
-				// msg.reason: por qué terminó ('score_limit', 'time_limit', etc.)
-				console.log(`🏁 Partida terminada. Ganador: ${msg.winner?.name}`);
-				// Aquí puedes mostrar pantalla de fin de juego
-				break;
-			}
+	/**
+	 * Conecta al WebSocket usando el nuevo sistema
+	 */
+	private async connectWebSocket(userId: number): Promise<void> {
+		try {
+			await this.wsManager.connect(userId);
+			console.log('🔌 WebSocket conectado exitosamente');
+		} catch (error) {
+			console.error('❌ Error conectando WebSocket:', error);
 		}
+	}
+
+	/**
+	 * Handler para cuando se une a una sala
+	 */
+	private handleRoomJoined(payload: any): void {
+		this.roomId = payload.roomId;
+		this.mySlot = payload.slot;
+		console.log(`🎮 Conectado a sala ${payload.roomId} como ${payload.slot}`);
+	}
+
+	/**
+	 * Handler para actualización del estado del juego
+	 */
+	private handleGameStateUpdated(payload: any): void {
+		this.applyGameState(payload.state);
+	}
+
+	/**
+	 * Handler para cuenta regresiva
+	 */
+	private handleCountdown(payload: any): void {
+		console.log(`⏰ Iniciando en ${payload.seconds} segundos...`);
+		// Aquí puedes mostrar UI de cuenta regresiva si quieres
+	}
+
+	/**
+	 * Handler para inicio del juego
+	 */
+	private handleGameStarted(payload: any): void {
+		console.log(`🚀 ¡Partida iniciada!`);
+		// Aquí puedes activar animaciones o UI del juego
+	}
+
+	/**
+	 * Handler para cuando un jugador anota
+	 */
+	private handlePlayerScored(payload: any): void {
+		console.log(`🎯 ${payload.player} anotó! ${payload.scores.player1}-${payload.scores.player2}`);
+		// Aquí puedes actualizar UI del marcador inmediatamente
+	}
+
+	/**
+	 * Handler para cuando el juego se pausa
+	 */
+	private handleGamePaused(payload: any): void {
+		console.log(`⏸️ Juego pausado: ${payload.reason}`);
+		// Aquí puedes mostrar UI de pausa
+	}
+
+	/**
+	 * Handler para cuando el juego termina
+	 */
+	private handleGameEnded(payload: any): void {
+		console.log(`🏁 Partida terminada. Ganador: ${payload.winner?.name}`);
+		// Aquí puedes mostrar pantalla de fin de juego
+	}
+
+	/**
+	 * Handler para cambios en el estado del WebSocket
+	 */
+	private handleWebSocketStatus(status: any): void {
+		console.log('🔌 Estado del WebSocket:', status);
+		// Aquí puedes mostrar UI de estado de conexión
 	}
 
 	private applyGameState(state: any) {
@@ -234,10 +260,16 @@ export class Game implements IDisposable {
 	}
 
 	private sendMove(delta: number) {
-		if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.mySlot) return;
+		if (!this.wsManager.isConnected() || !this.mySlot) return;
 		const now = Date.now();
 		if (now - this.lastMoveSentAt < this.MOVE_INTERVAL_MS) return;
-		this.ws.send(JSON.stringify({ player: this.mySlot, move: delta }));
+		
+		this.wsManager.send({ 
+			event: 'move', 
+			player: this.mySlot, 
+			move: delta 
+		});
+		
 		this.lastMoveSentAt = now;
 	}
 
@@ -290,6 +322,13 @@ export class Game implements IDisposable {
 		});
 		this.start();
 		this.dependents.Add(pongTable);
+
+		// Conectar al WebSocket para modo multijugador
+		if (players.length === 2) {
+			// Simular userId para testing - en producción esto vendría del sistema de auth
+			const mockUserId = 1;
+			this.connectWebSocket(mockUserId);
+		}
 	}
 
 	private RandomWind(strength: number = 1): BABYLON.Vector3 {
