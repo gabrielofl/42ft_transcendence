@@ -1,4 +1,7 @@
-type MessageCallback<T> = (payload: T) => void;
+import { Event } from "./Event";
+import { APlayer } from "../Player/APlayer";
+import { AppliedEffectArgs, PlayerEffectFactory } from "../PowerUps/Effects/APlayerEffect";
+import { PwrUpEventArgs } from "../Inventory"
 
 export enum GameEvent {
     SelfEffect,         // <PlayerEffectFactory>    Un jugador se aplica un efecto.
@@ -9,34 +12,54 @@ export enum GameEvent {
     GameEnded,          // <Player[]>               El juego ha terminado.
     GameRestart,        // <null>                   Reinicia el juego sin cambiar de jugadores.
     PointMade,          // <Player>                 Un jugador ha anotado un punto.
-    InventoryChange,    // <PickUpEventArgs>        Un jugador ha anotado un punto.
+    InventoryChange,    // <PwrUpEventArgs>        Un jugador ha anotado un punto.
+    Game_Room_Joined,
+    Game_Updated,
+    Game_Countdown,
+    Websocket_Updated
 }
 
+// Definimos un "tipo de payload" por cada evento.
+// Esto permite que cada evento tenga su tipo específico.
+type EventPayloads = {
+    [GameEvent.SelfEffect]: PlayerEffectFactory;
+    [GameEvent.MassEffect]: PlayerEffectFactory;
+    [GameEvent.AppliedEffect]: AppliedEffectArgs;
+    [GameEvent.GameStart]: APlayer[];
+    [GameEvent.GamePause]: boolean;
+    [GameEvent.GameEnded]: APlayer[];
+    [GameEvent.GameRestart]: null;
+    [GameEvent.PointMade]: APlayer;
+    [GameEvent.InventoryChange]: PwrUpEventArgs;
+    [GameEvent.Game_Room_Joined]: any;
+    [GameEvent.Game_Updated]: any;
+    [GameEvent.Game_Countdown]: any;
+    [GameEvent.Websocket_Updated]: any;
+};
+
 export class MessageBroker {
-    private static subscribers: Map<GameEvent, MessageCallback<any>[]> = new Map();
+    private static events: Map<GameEvent, Event<any>> = new Map();
 
-    public static Subscribe<T>(eventType: GameEvent, callback: MessageCallback<T>): void {
-        if (!this.subscribers.has(eventType)) {
-            this.subscribers.set(eventType, []);
+    private static getEvent<T extends GameEvent>(eventType: T): Event<EventPayloads[T]> {
+        if (!this.events.has(eventType)) {
+            this.events.set(eventType, new Event<EventPayloads[T]>());
         }
-        this.subscribers.get(eventType)!.push(callback);
+        return this.events.get(eventType)!;
     }
 
-    public static Unsubscribe<T>(eventType: GameEvent, callback: MessageCallback<T>): void {
-        if (!this.subscribers.has(eventType)) return;
-        this.subscribers.set(
-            eventType,
-            this.subscribers.get(eventType)!.filter(cb => cb !== callback)
-        );
+    public static Subscribe<T extends GameEvent>(eventType: T, callback: (payload: EventPayloads[T]) => void): void {
+        this.getEvent(eventType).Subscribe(callback);
     }
 
-    public static Publish<T>(eventType: GameEvent, payload: T): void {
-        if (!this.subscribers.has(eventType))
-            return;
+    public static Unsubscribe<T extends GameEvent>(eventType: T, callback: (payload: EventPayloads[T]) => void): void {
+        this.getEvent(eventType).Unsubscribe(callback);
+    }
 
-        console.log("Publicando: " + eventType.toLocaleString())
-        for (const cb of this.subscribers.get(eventType)!) {
-            cb(payload);
-        }
+    public static Publish<T extends GameEvent>(eventType: T, payload: EventPayloads[T]): void {
+        this.getEvent(eventType).Invoke(payload);
+    }
+
+    public static Clear<T extends GameEvent>(eventType: T): void {
+        this.getEvent(eventType).Clear();
     }
 }

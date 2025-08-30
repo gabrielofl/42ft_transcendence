@@ -55,7 +55,7 @@ export class PongTable extends DisposableMesh {
         this.gameZone = new Zone(PongTable.Map.size.width, 10, PongTable.Map.size.height);
         this.gameZone.OnLeaveEvent.Subscribe((iMesh) => this.BallLeaveGameZone(iMesh));
 
-        MessageBroker.Subscribe<boolean>(GameEvent.GamePause, (paused) => PongTable.Paused = paused);
+        MessageBroker.Subscribe(GameEvent.GamePause, (paused) => PongTable.Paused = paused);
 	}
 
     public CreatePowerUp(): void {

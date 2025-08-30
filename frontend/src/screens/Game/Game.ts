@@ -12,7 +12,6 @@ import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
 import { SpotMarker } from "../Player/SpotMarker";
 import { WindCompass } from "./WindCompass";
-import { EventBus } from "../../services/EventBus";
 import { gameWebSocketConfig } from "../../config/websocket";
 // import "@babylonjs/loaders/glTF";
 
@@ -40,7 +39,6 @@ export class Game implements IDisposable {
 	private materialFact: MaterialFactory;
 	private players: APlayer[] = [];
 
-	private eventBus: EventBus;
 	private mySlot: 'player1' | 'player2' | null = null;
 	private roomId: string | null = null;
 	private lastMoveSentAt = 0;
@@ -78,9 +76,6 @@ export class Game implements IDisposable {
 		MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
 
 		this.materialFact = new MaterialFactory();
-		
-		// Inicializar sistema de WebSocket refactorizado
-		this.eventBus = EventBus.getInstance();
 		
 		// Suscribirse a eventos del juego
 		this.setupGameEventListeners();
@@ -158,14 +153,14 @@ export class Game implements IDisposable {
 	 */
 	private setupGameEventListeners(): void {
 		// Suscribirse a eventos del juego
-		this.eventBus.subscribe('game_room_joined', this.handleRoomJoined.bind(this));
-		this.eventBus.subscribe('game_state_updated', this.handleGameStateUpdated.bind(this));
-		this.eventBus.subscribe('game_countdown', this.handleCountdown.bind(this));
-		this.eventBus.subscribe('game_started', this.handleGameStarted.bind(this));
-		this.eventBus.subscribe('player_scored', this.handlePlayerScored.bind(this));
-		this.eventBus.subscribe('game_paused', this.handleGamePaused.bind(this));
-		this.eventBus.subscribe('game_ended', this.handleGameEnded.bind(this));
-		this.eventBus.subscribe('websocket_status_updated', this.handleWebSocketStatus.bind(this));
+		MessageBroker.Subscribe(GameEvent.Game_Room_Joined, this.handleRoomJoined.bind(this));
+		MessageBroker.Subscribe(GameEvent.Game_Updated, this.handleGameStateUpdated.bind(this));
+		MessageBroker.Subscribe(GameEvent.Game_Countdown, this.handleCountdown.bind(this));
+		MessageBroker.Subscribe(GameEvent.Websocket_Updated, this.handleWebSocketStatus.bind(this));
+		MessageBroker.Subscribe(GameEvent.GameStart, this.handleGameStarted.bind(this));
+		MessageBroker.Subscribe(GameEvent.PointMade, this.handlePlayerScored.bind(this));
+		MessageBroker.Subscribe(GameEvent.GamePause, this.handleGamePaused.bind(this));
+		MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
 	}
 
 	/**

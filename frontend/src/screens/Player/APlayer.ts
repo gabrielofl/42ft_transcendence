@@ -43,8 +43,8 @@ export abstract class APlayer {
          });
 
         // Subscripción a mensajería global.
-        MessageBroker.Subscribe<PlayerEffectFactory>(GameEvent.MassEffect, this.OnMassEffect.bind(this));
-        MessageBroker.Subscribe<PlayerEffectFactory>(GameEvent.SelfEffect, this.OnSelfEffect.bind(this));
+        MessageBroker.Subscribe(GameEvent.MassEffect, this.OnMassEffect.bind(this));
+        MessageBroker.Subscribe(GameEvent.SelfEffect, this.OnSelfEffect.bind(this));
     }
 
     private OnSelfEffect(factory: PlayerEffectFactory): void {

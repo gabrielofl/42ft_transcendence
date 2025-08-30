@@ -32,11 +32,11 @@ function renderKey(key: string): string {
 }
 
 function setupEffectsListener(player: APlayer) {
-	MessageBroker.Subscribe<AppliedEffectArgs>(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
+	MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
         if (player === args.Target)
             addEffect(args.Target.GetName(), args.Effect);
     });
-    MessageBroker.Subscribe<PwrUpEventArgs>(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
+    MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
 }
 
 function addEffect(playerName: string, effect: APlayerEffect): void {

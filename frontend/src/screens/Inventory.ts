@@ -42,7 +42,7 @@ export class Inventory implements IDisposable {
       if (!value)
       {
         this.powerUps.set(slot, aPwrUp);
-        MessageBroker.Publish<PwrUpEventArgs>(GameEvent.InventoryChange, { Player: this.owner, PowerUp: aPwrUp, Slot: slot, Action: "Pick" });
+        MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: aPwrUp, Slot: slot, Action: "Pick" });
         break;
       }
     }
@@ -59,7 +59,7 @@ export class Inventory implements IDisposable {
     {
       value.UsePowerUp(this.owner);
       this.powerUps.set(index, undefined);
-      MessageBroker.Publish<PwrUpEventArgs>(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
+      MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
     }
   }
 
@@ -78,7 +78,7 @@ export class Inventory implements IDisposable {
   public Clear(): void {
     for (const [slot, value] of this.powerUps)
     {
-      MessageBroker.Publish<PwrUpEventArgs>(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
+      MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
       this.powerUps.set(slot, undefined);
     }
   }
