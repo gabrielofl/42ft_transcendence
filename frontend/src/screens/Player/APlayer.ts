@@ -11,6 +11,7 @@ import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect";
 import "../Utils/array.extensions";
 import { Event } from "../Utils/Event";
 import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect";
+import { Game } from "../Game/Game";
 
 export abstract class APlayer {
     public OnPaddleCreated: Event<APlayer> = new Event();
@@ -26,16 +27,18 @@ export abstract class APlayer {
     public Effects: ObservableList<APlayerEffect> = new ObservableList();
     public Shields: ObservableList<PaddleShieldEffect> = new ObservableList();;
     public PaddleLen: DependentValue<PaddleLenEffect, number>;
+    protected game: Game;
 
-    constructor(name: string) {
+    constructor(game: Game, name: string) {
+        this.game = game;
         this.name = name;
         this.Inventory = new Inventory(this);
         this.paddle = this.CreatePaddle(8);
         this.PaddleLen = new DependentValue((v) => v.GetAll().SumBy(e => e.Len));
-        this.PaddleLen.Values.Add(new PaddleLenEffect("", 8, -1));
+        this.PaddleLen.Values.Add(new PaddleLenEffect(game, "", 8, -1));
         this.PaddleLen.OnChangeEvent.Subscribe(value => this.paddle = this.CreatePaddle(value > 4 ? value : 4));
         this.PaddleLen.Values.OnAddEvent.Subscribe((effect) => this.PaddleLen.Values);
-        this.ScoreZone = new Zone(40, 5, 2);
+        this.ScoreZone = new Zone(game, 40, 5, 2);
 
         // Tratamiento de efectos.
         this.Effects.OnAddEvent.Subscribe((effect) => {
@@ -92,7 +95,7 @@ export abstract class APlayer {
             pos = this.paddle.GetMesh().position;
             this.paddle.Dispose();
         }
-        this.paddle = new Paddle(this, width);
+        this.paddle = new Paddle(this.game, this, width);
         
         if (this.behavior)
             this.ConfigurePaddleBehavior(this.behavior);
@@ -105,7 +108,7 @@ export abstract class APlayer {
     }
 
     public CreateBall(): Ball {
-        return new Ball();
+        return new Ball(this.game);
     }
 
     public ResetPaddle(): void {

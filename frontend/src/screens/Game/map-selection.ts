@@ -4,6 +4,7 @@ import { PongTable } from "./PongTable";
 import { Game } from "./Game";
 import view from "./map-selection.html?raw";
 
+let game: Game;
 let pong: PongTable;
 
 export async function renderMapSelection() {
@@ -51,11 +52,12 @@ export async function renderMapSelection() {
 function renderPreview(mapDef: MapDefinition) {
 	const canvas = document.getElementById("map-canvas") as HTMLCanvasElement;
 
-    Game.CreateInstance(canvas);
-
     if (pong)
         pong.Dispose();
 
 	PongTable.Map = mapDef;
-	pong = new PongTable(true);
+
+	if (!game)
+		game = new Game(canvas);
+	pong = new PongTable(game, true);
 }

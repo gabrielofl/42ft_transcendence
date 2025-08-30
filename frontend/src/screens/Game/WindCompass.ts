@@ -12,12 +12,13 @@ export class WindCompass implements IDisposable {
     private disposed: boolean = false;
     private arrow: BABYLON.TransformNode;
     public Text: GUI.TextBlock;
+    protected game: Game;
 
-    constructor() {
-        let game = Game.GetInstance();
+    constructor(game: Game) {
+        this.game = game;
         let scene = game.GetScene(this);
 
-        this.Text = this.CreateText(game.GetGui(this));
+        this.Text = this.CreateText(this.game.GetGui(this));
 
         // Flecha como representación del viento
         this.arrow = new BABYLON.TransformNode("arrow", scene);

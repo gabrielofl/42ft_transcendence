@@ -8,8 +8,8 @@ import { GameEvent, MessageBroker } from "../../Utils/MessageBroker";
 export class PaddleShieldEffect extends APlayerEffect {
     private shield: DisposableMesh | undefined;
     
-    constructor(imgPath: string, durationMs: number = 5000) {
-        super(imgPath, durationMs);
+    constructor(game: Game, imgPath: string, durationMs: number = 5000) {
+        super(game, imgPath, durationMs);
     }
 
     public Execute(target: APlayer): void {
@@ -21,7 +21,7 @@ export class PaddleShieldEffect extends APlayerEffect {
 
         // Limpiar efectos negativos
         target.Effects.GetAll().Where(e => e.IsNegative).forEach(e => e.Undo(target));
-        MessageBroker.Publish<AppliedEffectArgs>(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
         super.Execute(target);
     }
 
@@ -36,8 +36,6 @@ export class PaddleShieldEffect extends APlayerEffect {
     }
 
     private CreateShieldMesh(target: APlayer): DisposableMesh {
-        let game: Game = Game.GetInstance();
-
         console.log("Shield len: " + target.PaddleLen.Value());
 
         // Crear esfera elipsoidal
@@ -46,9 +44,9 @@ export class PaddleShieldEffect extends APlayerEffect {
             diameterY: 3,
             diameterZ: 3 
         }, scene);
-        let shield: DisposableMesh = new DisposableMesh(fMeshBuilder);
+        let shield: DisposableMesh = new DisposableMesh(this.game, fMeshBuilder);
         let mesh = shield.GetMesh();
-        mesh.material = game.GetMaterial("Shield");
+        mesh.material = this.game.GetMaterial("Shield");
 
         // Hacer que el escudo siga a la pala o jugador
         let paddle = target.GetPaddle();

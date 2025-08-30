@@ -1,3 +1,4 @@
+import { Game } from "../Game/Game";
 import { APlayer } from "../Player/APlayer";
 
 export interface IPowerUp  {

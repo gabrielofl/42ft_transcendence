@@ -38,9 +38,13 @@ export class Game implements IDisposable {
 	private materialFact: MaterialFactory;
 	private players: APlayer[] = [];
 
-    private constructor(canvas: HTMLCanvasElement) {
+    public constructor(canvas: HTMLCanvasElement | undefined) {
         // Inicializar motor, escena y gui
-        this.engine = new BABYLON.Engine(canvas, true);
+        if (canvas)
+			this.engine = new BABYLON.Engine(canvas, true);
+		else
+			this.engine = new BABYLON.NullEngine();
+
         this.scene = new BABYLON.Scene(this.engine);
 		this.gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
 
@@ -69,27 +73,9 @@ export class Game implements IDisposable {
 		PongTable.Balls.OnRemoveEvent.Subscribe(this.BallRemoved.bind(this));
 		MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
 
-		this.materialFact = new MaterialFactory();
+		this.materialFact = new MaterialFactory(this);
 		
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
-    }
-
-    /**
-     * Creates an instance with the necesary Babylon instances.
-     * @param canvas canvas that wild contain Babylon scene.
-     */
-    public static CreateInstance(canvas: HTMLCanvasElement): void {
-        if (!Game.instance)
-			Game.instance = new Game(canvas);
-    }
-
-    /**
-     * @returns The game instance.
-     */
-    public static GetInstance(): Game {
-		if (!Game.instance)
-    		throw new Error("CreateInstance must be called");
-        return Game.instance;
     }
 
 	/**
@@ -116,7 +102,6 @@ export class Game implements IDisposable {
 	 */
 	public GetScene(owner: IDisposable): BABYLON.Scene {
 		this.dependents.Add(owner);
-		owner.OnDisposeEvent.Subscribe(() => this.dependents.Remove(owner));
 		return this.scene;
 	}
 
@@ -126,7 +111,6 @@ export class Game implements IDisposable {
 	 */
 	public GetGui(owner: IDisposable): GUI.AdvancedDynamicTexture {
 		this.dependents.Add(owner);
-		owner.OnDisposeEvent.Subscribe(() => this.dependents.Remove(owner));
 		return this.gui;
 	}
 
@@ -146,7 +130,7 @@ export class Game implements IDisposable {
 	public CreateGame(players: APlayer[]): void {
 		// TABLE
 		const inputMap: Record<string, boolean> = {};
-		const pongTable = new PongTable();
+		const pongTable = new PongTable(this);
 		this.players = players;
 
 		players.forEach((p, idx) =>{
@@ -176,7 +160,7 @@ export class Game implements IDisposable {
 			inputMap[evt.sourceEvent.key] = false;
 		}));
 		
-		this.arrow = new WindCompass();
+		this.arrow = new WindCompass(this);
 		this.arrow.Update(this.Wind = this.RandomWind());
 		setInterval(() => {
 			this.Wind = this.RandomWind();
@@ -230,7 +214,7 @@ export class Game implements IDisposable {
 	// Resetear posición y velocidad con física
     public start()
     {
-        let ball = new Ball();
+        let ball = new Ball(this);
         const ballMesh = ball.GetMesh();
         ballMesh.physicsImpostor?.setLinearVelocity(BABYLON.Vector3.Zero());
         ballMesh.position.set(0, 0.5, 0);

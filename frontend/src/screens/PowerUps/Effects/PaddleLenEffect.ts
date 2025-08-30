@@ -1,3 +1,4 @@
+import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
 import { GameEvent, MessageBroker } from "../../Utils/MessageBroker";
 import { APlayerEffect, AppliedEffectArgs } from "../Effects/APlayerEffect";
@@ -5,8 +6,8 @@ import { APlayerEffect, AppliedEffectArgs } from "../Effects/APlayerEffect";
 export class PaddleLenEffect extends APlayerEffect {
     public Len: number;
 
-    constructor(imgPath: string, len: number = 4, durationMs: number = 5000) {
-        super(imgPath, durationMs);
+    constructor(game: Game, imgPath: string, len: number = 4, durationMs: number = 5000) {
+        super(game, imgPath, durationMs);
         this.Len = len;
         this.IsNegative = len < 0;
     }
@@ -16,7 +17,7 @@ export class PaddleLenEffect extends APlayerEffect {
             return;
         
         target.PaddleLen.Values.Add(this);
-        MessageBroker.Publish<AppliedEffectArgs>(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
         super.Execute(target);
     }
 

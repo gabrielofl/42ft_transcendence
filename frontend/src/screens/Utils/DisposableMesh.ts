@@ -11,8 +11,8 @@ export class DisposableMesh implements IMesh, IDisposable {
     protected mesh: BABYLON.Mesh;
     protected scene: BABYLON.Scene;
 
-    constructor(fMeshBuilder: (scene: BABYLON.Scene) => BABYLON.Mesh) {
-        this.scene = Game.GetInstance().GetScene(this);
+    constructor(game: Game, fMeshBuilder: (scene: BABYLON.Scene) => BABYLON.Mesh) {
+        this.scene = game.GetScene(this);
         this.mesh = fMeshBuilder(this.scene);
     }
 

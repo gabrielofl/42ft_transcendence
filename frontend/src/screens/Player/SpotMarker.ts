@@ -15,8 +15,8 @@ export class SpotMarker implements IDisposable {
     private head: DisposableMesh;
     private isDisposed: boolean = false;
 
-    constructor(position: BABYLON.Vector3) {
-        const scene = Game.GetInstance().GetScene(this);
+    constructor(game: Game, position: BABYLON.Vector3) {
+        const scene = game.GetScene(this);
 
         // Nodo raíz para agrupar las partes
         this.root = new BABYLON.TransformNode("dummyRoot", scene);
@@ -28,7 +28,7 @@ export class SpotMarker implements IDisposable {
             diameterTop: 1.2,
             diameterBottom: 0,
         }, scene);
-        this.body = new DisposableMesh(fBodyBuilder);
+        this.body = new DisposableMesh(game, fBodyBuilder);
         let bodyMesh = this.body.GetMesh();
         bodyMesh.parent = this.root;
         bodyMesh.position.y = 0.6;
@@ -37,7 +37,7 @@ export class SpotMarker implements IDisposable {
         let fHeadBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateSphere("dummyHead", {
             diameter: 1.2
         }, scene);
-        this.head = new DisposableMesh(fHeadBuilder);
+        this.head = new DisposableMesh(game, fHeadBuilder);
         let headMesh = this.head.GetMesh();
         headMesh.parent = this.root;
         headMesh.position.y = 2.4;

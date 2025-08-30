@@ -16,15 +16,15 @@ export class PowerUpBox extends Zone {
     protected rewardTypes: (() => IPowerUp)[] = [];
     protected observable: BABYLON.Nullable<BABYLON.Observer<BABYLON.Scene>>;
 
-    constructor(tableWidth: number, tableHeight: number) {
-        super(1.5, 1.5, 1.5);
+    constructor(game: Game, tableWidth: number, tableHeight: number) {
+        super(game, 1.5, 1.5, 1.5);
 
-        // this.rewardTypes.push(() => new PowerUpMoreLength());
-        this.rewardTypes.push(() => new PowerUpLessLength());
-        // this.rewardTypes.push(() => new PowerUpSpeedUp());
-        // this.rewardTypes.push(() => new PowerUpSpeedDown());
+        // this.rewardTypes.push(() => new PowerUpMoreLength(game));
+        this.rewardTypes.push(() => new PowerUpLessLength(game));
+        // this.rewardTypes.push(() => new PowerUpSpeedUp(game));
+        // this.rewardTypes.push(() => new PowerUpSpeedDown(game));
         // this.rewardTypes.push(() => new PowerUpCreateBall());
-        this.rewardTypes.push(() => new PowerUpShield());
+        this.rewardTypes.push(() => new PowerUpShield(game));
 
         // Posición aleatoria dentro del campo de juego
         const x = (Math.random() - 0.5) * tableWidth * 0.8;
@@ -32,7 +32,7 @@ export class PowerUpBox extends Zone {
         this.mesh.position.set(x, 1, z);
 
         // Sobreescribir material de la zona.
-        this.mesh.material = Game.GetInstance().GetMaterial("PowerUp");
+        this.mesh.material = game.GetMaterial("PowerUp");
         
         // Animación visual para destacar el power-up
         this.observable = this.scene.onBeforeRenderObservable.add(() => {

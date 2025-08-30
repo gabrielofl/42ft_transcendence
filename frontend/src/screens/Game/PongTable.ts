@@ -28,21 +28,23 @@ export class PongTable extends DisposableMesh {
 	private markers: SpotMarker[] = [];
 	private obstacles: Obstacle[];
     private gameZone: Zone;
+    private game: Game;
 
-	constructor(preview: boolean = false) {
+	constructor(game: Game, preview: boolean = false) {
         let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateGround("table", {
             width: PongTable.Map.size.width, height: PongTable.Map.size.height }, scene);
-        super (fMeshBuilder);
+        super (game, fMeshBuilder);
 
+        this.game = game;
         this.walls = PongTable.Map.walls.map(w =>
-            new Wall(w.length, new BABYLON.Vector2(w.position[0], w.position[1]), w.rotation)
+            new Wall(game, w.length, new BABYLON.Vector2(w.position[0], w.position[1]), w.rotation)
         );
         this.obstacles = PongTable.Map.obstacles.map(o => 
-            new Obstacle(o.length, new BABYLON.Vector2(o.position[0], o.position[1]), o.rotation, o.life)
+            new Obstacle(game, o.length, new BABYLON.Vector2(o.position[0], o.position[1]), o.rotation, o.life)
         );
 
         if (preview)
-            this.markers = PongTable.Map.spots.map(s => new SpotMarker(s));
+            this.markers = PongTable.Map.spots.map(s => new SpotMarker(game, s));
         
         // Crear PowerUps
         var i = 0;
@@ -51,17 +53,16 @@ export class PongTable extends DisposableMesh {
         }
         PongTable.PowerUps.OnRemoveEvent.Subscribe((pwrUp) => this.CreatePowerUp());
         
-		this.mesh.material = Game.GetInstance().GetMaterial("PongTable");;
-        this.gameZone = new Zone(PongTable.Map.size.width, 10, PongTable.Map.size.height);
+		this.mesh.material = game.GetMaterial("PongTable");;
+        this.gameZone = new Zone(game, PongTable.Map.size.width, 10, PongTable.Map.size.height);
         this.gameZone.OnLeaveEvent.Subscribe((iMesh) => this.BallLeaveGameZone(iMesh));
 
         MessageBroker.Subscribe(GameEvent.GamePause, (paused) => PongTable.Paused = paused);
 	}
 
     public CreatePowerUp(): void {
-        setTimeout(() => new PowerUpBox(PongTable.Map.size.width, PongTable.Map.size.height), 2000);
+        setTimeout(() => new PowerUpBox(this.game, PongTable.Map.size.width, PongTable.Map.size.height), 2000);
     }
-
 
     /**
      * All Balls are subscribed to this method to avoid balls scaping from table.

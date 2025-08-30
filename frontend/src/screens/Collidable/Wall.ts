@@ -8,20 +8,22 @@ export class Wall extends DisposableImpostor {
     public static GROUP: number = 2;
     protected length: number = 1;
     private coloredmesh: DisposableMesh; 
+    protected game: Game;
     
-	constructor(length: number, center: BABYLON.Vector2, rotation: number) {
+	constructor(game: Game, length: number, center: BABYLON.Vector2, rotation: number) {
         let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("wall", { width: length, height: 3.5, depth: 1}, scene);
-        super(fMeshBuilder, 0);
+        super(game, fMeshBuilder, 0);
         this.PositionMesh(this.mesh, center, rotation);
-
+        
+        this.game = game;
         let fTMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("colorwall", { width: length, height: 1, depth: 1}, scene);
-        this.coloredmesh = new DisposableMesh(fTMeshBuilder);
+        this.coloredmesh = new DisposableMesh(game, fTMeshBuilder);
         let tMesh = this.coloredmesh.GetMesh();
         this.PositionMesh(tMesh, center, rotation);
-        tMesh.material = Game.GetInstance().GetMaterial("Wall");
+        tMesh.material = game.GetMaterial("Wall");
         this.OnDisposeEvent.Subscribe(() => this.coloredmesh.Dispose());
 
-        this.mesh.material = Game.GetInstance().GetMaterial("Transparent");
+        this.mesh.material = game.GetMaterial("Transparent");
         if (this.mesh.physicsImpostor != undefined)
 		{
 			this.mesh.physicsImpostor.physicsBody.collisionFilterGroup = Wall.GROUP;

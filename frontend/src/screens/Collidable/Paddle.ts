@@ -17,16 +17,16 @@ export class Paddle extends DisposableImpostor {
     protected owner;
     private coloredmesh: DisposableMesh; 
 
-    constructor(player: APlayer, width: number) {
+    constructor(game: Game, player: APlayer, width: number) {
         let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox(player.GetName(), { width: width, height: 3.5, depth: 1 }, scene);
-        super(fMeshBuilder, 0);
+        super(game, fMeshBuilder, 0);
         this.owner = player;
-        this.mesh.material = Game.GetInstance().GetMaterial("Transparent");
+        this.mesh.material = game.GetMaterial("Transparent");
         
         let fTMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("colorwall", { width: width, height: 1, depth: 1}, scene);
-        this.coloredmesh = new DisposableMesh(fTMeshBuilder);
+        this.coloredmesh = new DisposableMesh(game, fTMeshBuilder);
         let tMesh = this.coloredmesh.GetMesh();
-        tMesh.material = Game.GetInstance().GetMaterial("Paddle");
+        tMesh.material = game.GetMaterial("Paddle");
         tMesh.parent = this.mesh;
         tMesh.position.x = 0;
         tMesh.position.y = 0;

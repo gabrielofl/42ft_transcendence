@@ -2,6 +2,7 @@ import * as BABYLON from "@babylonjs/core";
 import { Wall } from "./Wall";
 import { Ball } from "./Ball";
 import { PongTable } from "../Game/PongTable";
+import { Game } from "../Game/Game";
 
 // Difiere de la pared en que tiene vida y esta disminuye al chocar la bola con este.
 // Si la vida llega a 0, este obstáculo desaparece.
@@ -11,8 +12,8 @@ export class Obstacle extends Wall {
     private lastCollisionTime = 0;
     private collisionCooldown = 100; // ms
 
-    constructor(length: number, center: BABYLON.Vector2, rotation: number, life: number) {
-        super(length, center, rotation);
+    constructor(game: Game, length: number, center: BABYLON.Vector2, rotation: number, life: number) {
+        super(game, length, center, rotation);
         this.life = life;
 
         const callback = (ball: Ball) => {

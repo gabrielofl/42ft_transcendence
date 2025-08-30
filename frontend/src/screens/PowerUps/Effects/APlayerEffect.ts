@@ -1,3 +1,4 @@
+import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
 import { Event } from "../../Utils/Event";
 import { IEffectCommand } from "./IEffectCommand";
@@ -15,10 +16,12 @@ export abstract class APlayerEffect implements IEffectCommand<APlayer> {
     public Origin: APlayer | null = null;
     protected disposed: boolean = false;
     protected duration: number;
+    protected game: Game;
 
-    constructor(imgPath: string, duration: number = 10) {
+    constructor(game: Game, imgPath: string, duration: number = 10) {
         this.duration = duration;
         this.ImgPath = imgPath;
+        this.game = game;
     }
 
     public Dispose(): void {

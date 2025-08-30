@@ -8,6 +8,8 @@ import { LocalPlayer } from "../Player/LocalPlayer";
 import { AIPlayer } from "../Player/AIPlayer";
 import { createPlayerCard } from "./player-card";
 
+let game: Game;
+
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
 }
@@ -29,24 +31,24 @@ function setupGameEvents(): void {
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
 		console.log("Iniciando Pong 3D", canvas);
-		// Game instance is needed to make players.
-		Game.CreateInstance(canvas);
 
 		const container = document.getElementById("player-cards");
-		if (!container) return;
+		if (!container)
+			return;
 
 		// Limpiar cualquier tarjeta previa
 		container.innerHTML = "";
+		game = new Game(canvas);
 
 		// const player = new LocalPlayer("Jorge", "a", "d", ["z", "x", "c"]);
 		// const enemy = new LocalPlayer("Sutanito", "h", "k", ["b", "n", "m"]);
-		const enemy = new AIPlayer("Fulanito");
+		const enemy = new AIPlayer(game, "Fulanito");
 		enemy.Color = new BABYLON.Color3(0, 0, 1);
-		const enemy2 = new AIPlayer("Menganito");
+		const enemy2 = new AIPlayer(game, "Menganito");
 		enemy2.Color = new BABYLON.Color3(1, 0, 0);
-		const enemy3 = new AIPlayer("Sutanito");
+		const enemy3 = new AIPlayer(game, "Sutanito");
 		enemy3.Color = new BABYLON.Color3(0, 1, 0);
-		const enemy4 = new AIPlayer("Pegonito");
+		const enemy4 = new AIPlayer(game, "Pegonito");
 		enemy4.Color = new BABYLON.Color3(1, 0, 1);
 
 		let players = [enemy, enemy2, enemy3, enemy4];
@@ -56,7 +58,7 @@ function setupGameEvents(): void {
 			container.insertAdjacentHTML("beforeend", createPlayerCard(player, color));
 		});
 
-		Game.GetInstance().CreateGame(players);
+		game.CreateGame(players);
 	}
 }
 

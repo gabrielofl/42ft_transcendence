@@ -2,10 +2,11 @@ import * as BABYLON from "@babylonjs/core";
 import { APlayer } from "./APlayer";
 import { Ball } from "../Collidable/Ball";
 import { PongTable } from "../Game/PongTable";
+import { Game } from "../Game/Game";
 
 export class AIPlayer extends APlayer {
-    constructor(name: string) {
-        super(name);
+    constructor(game: Game, name: string) {
+        super(game, name);
     }
 
     // Verifica si la bola se acerca al Paddle.

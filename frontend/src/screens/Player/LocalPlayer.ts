@@ -1,13 +1,14 @@
 import { APlayer } from "./APlayer";
 import { PongTable } from "../Game/PongTable";
+import { Game } from "../Game/Game";
 
 export class LocalPlayer extends APlayer {
 	private leftKey: string;
 	private rightKey: string;
 	private inventoryKeys: [string, string, string] | undefined;
 
-	constructor(name: string, leftKey: string, rightKey: string, skills?: [string, string, string]) {
-		super(name);
+	constructor(game: Game, name: string, leftKey: string, rightKey: string, skills?: [string, string, string]) {
+		super(game, name);
 		this.leftKey = leftKey;
 		this.rightKey = rightKey;
 		this.inventoryKeys = skills;

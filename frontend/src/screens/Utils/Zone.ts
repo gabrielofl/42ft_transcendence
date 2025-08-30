@@ -10,10 +10,10 @@ export class Zone extends DisposableMesh {
     public OnLeaveEvent: Event<IMesh> = new Event();
     protected recentCollided: boolean = false;
 
-    constructor(width: number, height: number, depth: number) {
-        super((scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("zone", { width: width, height: height, depth: depth }, scene));
+    constructor(game: Game, width: number, height: number, depth: number) {
+        super(game, (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("zone", { width: width, height: height, depth: depth }, scene));
 
-        this.mesh.material = Game.GetInstance().GetMaterial("Transparent");
+        this.mesh.material = game.GetMaterial("Transparent");
 
         // TODO: Analizar patrón observer.
         PongTable.Zones.Add(this);

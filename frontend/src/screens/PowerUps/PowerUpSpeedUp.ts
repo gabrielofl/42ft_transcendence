@@ -3,21 +3,24 @@ import { APlayer } from "../Player/APlayer";
 import { PaddleSpeedEffect } from "./Effects/PaddleSpeedEffect";
 import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
 import { PlayerEffectFactory } from "./Effects/APlayerEffect";
+import { Game } from "../Game/Game";
 
 export class PowerUpSpeedUp implements IPowerUp {
     public ImgPath: string;
+    private game: Game;
 
-    constructor() {
+    constructor(game: Game) {
+        this.game = game;
         this.ImgPath = "textures/PowerUpSpeedUp.jpg";
     }
     
     public UsePowerUp(player: APlayer): void {
         const factory = () => {
-            const effect = new PaddleSpeedEffect(this.ImgPath, 0.8);
+            const effect = new PaddleSpeedEffect(this.game, this.ImgPath, 0.8);
             effect.Origin = player;
             return effect;
         };
 
-        MessageBroker.Publish<PlayerEffectFactory>(GameEvent.SelfEffect, factory);
+        MessageBroker.Publish(GameEvent.SelfEffect, factory);
     }
 }

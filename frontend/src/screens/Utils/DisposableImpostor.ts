@@ -1,12 +1,13 @@
+import { Game } from "../Game/Game";
 import { DisposableMesh } from "./DisposableMesh";
 import * as BABYLON from "@babylonjs/core";
 
 export class DisposableImpostor extends DisposableMesh {
     private impostor: BABYLON.PhysicsImpostor;
 
-    constructor (fMeshBuilder: (scene: BABYLON.Scene) => BABYLON.Mesh, mass: number)
+    constructor (game: Game, fMeshBuilder: (scene: BABYLON.Scene) => BABYLON.Mesh, mass: number)
     {
-        super(fMeshBuilder);
+        super(game, fMeshBuilder);
         this.mesh.physicsImpostor = this.impostor = new BABYLON.PhysicsImpostor(
             this.mesh,
             BABYLON.PhysicsImpostor.BoxImpostor,

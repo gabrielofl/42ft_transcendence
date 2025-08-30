@@ -12,15 +12,17 @@ export class Ball extends DisposableImpostor {
     private static readonly DESIRED_SPEED = 42; // o lo que tú quieras
 	private velocity: BABYLON.Vector3 | null = null;
 	private observer: BABYLON.Observer<BABYLON.Scene>;
+	protected game: Game;
 
-	constructor() {
+	constructor(game: Game) {
 		// let mesh = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: 1 }, scene);
 		let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("ball", { size: 1.5 }, scene);
-		super(fMeshBuilder, 1);
+		super(game, fMeshBuilder, 1);
 
+		this.game = game;
 		this.mesh.position.y = 0.5; // Vertical position
 		this.mesh.position.z = 0;
-		this.mesh.material = Game.GetInstance().GetMaterial("Ball");
+		this.mesh.material = game.GetMaterial("Ball");
 
 		if (this.mesh.physicsImpostor != undefined)
 		{
@@ -37,7 +39,7 @@ export class Ball extends DisposableImpostor {
 		PongTable.Balls.Add(this);
 		this.OnDisposeEvent.Subscribe(() => PongTable.Balls.Remove(this));
 
-        MessageBroker.Subscribe<boolean>(GameEvent.GamePause, this.GamePaused.bind(this));
+        MessageBroker.Subscribe(GameEvent.GamePause, this.GamePaused.bind(this));
 	}
 
 	private GamePaused(paused: boolean): void
@@ -75,7 +77,7 @@ export class Ball extends DisposableImpostor {
         if (!v) 
 			return;
 
-		v = v.add(Game.GetInstance().Wind);
+		v = v.add(this.game.Wind);
 
 		impostor.setLinearVelocity(new BABYLON.Vector3(v?.x, 0, v?.z));
         const currentSpeed = v.length();
