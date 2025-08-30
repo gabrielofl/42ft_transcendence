@@ -264,9 +264,9 @@ export class ApiService {
 
   // Utility methods
   isAuthenticated(): boolean {
-    // Check if we have the authentication cookies
+    // Check if we have the CSRF token cookie (accessToken is HTTP-only and can't be read by JS)
     const cookies = document.cookie.split(';');
-    return cookies.some(cookie => cookie.trim().startsWith('accessToken='));
+    return cookies.some(cookie => cookie.trim().startsWith('csrfToken='));
   }
 }
 

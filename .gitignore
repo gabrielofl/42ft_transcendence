@@ -6,4 +6,4 @@ frontend/package-lock.json
 backend/pong.db
 /.vs
 /.vscode
-/client_secret_723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com.json
+client_secret_*.json
