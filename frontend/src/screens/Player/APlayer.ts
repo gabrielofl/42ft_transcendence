@@ -13,7 +13,7 @@ import { Event } from "../Utils/Event";
 import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect";
 
 export abstract class APlayer {
-    public OnPaddleCreated: Event<APlayer> = new Event();
+    public OnPaddleCreatedEvent: Event<APlayer> = new Event();
 
     // Propiedades
     protected name: string;
@@ -100,7 +100,7 @@ export abstract class APlayer {
         if (pos)
             this.paddle.GetMesh().position = pos;
         
-        this.OnPaddleCreated.Invoke(this);
+        this.OnPaddleCreatedEvent.Invoke(this);
         return this.paddle;
     }
 
