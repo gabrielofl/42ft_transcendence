@@ -30,11 +30,6 @@ export class PaddleShieldEffect extends APlayerEffect {
         this.Dispose();
     }
 
-    public Dispose(): void {
-        this.shield?.Dispose();
-        super.Dispose();
-    }
-
     private CreateShieldMesh(target: APlayer): DisposableMesh {
         let game: Game = Game.GetInstance();
 
@@ -54,13 +49,26 @@ export class PaddleShieldEffect extends APlayerEffect {
         let paddle = target.GetPaddle();
 
         // Rehacer el escudo si la pala se ha eliminado.
-        target.OnPaddleCreated.Subscribe((player) => {
-            if (!this.shield?.IsDisposed())
-                this.shield?.Dispose();
-            this.shield = this.CreateShieldMesh(player)
-        });
-
+        target.OnPaddleCreatedEvent.Subscribe(this.PaddleCreatedHandler);
         mesh.parent = paddle.GetMesh();
         return shield;
     }
+
+    private PaddleCreatedHandler = (player: APlayer): void => {
+        if (this.disposed)
+            return;
+
+        if (!this.shield?.IsDisposed())
+            this.shield?.Dispose();
+        this.shield = this.CreateShieldMesh(player);
+    }
+    
+    public Dispose(): void {
+        if (this.Origin) {
+            this.Origin.OnPaddleCreatedEvent.Unsubscribe(this.PaddleCreatedHandler);
+        }
+        this.shield?.Dispose();
+        super.Dispose();
+    }
 }
+
