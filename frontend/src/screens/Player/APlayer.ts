@@ -32,7 +32,7 @@ export abstract class APlayer {
     constructor(game: Game, name: string) {
         this.game = game;
         this.name = name;
-        this.Inventory = new Inventory(this);
+        this.Inventory = new Inventory(game, this);
         this.paddle = this.CreatePaddle(8);
         this.PaddleLen = new DependentValue((v) => v.GetAll().SumBy(e => e.Len));
         this.PaddleLen.Values.Add(new PaddleLenEffect(game, "", 8, -1));
@@ -46,8 +46,8 @@ export abstract class APlayer {
          });
 
         // Subscripción a mensajería global.
-        MessageBroker.Subscribe(GameEvent.MassEffect, this.OnMassEffect.bind(this));
-        MessageBroker.Subscribe(GameEvent.SelfEffect, this.OnSelfEffect.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.MassEffect, this.OnMassEffect.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.SelfEffect, this.OnSelfEffect.bind(this));
     }
 
     private OnSelfEffect(factory: PlayerEffectFactory): void {
@@ -133,7 +133,7 @@ export abstract class APlayer {
     
     public IncreaseScore(score: number = 1): void {
         this.score += score;
-        MessageBroker.Publish(GameEvent.PointMade, this);
+        this.game.MessageBroker.Publish(GameEvent.PointMade, this);
     }
 
     public Reset() {

@@ -29,7 +29,7 @@ export class LocalPlayer extends APlayer {
 	}
 
     public ProcessPlayerAction(inputMap: Record<string, boolean>): void {
-		if (!inputMap || PongTable.Paused)
+		if (!inputMap || this.game.Paused)
 			return;
 
 		if (inputMap[this.leftKey]) 

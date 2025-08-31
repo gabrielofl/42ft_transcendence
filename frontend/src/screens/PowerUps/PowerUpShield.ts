@@ -21,6 +21,6 @@ export class PowerUpShield implements IPowerUp {
             return effect;
         };
        
-        MessageBroker.Publish(GameEvent.SelfEffect, factory);
+        this.game.MessageBroker.Publish(GameEvent.SelfEffect, factory);
     }
 }

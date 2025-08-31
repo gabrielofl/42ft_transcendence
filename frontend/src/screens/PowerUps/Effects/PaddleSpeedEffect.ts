@@ -17,7 +17,7 @@ export class PaddleSpeedEffect extends APlayerEffect {
             return;
 
         target.GetPaddle().Speed = this.speed;
-        MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        this.game.MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
         super.Execute(target);
     }
 

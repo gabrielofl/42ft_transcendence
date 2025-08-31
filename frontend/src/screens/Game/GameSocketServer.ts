@@ -31,14 +31,14 @@
      */
     export function setupGameEventListeners(): void {
         // Suscribirse a eventos del juego
-        MessageBroker.Subscribe(GameEvent.Game_Room_Joined, this.handleRoomJoined.bind(this));
-        MessageBroker.Subscribe(GameEvent.Game_Updated, this.handleGameStateUpdated.bind(this));
-        MessageBroker.Subscribe(GameEvent.Game_Countdown, this.handleCountdown.bind(this));
-        MessageBroker.Subscribe(GameEvent.Websocket_Updated, this.handleWebSocketStatus.bind(this));
-        MessageBroker.Subscribe(GameEvent.GameStart, this.handleGameStarted.bind(this));
-        MessageBroker.Subscribe(GameEvent.PointMade, this.handlePlayerScored.bind(this));
-        MessageBroker.Subscribe(GameEvent.GamePause, this.handleGamePaused.bind(this));
-        MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.Game_Room_Joined, this.handleRoomJoined.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.Game_Updated, this.handleGameStateUpdated.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.Game_Countdown, this.handleCountdown.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.Websocket_Updated, this.handleWebSocketStatus.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.GameStart, this.handleGameStarted.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.PointMade, this.handlePlayerScored.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.GamePause, this.handleGamePaused.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
     }
 
     /**

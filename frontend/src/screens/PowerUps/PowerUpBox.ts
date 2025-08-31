@@ -21,10 +21,10 @@ export class PowerUpBox extends Zone {
 
         // this.rewardTypes.push(() => new PowerUpMoreLength(game));
         this.rewardTypes.push(() => new PowerUpLessLength(game));
-        // this.rewardTypes.push(() => new PowerUpSpeedUp(game));
-        // this.rewardTypes.push(() => new PowerUpSpeedDown(game));
+        this.rewardTypes.push(() => new PowerUpSpeedUp(game));
+        this.rewardTypes.push(() => new PowerUpSpeedDown(game));
         // this.rewardTypes.push(() => new PowerUpCreateBall());
-        this.rewardTypes.push(() => new PowerUpShield(game));
+        // this.rewardTypes.push(() => new PowerUpShield(game));
 
         // Posición aleatoria dentro del campo de juego
         const x = (Math.random() - 0.5) * tableWidth * 0.8;
@@ -41,7 +41,7 @@ export class PowerUpBox extends Zone {
         });
         
         // Se añade a la lista de PowerUps.
-        PongTable.PowerUps.Add(this);
+        game.PowerUps.Add(this);
         
         // Registrarse a eventos.
         this.OnEnterEvent.Subscribe((iMesh) => this.PickUp(iMesh));
@@ -69,7 +69,7 @@ export class PowerUpBox extends Zone {
     public Dispose(): void {
         super.Dispose();
         this.OnEnterEvent.Clear();
-        PongTable.PowerUps.Remove(this);
+        this.game.PowerUps.Remove(this);
         this.scene.onBeforeRenderObservable.remove(this.observable);
     }
 }

@@ -8,7 +8,8 @@ import { LocalPlayer } from "../Player/LocalPlayer";
 import { AIPlayer } from "../Player/AIPlayer";
 import { createPlayerCard } from "./player-card";
 
-let game: Game;
+let clientgame: Game;
+let servergame: Game;
 
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
@@ -23,48 +24,65 @@ export async function renderGame(playerName: string, opponentName: string, mode:
 	main.innerHTML = rendered; 
 
 	setupGameEvents();
-	setupGameEndedListener();
-	setupPointMadeListener();
 }
 
 function setupGameEvents(): void { 
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
-		console.log("Iniciando Pong 3D", canvas);
-
-		const container = document.getElementById("player-cards");
+		const container = document.getElementById("player-cards-client");
 		if (!container)
 			return;
 
-		// Limpiar cualquier tarjeta previa
 		container.innerHTML = "";
-		game = new Game(canvas);
+		clientgame = new Game(canvas, false);
+		clientgame.ID = "client";
+		clientgame.CreateGame(createPlayers(clientgame, container));
+		setupGameEndedListener(clientgame);
+		setupPointMadeListener(clientgame);
+		console.log("Iniciando Pong local");
+	}
+	
+	const servercanvas = document.getElementById('server-pong-canvas') as HTMLCanvasElement | null;
+	if (servercanvas) {
+		const servercontainer = document.getElementById("player-cards-server");
+		if (!servercontainer)
+			return
+	
+		servercontainer.innerHTML = "";
+		servergame = new Game(servercanvas, true);
+		servergame.ID = "server";
+		servergame.CreateGame(createPlayers(servergame, servercontainer));
+		setupGameEndedListener(servergame);
+		setupPointMadeListener(servergame);
+		console.log("Iniciando Pong Server");
+	}
+}
 
+function createPlayers(game: Game, container: HTMLElement): APlayer[] {
 		// const player = new LocalPlayer("Jorge", "a", "d", ["z", "x", "c"]);
 		// const enemy = new LocalPlayer("Sutanito", "h", "k", ["b", "n", "m"]);
-		const enemy = new AIPlayer(game, "Fulanito");
+		const enemy = new AIPlayer(game, game.ID + "Fulanito");
 		enemy.Color = new BABYLON.Color3(0, 0, 1);
-		const enemy2 = new AIPlayer(game, "Menganito");
+		const enemy2 = new AIPlayer(game, game.ID + "Menganito");
 		enemy2.Color = new BABYLON.Color3(1, 0, 0);
-		const enemy3 = new AIPlayer(game, "Sutanito");
+		const enemy3 = new AIPlayer(game, game.ID + "Sutanito");
 		enemy3.Color = new BABYLON.Color3(0, 1, 0);
-		const enemy4 = new AIPlayer(game, "Pegonito");
+		const enemy4 = new AIPlayer(game, game.ID + "Pegonito");
 		enemy4.Color = new BABYLON.Color3(1, 0, 1);
 
 		let players = [enemy, enemy2, enemy3, enemy4];
 		// Insertar tarjetas para cada jugador
 		players.forEach((player, index) => {
 			const color = index % 2 === 0 ? "text-blue-200" : "text-purple-200";
-			container.insertAdjacentHTML("beforeend", createPlayerCard(player, color));
+			container.insertAdjacentHTML("beforeend", createPlayerCard(game, player, color));
 		});
 
-		game.CreateGame(players);
-	}
+		return players;
 }
 
 // Subscripción al evento GameEnded.
-function setupGameEndedListener(): void {
-	MessageBroker.Subscribe(GameEvent.GameEnded, (players: APlayer[]) => {
+function setupGameEndedListener(game: Game): void {
+	game.MessageBroker.Subscribe(GameEvent.GameEnded, (players: APlayer[]) => {
         const winner = players.sort((a, b) => a.GetScore() - b.GetScore())[0];
 		const container = document.querySelector(".relative.w-full") as HTMLDivElement;
 		if (!container) 
@@ -84,7 +102,7 @@ function setupGameEndedListener(): void {
 				const panel = document.getElementById("game-ended-panel");
 				if (panel)
 					panel.remove();
-				MessageBroker.Publish(GameEvent.GameRestart, null);
+				game.MessageBroker.Publish(GameEvent.GameRestart, null);
 				players.forEach(p => setPlayerPoints(p, 0));
 			});
 		}
@@ -92,8 +110,8 @@ function setupGameEndedListener(): void {
 }
 
 // Subscripción al evento PointMade
-function setupPointMadeListener() {
-	MessageBroker.Subscribe(GameEvent.PointMade, (player: APlayer) => {
+function setupPointMadeListener(game: Game) {
+	game.MessageBroker.Subscribe(GameEvent.PointMade, (player: APlayer) => {
 		// Buscar el elemento del marcador correspondiente al jugador
 		setPlayerPoints(player, player.GetScore());
 	});

@@ -9,19 +9,21 @@ export class Zone extends DisposableMesh {
     public OnEnterEvent: Event<IMesh> = new Event();
     public OnLeaveEvent: Event<IMesh> = new Event();
     protected recentCollided: boolean = false;
+    protected game: Game;
 
     constructor(game: Game, width: number, height: number, depth: number) {
         super(game, (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("zone", { width: width, height: height, depth: depth }, scene));
 
+        this.game = game;
         this.mesh.material = game.GetMaterial("Transparent");
 
         // TODO: Analizar patrón observer.
-        PongTable.Zones.Add(this);
-        this.OnDisposeEvent.Subscribe(() => PongTable.Zones.Remove(this));
+        game.Zones.Add(this);
+        this.OnDisposeEvent.Subscribe(() => game.Zones.Remove(this));
 
         // Revisar si una bola ha entrado.
         this.scene.onBeforeRenderObservable.add(() => {
-            PongTable.Balls.GetAll().forEach(ball => this.CheckMeshInside(ball));
+            game.Balls.GetAll().forEach(ball => this.CheckMeshInside(ball));
         });
     }
 

@@ -21,6 +21,6 @@ export class PowerUpSpeedDown implements IPowerUp {
             return effect;
         };
 
-        MessageBroker.Publish(GameEvent.MassEffect, factory);
+        this.game.MessageBroker.Publish(GameEvent.MassEffect, factory);
     }
 }

@@ -1,9 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
-import * as MAPS from "./Maps";
 import { Ball } from "../Collidable/Ball";
 import { Wall } from "../Collidable/Wall";
 import { PowerUpBox } from "../PowerUps/PowerUpBox";
-import { MapDefinition } from "./Maps";
 import { Obstacle } from "../Collidable/Obstacle";
 import { Zone } from "../Utils/Zone";
 import { IMesh } from "../Interfaces/IMesh";
@@ -17,11 +15,6 @@ import { IPowerUp } from "../PowerUps/IPowerUp";
 
 export class PongTable extends DisposableMesh {
     private readonly MAX_POWERUPS = 15;
-    public static Zones: ObservableList<Zone> = new ObservableList();
-    public static Balls: ObservableList<Ball> = new ObservableList();
-    public static PowerUps: ObservableList<PowerUpBox> = new ObservableList();
-    public static Map: MapDefinition = MAPS.MultiplayerMap;
-    public static Paused: boolean = false;
     public OnDisposeEvent: Event<void> = new Event();
 
 	private walls: Wall[];
@@ -32,36 +25,36 @@ export class PongTable extends DisposableMesh {
 
 	constructor(game: Game, preview: boolean = false) {
         let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateGround("table", {
-            width: PongTable.Map.size.width, height: PongTable.Map.size.height }, scene);
+            width: game.Map.size.width, height: game.Map.size.height }, scene);
         super (game, fMeshBuilder);
 
         this.game = game;
-        this.walls = PongTable.Map.walls.map(w =>
+        this.walls = game.Map.walls.map(w =>
             new Wall(game, w.length, new BABYLON.Vector2(w.position[0], w.position[1]), w.rotation)
         );
-        this.obstacles = PongTable.Map.obstacles.map(o => 
+        this.obstacles = game.Map.obstacles.map(o => 
             new Obstacle(game, o.length, new BABYLON.Vector2(o.position[0], o.position[1]), o.rotation, o.life)
         );
 
         if (preview)
-            this.markers = PongTable.Map.spots.map(s => new SpotMarker(game, s));
+            this.markers = game.Map.spots.map(s => new SpotMarker(game, s));
         
         // Crear PowerUps
         var i = 0;
         while (++i <= this.MAX_POWERUPS) {
             this.CreatePowerUp();
         }
-        PongTable.PowerUps.OnRemoveEvent.Subscribe((pwrUp) => this.CreatePowerUp());
+        game.PowerUps.OnRemoveEvent.Subscribe((pwrUp) => this.CreatePowerUp());
         
 		this.mesh.material = game.GetMaterial("PongTable");;
-        this.gameZone = new Zone(game, PongTable.Map.size.width, 10, PongTable.Map.size.height);
+        this.gameZone = new Zone(game, game.Map.size.width, 10, game.Map.size.height);
         this.gameZone.OnLeaveEvent.Subscribe((iMesh) => this.BallLeaveGameZone(iMesh));
 
-        MessageBroker.Subscribe(GameEvent.GamePause, (paused) => PongTable.Paused = paused);
+        this.game.MessageBroker.Subscribe(GameEvent.GamePause, (paused) => game.Paused = paused);
 	}
 
     public CreatePowerUp(): void {
-        setTimeout(() => new PowerUpBox(this.game, PongTable.Map.size.width, PongTable.Map.size.height), 2000);
+        setTimeout(() => new PowerUpBox(this.game, this.game.Map.size.width, this.game.Map.size.height), 2000);
     }
 
     /**
@@ -83,12 +76,12 @@ export class PongTable extends DisposableMesh {
         this.obstacles = [];
         this.markers.forEach(m => m.Dispose());
         this.markers = [];
-        let pwrUps: PowerUpBox[] = PongTable.PowerUps.GetAll();
+        let pwrUps: PowerUpBox[] = this.game.PowerUps.GetAll();
         this.gameZone.Dispose();
-        PongTable.PowerUps.OnRemoveEvent.Clear();
+        this.game.PowerUps.OnRemoveEvent.Clear();
         pwrUps.forEach(p => {
             p.Dispose();
-            PongTable.PowerUps.Remove(p);
+            this.game.PowerUps.Remove(p);
         });
         super.Dispose();
     }

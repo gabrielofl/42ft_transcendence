@@ -17,7 +17,7 @@ export class PaddleLenEffect extends APlayerEffect {
             return;
         
         target.PaddleLen.Values.Add(this);
-        MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        this.game.MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
         super.Execute(target);
     }
 

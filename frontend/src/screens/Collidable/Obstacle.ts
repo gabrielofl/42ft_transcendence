@@ -20,8 +20,8 @@ export class Obstacle extends Wall {
             console.log("Registrando bola a Obstacle");
             this.mesh.physicsImpostor?.registerOnPhysicsCollide(ball.GetImpostor(), () => this.BallCollision());
         };
-        PongTable.Balls.OnAddEvent.Subscribe((ball) => callback(ball));
-        PongTable.Balls.GetAll().forEach(ball => callback(ball));
+        game.Balls.OnAddEvent.Subscribe((ball) => callback(ball));
+        game.Balls.GetAll().forEach(ball => callback(ball));
     }
 
     private BallCollision(): void {

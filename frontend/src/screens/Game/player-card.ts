@@ -7,7 +7,7 @@ import { PwrUpEventArgs } from "../Inventory";
 import { Game } from "./Game";
 import { APlayerEffect, AppliedEffectArgs, PlayerEffectFactory } from "../PowerUps/Effects/APlayerEffect";
 
-export function createPlayerCard(player: APlayer, colorClass: string): string {
+export function createPlayerCard(game: Game, player: APlayer, colorClass: string): string {
     let keysHTML = "";
 
     if (player instanceof LocalPlayer) {
@@ -21,7 +21,7 @@ export function createPlayerCard(player: APlayer, colorClass: string): string {
         <div class="flex gap-2">${keysHTML}</div>   
     ` : "";
 
-	setupEffectsListener(player);
+	setupEffectsListener(game, player);
 
     let name = player.GetName();
     return replaceTemplatePlaceholders(playerCardTemplate, { name, controls });
@@ -31,12 +31,12 @@ function renderKey(key: string): string {
     return `<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">${key.toUpperCase()}</kbd>`;
 }
 
-function setupEffectsListener(player: APlayer) {
-	MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
+function setupEffectsListener(game: Game, player: APlayer) {
+	game.MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
         if (player === args.Target)
             addEffect(args.Target.GetName(), args.Effect);
     });
-    MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
+    game.MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
 }
 
 function addEffect(playerName: string, effect: APlayerEffect): void {

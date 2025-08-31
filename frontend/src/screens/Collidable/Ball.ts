@@ -36,10 +36,10 @@ export class Ball extends DisposableImpostor {
 		});
 
 		// Se añade a la lista de bolas.
-		PongTable.Balls.Add(this);
-		this.OnDisposeEvent.Subscribe(() => PongTable.Balls.Remove(this));
+		game.Balls.Add(this);
+		this.OnDisposeEvent.Subscribe(() => game.Balls.Remove(this));
 
-        MessageBroker.Subscribe(GameEvent.GamePause, this.GamePaused.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.GamePause, this.GamePaused.bind(this));
 	}
 
 	private GamePaused(paused: boolean): void
@@ -61,7 +61,7 @@ export class Ball extends DisposableImpostor {
 
 	// Se asegura de que la velocidad de la bola se mantenga en un rango.
 	private MaintainBallSpeed(): void {
-		if (PongTable.Paused)
+		if (this.game.Paused)
 			return;
 
 		let p = this.mesh.position;

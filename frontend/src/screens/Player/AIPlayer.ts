@@ -40,12 +40,12 @@ export class AIPlayer extends APlayer {
 
     // Intenta acercarse a la bola más cercana.
     public ProcessPlayerAction(inputMap: Record<string, boolean>): void {
-        if (PongTable.Paused)
+        if (this.game.Paused)
             return;
 
         // Busca bola mas cercana
         let pMesh: BABYLON.Mesh = this.paddle.GetMesh();
-        let incoming: Ball[] = PongTable.Balls.GetAll().filter((ball) => this.IsBallComing(ball));
+        let incoming: Ball[] = this.game.Balls.GetAll().filter((ball) => this.IsBallComing(ball));
         const targetBall = this.ClosestBall(incoming);
 
         // Si existe bola, se desplaza hacia ella de ser necesario.

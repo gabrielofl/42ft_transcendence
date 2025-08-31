@@ -3,6 +3,7 @@ import { APlayer } from "./Player/APlayer";
 import { IDisposable } from "./Interfaces/IDisposable";
 import { Event } from "./Utils/Event";
 import { GameEvent, MessageBroker } from "./Utils/MessageBroker";
+import { Game } from "./Game/Game";
 
 export type PwrUpEventArgs = {
     Player: APlayer;
@@ -15,9 +16,11 @@ export class Inventory implements IDisposable {
   public OnDisposeEvent: Event<void> = new Event();
   private powerUps: Map<number, IPowerUp | undefined> = new Map();
   private owner: APlayer;
+  private game: Game;
 
-  constructor(owner: APlayer) {
+  constructor(game: Game, owner: APlayer) {
     this.owner = owner;
+    this.game = game;
     this.powerUps.set(0, undefined);
     this.powerUps.set(1, undefined);
     this.powerUps.set(2, undefined);
@@ -42,7 +45,7 @@ export class Inventory implements IDisposable {
       if (!value)
       {
         this.powerUps.set(slot, aPwrUp);
-        MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: aPwrUp, Slot: slot, Action: "Pick" });
+        this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: aPwrUp, Slot: slot, Action: "Pick" });
         break;
       }
     }
@@ -59,7 +62,7 @@ export class Inventory implements IDisposable {
     {
       value.UsePowerUp(this.owner);
       this.powerUps.set(index, undefined);
-      MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
+      this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
     }
   }
 
@@ -78,7 +81,7 @@ export class Inventory implements IDisposable {
   public Clear(): void {
     for (const [slot, value] of this.powerUps)
     {
-      MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
+      this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
       this.powerUps.set(slot, undefined);
     }
   }

@@ -1,6 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 import * as CANNON from "cannon";
+import * as MAPS from "./Maps";
 import { IDisposable } from "../Interfaces/IDisposable";
 import { Event } from "../Utils/Event";
 import { ObservableList } from "../Utils/ObservableList";
@@ -12,12 +13,13 @@ import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
 import { SpotMarker } from "../Player/SpotMarker";
 import { WindCompass } from "./WindCompass";
+import { Zone } from "../Utils/Zone";
+import { PowerUpBox } from "../PowerUps/PowerUpBox";
 // import "@babylonjs/loaders/glTF";
 
 export class Game implements IDisposable {
-    // --- Singleton ---
-    private static instance: Game | null = null;
     private readonly WIN_POINTS = 5;
+	public ID: string = "";
 
 	// --- Disposable ---
 	// private isLateralView = false;
@@ -34,16 +36,27 @@ export class Game implements IDisposable {
 	private arrow: WindCompass | null = null;
 	public Wind: BABYLON.Vector3 = new BABYLON.Vector3();
 
+	// --- Utils ---
 	private isLateralView: boolean = false;
 	private materialFact: MaterialFactory;
 	private players: APlayer[] = [];
+	public Paused: boolean = false;
 
-    public constructor(canvas: HTMLCanvasElement | undefined) {
+	// ---Instances ---
+	public MessageBroker: MessageBroker = new MessageBroker();
+	public Zones: ObservableList<Zone> = new ObservableList();
+	public Balls: ObservableList<Ball> = new ObservableList();
+	public PowerUps: ObservableList<PowerUpBox> = new ObservableList();
+	public Map: MAPS.MapDefinition = MAPS.MultiplayerMap;
+
+    public constructor(canvas: HTMLCanvasElement, isServerSide: boolean) {
         // Inicializar motor, escena y gui
-        if (canvas)
-			this.engine = new BABYLON.Engine(canvas, true);
-		else
+
+		// let isServerSide: boolean = canvas == undefined  | undefined;
+/*         if (isServerSide)
 			this.engine = new BABYLON.NullEngine();
+		else */
+			this.engine = new BABYLON.Engine(canvas, true);
 
         this.scene = new BABYLON.Scene(this.engine);
 		this.gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
@@ -70,8 +83,8 @@ export class Game implements IDisposable {
 		this.scene.actionManager = new BABYLON.ActionManager(this.scene);
 		this.engine.runRenderLoop(() => this.scene.render());
 		window.addEventListener('resize', () => this.engine.resize());
-		PongTable.Balls.OnRemoveEvent.Subscribe(this.BallRemoved.bind(this));
-		MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
+		this.Balls.OnRemoveEvent.Subscribe(this.BallRemoved.bind(this));
+		this.MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
 
 		this.materialFact = new MaterialFactory(this);
 		
@@ -87,6 +100,7 @@ export class Game implements IDisposable {
 
 		this.isDisposed = true;
 		this.dependents.GetAll().forEach(d => d.Dispose());
+		this.MessageBroker.ClearAll();
 	}
 
 	/**
@@ -134,13 +148,13 @@ export class Game implements IDisposable {
 		this.players = players;
 
 		players.forEach((p, idx) =>{
-            p.ConfigurePaddleBehavior({position: PongTable.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0), maxDistance: 10});
+            p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0), maxDistance: 10});
             p.ScoreZone.OnEnterEvent.Subscribe((iMesh) => this.BallEnterScoreZone(p, iMesh));
         });
 
 		// CAMERA
-		let cameraFrontView = new BABYLON.Vector3(0, 15, -PongTable.Map.size.height);
-		let cameraLateralView = new BABYLON.Vector3(-PongTable.Map.size.height, 45, 0);
+		let cameraFrontView = new BABYLON.Vector3(0, 15, -this.Map.size.height);
+		let cameraLateralView = new BABYLON.Vector3(-this.Map.size.height, 45, 0);
 		this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
 			inputMap[evt.sourceEvent.key] = true;
 		
@@ -151,8 +165,8 @@ export class Game implements IDisposable {
 					: cameraFrontView;
 				this.camera.setTarget(BABYLON.Vector3.Zero());
 			} else if (evt.sourceEvent.key === "p") {
-				console.log("Pause: " + !PongTable.Paused);
-				MessageBroker.Publish(GameEvent.GamePause, !PongTable.Paused);
+				console.log("Pause: " + !this.Paused);
+				this.MessageBroker.Publish(GameEvent.GamePause, !this.Paused);
 			}
 		}));
 
@@ -182,17 +196,17 @@ export class Game implements IDisposable {
 	}
 
 	private GameEnded(): void {
-		if (PongTable.Paused === true)
+		if (this.Paused === true)
 			return;
 
-		MessageBroker.Publish(GameEvent.GamePause, true);
-		PongTable.Balls.GetAll().forEach(ball => ball.Dispose());
-		MessageBroker.Publish(GameEvent.GameEnded, [...this.players]);
+		this.MessageBroker.Publish(GameEvent.GamePause, true);
+		this.Balls.GetAll().forEach(ball => ball.Dispose());
+		this.MessageBroker.Publish(GameEvent.GameEnded, [...this.players]);
 	}
 
 	private GameRestart(): void {
 		this.players.forEach(p => p.Reset());
-		MessageBroker.Publish(GameEvent.GamePause, false);
+		this.MessageBroker.Publish(GameEvent.GamePause, false);
 		this.start()
 	}
 
@@ -207,7 +221,7 @@ export class Game implements IDisposable {
 	public BallRemoved(): void {
 		if (!this.players.every(p => p.GetScore() < this.WIN_POINTS))
 			this.GameEnded();
-		else if (PongTable.Balls.GetAll().length == 0)
+		else if (this.Balls.GetAll().length == 0)
 			this.start();
 	}
 

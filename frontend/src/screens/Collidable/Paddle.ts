@@ -45,8 +45,8 @@ export class Paddle extends DisposableImpostor {
         const callback = (ball: Ball) => {
             this.mesh.physicsImpostor?.registerOnPhysicsCollide(ball.GetImpostor(), () => this.BallCollision(ball));
         };
-        PongTable.Balls.OnAddEvent.Subscribe((ball) => { callback(ball); });
-        PongTable.Balls.GetAll().forEach(ball => { callback(ball); });
+        game.Balls.OnAddEvent.Subscribe((ball) => { callback(ball); });
+        game.Balls.GetAll().forEach(ball => { callback(ball); });
     }
 
     /**
