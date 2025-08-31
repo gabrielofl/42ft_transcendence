@@ -1,7 +1,7 @@
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
-import { GameEvent, MessageBroker } from "../../Utils/MessageBroker";
-import { APlayerEffect, AppliedEffectArgs, PlayerEffectFactory } from "../Effects/APlayerEffect";
+import { GameEvent } from "@shared/types/types";
 
 export class PaddleSpeedEffect extends APlayerEffect {
     private speed: number;

@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { Wall } from "./Wall";
 import { Ball } from "./Ball";
-import { PongTable } from "../Game/PongTable";
+import { APongTable } from "../Game/APongTable";
 import { Game } from "../Game/Game";
 
 // Difiere de la pared en que tiene vida y esta disminuye al chocar la bola con este.

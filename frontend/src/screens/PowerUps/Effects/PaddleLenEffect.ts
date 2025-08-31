@@ -1,7 +1,7 @@
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
-import { GameEvent, MessageBroker } from "../../Utils/MessageBroker";
-import { APlayerEffect, AppliedEffectArgs } from "../Effects/APlayerEffect";
+import { GameEvent } from "@shared/types/types";
 
 export class PaddleLenEffect extends APlayerEffect {
     public Len: number;

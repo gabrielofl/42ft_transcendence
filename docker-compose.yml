@@ -9,6 +9,7 @@ services:
           - ./frontend:/app 
           - /app/node_modules
           - frontend-dist:/app/dist
+          - ./shared:/app/src/shared
       env_file:
         - ./frontend/.env.production
       environment:
@@ -26,6 +27,7 @@ services:
       volumes:
         - frontend-dist:/app/static
         - ./backend/pong.db:/app/pong.db
+        - ./shared:/app/src/shared
       env_file:
         - ./backend/.env
       networks:

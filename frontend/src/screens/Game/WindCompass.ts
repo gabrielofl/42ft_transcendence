@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 import { Game } from "./Game";
-import { IDisposable } from "../Interfaces/IDisposable";
-import { Event } from "../Utils/Event";
+import { IDisposable } from "@shared/interfaces/IDisposable";
+import { Event } from "@shared/utils/Event";
 
 /**
  * Creates an arrow to point wind direction.

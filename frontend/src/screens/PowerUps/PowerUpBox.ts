@@ -1,6 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import { Ball } from "../Collidable/Ball";
-import { IPowerUp } from "./IPowerUp";
+import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { PowerUpMoreLength } from "./PowerUpMoreLength";
 import { PowerUpSpeedUp } from "./PowerUpSpeedUp";
 import { Zone } from "../Utils/Zone";
@@ -9,14 +9,14 @@ import { PowerUpLessLength } from "./PowerUpLessLength";
 import { PowerUpSpeedDown } from "./PowerUpSpeedDown";
 import { PowerUpCreateBall } from "./PowerUpCreateBall";
 import { Game } from "../Game/Game";
-import { PongTable } from "../Game/PongTable";
+import { APongTable } from "../Game/APongTable";
 import { PowerUpShield } from "./PowerUpShield";
 
 export class PowerUpBox extends Zone {
     protected rewardTypes: (() => IPowerUp)[] = [];
     protected observable: BABYLON.Nullable<BABYLON.Observer<BABYLON.Scene>>;
 
-    constructor(game: Game, tableWidth: number, tableHeight: number) {
+    constructor(game: Game, x: number, z: number) {
         super(game, 1.5, 1.5, 1.5);
 
         // this.rewardTypes.push(() => new PowerUpMoreLength(game));
@@ -26,9 +26,6 @@ export class PowerUpBox extends Zone {
         // this.rewardTypes.push(() => new PowerUpCreateBall());
         // this.rewardTypes.push(() => new PowerUpShield(game));
 
-        // Posición aleatoria dentro del campo de juego
-        const x = (Math.random() - 0.5) * tableWidth * 0.8;
-        const z = (Math.random() - 0.5) * tableHeight * 0.8;
         this.mesh.position.set(x, 1, z);
 
         // Sobreescribir material de la zona.

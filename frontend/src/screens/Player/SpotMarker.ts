@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { Game } from "../Game/Game"; // Ajusta la ruta según tu proyecto
-import { IDisposable } from "../Interfaces/IDisposable";
-import { Event } from "../Utils/Event";
+import { IDisposable } from "@shared/interfaces/IDisposable";
+import { Event } from "@shared/utils/Event";
 import { DisposableMesh } from "../Utils/DisposableMesh";
 
 /**

@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { IMesh } from "../Interfaces/IMesh";
-import { Event } from "./Event";
-import { IDisposable } from "../Interfaces/IDisposable";
+import { Event } from "@shared/utils/Event";
+import { IDisposable } from "@shared/interfaces/IDisposable";
 import { Game } from "../Game/Game";
 
 // Clase para facilitar el manejo de una Mesh.

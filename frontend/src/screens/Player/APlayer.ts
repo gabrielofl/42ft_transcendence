@@ -3,13 +3,13 @@ import * as BABYLON from "@babylonjs/core";
 import { Inventory } from "../Inventory";
 import { Zone } from "../Utils/Zone";
 import { ObservableList } from "../Utils/ObservableList";
-import { APlayerEffect, PlayerEffectFactory } from "../PowerUps/Effects/APlayerEffect";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
+import { GameEvent, PlayerEffectFactory } from "@shared/types/types";
 import { Ball } from "../Collidable/Ball";
 import { DependentValue } from "../Utils/DependentValue";
 import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect";
 import "../Utils/array.extensions";
-import { Event } from "../Utils/Event";
+import { Event } from "@shared/utils/Event";
 import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect";
 import { Game } from "../Game/Game";
 

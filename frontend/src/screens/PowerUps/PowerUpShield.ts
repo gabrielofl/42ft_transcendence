@@ -1,8 +1,7 @@
-import { IPowerUp } from "./IPowerUp";
+import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
 import { PaddleShieldEffect } from "./Effects/PaddleShieldEffect";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
-import { APlayerEffect, PlayerEffectFactory } from "./Effects/APlayerEffect";
+import { GameEvent } from "@shared/types/types";
 import { Game } from "../Game/Game";
 
 export class PowerUpShield implements IPowerUp {

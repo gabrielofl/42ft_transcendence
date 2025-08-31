@@ -1,9 +1,9 @@
 import * as BABYLON from "@babylonjs/core";
 import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
-import { APlayerEffect, AppliedEffectArgs } from "../Effects/APlayerEffect";
 import { DisposableMesh } from "../../Utils/DisposableMesh";
-import { GameEvent, MessageBroker } from "../../Utils/MessageBroker";
+import { GameEvent } from "@shared/types/types";
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 
 export class PaddleShieldEffect extends APlayerEffect {
     private shield: DisposableMesh | undefined;

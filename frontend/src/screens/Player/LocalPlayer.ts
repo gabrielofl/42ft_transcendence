@@ -1,5 +1,5 @@
 import { APlayer } from "./APlayer";
-import { PongTable } from "../Game/PongTable";
+import { APongTable } from "../Game/APongTable";
 import { Game } from "../Game/Game";
 
 export class LocalPlayer extends APlayer {

@@ -1,9 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
 import { APlayer } from "../Player/APlayer";
 import { DisposableImpostor } from "../Utils/DisposableImpostor";
-import { PongTable } from "../Game/PongTable";
 import { Wall } from "./Wall";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
+import { GameEvent } from "@shared/types/types";
 import { Game } from "../Game/Game";
 
 export class Ball extends DisposableImpostor {
@@ -52,9 +51,7 @@ export class Ball extends DisposableImpostor {
 		}
 		else
 		{
-			this.observer = this.scene.onBeforeRenderObservable.add(() => {
-				this.MaintainBallSpeed();
-			});
+			this.observer = this.scene.onBeforeRenderObservable.add(() => this.MaintainBallSpeed());
 			this.GetImpostor().setLinearVelocity(this.velocity);
 		}
 	}

@@ -11,7 +11,11 @@
 	  "forceConsistentCasingInFileNames": true, // optional, prevents subtle bugs
 	  "isolatedModules": true,                  // needed for Vite + TS
 	  "resolveJsonModule": true,                // allow importing JSON
-	  "noEmit": true                            // Vite handles emitting
+	  "noEmit": true,                           // Vite handles emitting
+	  "baseUrl": ".",
+	  "paths": {
+      	"@shared/*": ["../shared/*"]
+      }
 	},
 	"include": ["src/**/*.ts", "../public", "src/types"],
 	"exclude": ["node_modules", "dist"]

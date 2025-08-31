@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import gameTemplate from "./game.html?raw";
 import gameEndedTemplate from "./game-ended.html?raw";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
+import { GameEvent } from "@shared/types/types";
 import { APlayer } from "../Player/APlayer";
 import { Game } from "./Game";
 import { LocalPlayer } from "../Player/LocalPlayer";
@@ -61,6 +61,12 @@ function setupGameEvents(): void {
 function createPlayers(game: Game, container: HTMLElement): APlayer[] {
 		// const player = new LocalPlayer("Jorge", "a", "d", ["z", "x", "c"]);
 		// const enemy = new LocalPlayer("Sutanito", "h", "k", ["b", "n", "m"]);
+
+/* 	if (playertype == local)
+		new LocalPlayer
+	else
+		new SocketPLayer(); */
+
 		const enemy = new AIPlayer(game, game.ID + "Fulanito");
 		enemy.Color = new BABYLON.Color3(0, 0, 1);
 		const enemy2 = new AIPlayer(game, game.ID + "Menganito");

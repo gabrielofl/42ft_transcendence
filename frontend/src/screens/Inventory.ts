@@ -1,16 +1,9 @@
-import { IPowerUp } from "./PowerUps/IPowerUp";
+import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "./Player/APlayer";
-import { IDisposable } from "./Interfaces/IDisposable";
-import { Event } from "./Utils/Event";
-import { GameEvent, MessageBroker } from "./Utils/MessageBroker";
+import { IDisposable } from "@shared/interfaces/IDisposable";
+import { Event } from "@shared/utils/Event";
 import { Game } from "./Game/Game";
-
-export type PwrUpEventArgs = {
-    Player: APlayer;
-    PowerUp?: IPowerUp; 
-    Slot: number;
-    Action: "Pick" | "Use" | "Clear";
-};
+import { GameEvent } from "@shared/types/types"
 
 export class Inventory implements IDisposable {
   public OnDisposeEvent: Event<void> = new Event();

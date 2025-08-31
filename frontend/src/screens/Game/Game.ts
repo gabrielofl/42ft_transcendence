@@ -2,12 +2,13 @@ import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
 import * as CANNON from "cannon";
 import * as MAPS from "./Maps";
-import { IDisposable } from "../Interfaces/IDisposable";
-import { Event } from "../Utils/Event";
+import { IDisposable } from "@shared/interfaces/IDisposable";
+import { Event } from "@shared/utils/Event";
 import { ObservableList } from "../Utils/ObservableList";
 import { APlayer } from "../Player/APlayer";
-import { PongTable } from "./PongTable";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
+import { APongTable } from "./APongTable";
+// import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
+import { MessageBroker } from "@shared/utils/MessageBroker";
 import { MaterialFactory } from "./MaterialFactory";
 import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
@@ -15,6 +16,9 @@ import { SpotMarker } from "../Player/SpotMarker";
 import { WindCompass } from "./WindCompass";
 import { Zone } from "../Utils/Zone";
 import { PowerUpBox } from "../PowerUps/PowerUpBox";
+import { ServerPongTable } from "./ServerPongTable";
+import { ClientPongTable } from "./ClientPongTable";
+import { GameEvent } from "@shared/types/types";
 // import "@babylonjs/loaders/glTF";
 
 export class Game implements IDisposable {
@@ -41,6 +45,7 @@ export class Game implements IDisposable {
 	private materialFact: MaterialFactory;
 	private players: APlayer[] = [];
 	public Paused: boolean = false;
+	private isServerSide: boolean;
 
 	// ---Instances ---
 	public MessageBroker: MessageBroker = new MessageBroker();
@@ -50,13 +55,14 @@ export class Game implements IDisposable {
 	public Map: MAPS.MapDefinition = MAPS.MultiplayerMap;
 
     public constructor(canvas: HTMLCanvasElement, isServerSide: boolean) {
+		this.isServerSide = isServerSide;
         // Inicializar motor, escena y gui
 
 		// let isServerSide: boolean = canvas == undefined  | undefined;
 /*         if (isServerSide)
-			this.engine = new BABYLON.NullEngine();
-		else */
-			this.engine = new BABYLON.Engine(canvas, true);
+else */
+		// this.engine = new BABYLON.NullEngine();
+		this.engine = new BABYLON.Engine(canvas, true);
 
         this.scene = new BABYLON.Scene(this.engine);
 		this.gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
@@ -85,7 +91,7 @@ export class Game implements IDisposable {
 		window.addEventListener('resize', () => this.engine.resize());
 		this.Balls.OnRemoveEvent.Subscribe(this.BallRemoved.bind(this));
 		this.MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
-
+		this.MessageBroker.Subscribe(GameEvent.GamePause, (paused: boolean) => this.scene.getPhysicsEngine()?.setTimeStep(paused ? 0 : 1/60));
 		this.materialFact = new MaterialFactory(this);
 		
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
@@ -144,7 +150,7 @@ export class Game implements IDisposable {
 	public CreateGame(players: APlayer[]): void {
 		// TABLE
 		const inputMap: Record<string, boolean> = {};
-		const pongTable = new PongTable(this);
+		const pongTable = this.isServerSide ? new ServerPongTable(this) : new ClientPongTable(this);
 		this.players = players;
 
 		players.forEach((p, idx) =>{

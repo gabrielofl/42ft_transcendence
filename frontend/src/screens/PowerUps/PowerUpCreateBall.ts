@@ -1,4 +1,4 @@
-import { IPowerUp } from "./IPowerUp";
+import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
 
 export class PowerUpCreateBall implements IPowerUp {

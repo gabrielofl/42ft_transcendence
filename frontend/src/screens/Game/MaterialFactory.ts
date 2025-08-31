@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { Game } from "./Game";
-import { IDisposable } from "../Interfaces/IDisposable";
-import { Event } from "../Utils/Event";
+import { Event } from "@shared/utils/Event"
+import { IDisposable } from "@shared/interfaces/IDisposable";
 
 type MaterialConfig = {
     color?: [number, number, number];

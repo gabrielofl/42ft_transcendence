@@ -1,11 +1,10 @@
 import playerCardTemplate from "./player-card.html?raw";
 import { APlayer } from "../Player/APlayer";
 import { LocalPlayer } from "../Player/LocalPlayer";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
+import { AppliedEffectArgs, GameEvent, PwrUpEventArgs } from "@shared/types/types";
 import { replaceTemplatePlaceholders } from "./GameScreen";
-import { PwrUpEventArgs } from "../Inventory";
 import { Game } from "./Game";
-import { APlayerEffect, AppliedEffectArgs, PlayerEffectFactory } from "../PowerUps/Effects/APlayerEffect";
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 
 export function createPlayerCard(game: Game, player: APlayer, colorClass: string): string {
     let keysHTML = "";

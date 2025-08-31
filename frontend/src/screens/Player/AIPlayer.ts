@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { APlayer } from "./APlayer";
 import { Ball } from "../Collidable/Ball";
-import { PongTable } from "../Game/PongTable";
+import { APongTable } from "../Game/APongTable";
 import { Game } from "../Game/Game";
 
 export class AIPlayer extends APlayer {

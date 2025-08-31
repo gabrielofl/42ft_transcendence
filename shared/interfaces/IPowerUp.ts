@@ -1,5 +1,4 @@
-import { Game } from "../Game/Game";
-import { APlayer } from "../Player/APlayer";
+import { APlayer } from "../../frontend/src/screens/Player/APlayer";
 
 export interface IPowerUp  {
     ImgPath: string;

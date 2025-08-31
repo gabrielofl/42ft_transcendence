@@ -3,7 +3,7 @@ import { APlayer } from "../Player/APlayer";
 import { Ball } from "./Ball";
 import { Wall } from "./Wall";
 import { DisposableImpostor } from "../Utils/DisposableImpostor";
-import { PongTable } from "../Game/PongTable";
+import { APongTable } from "../Game/APongTable";
 import { DisposableMesh } from "../Utils/DisposableMesh";
 import { Game } from "../Game/Game";
 

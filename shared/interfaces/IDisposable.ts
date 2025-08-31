@@ -1,5 +1,4 @@
-import * as BABYLON from "@babylonjs/core";
-import { Event } from "../Utils/Event";
+import { Event } from "../utils/Event";
 
 export interface IDisposable <T = null> {
     OnDisposeEvent: Event<void>;

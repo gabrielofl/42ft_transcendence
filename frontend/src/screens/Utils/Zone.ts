@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
 import { DisposableMesh } from "./DisposableMesh";
 import { IMesh } from "../Interfaces/IMesh";
-import { PongTable } from "../Game/PongTable";
-import { Event } from "./Event";
+import { APongTable } from "../Game/APongTable";
+import { Event } from "@shared/utils/Event";
 import { Game } from "../Game/Game";
 
 export class Zone extends DisposableMesh {

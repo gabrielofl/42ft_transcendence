@@ -1,4 +1,4 @@
-import { Event } from "./Event";
+import { Event } from "@shared/utils/Event";
 import { ObservableList } from "./ObservableList";
 
 /**

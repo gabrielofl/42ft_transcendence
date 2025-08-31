@@ -1,11 +1,11 @@
 import * as BABYLON from "@babylonjs/core";
 import { MapDefinition, Maps } from "./Maps"; // el objeto que contiene todos los mapas
-import { PongTable } from "./PongTable";
+import { APongTable } from "./APongTable";
 import { Game } from "./Game";
 import view from "./map-selection.html?raw";
 
 let game: Game;
-let pong: PongTable;
+let pong: APongTable;
 
 export async function renderMapSelection() {
 	const main = document.getElementById("main");
@@ -55,9 +55,9 @@ function renderPreview(mapDef: MapDefinition) {
     if (pong)
         pong.Dispose();
 
-	PongTable.Map = mapDef;
+	APongTable.Map = mapDef;
 
 	if (!game)
 		game = new Game(canvas);
-	pong = new PongTable(game, true);
+	pong = new APongTable(game, true);
 }

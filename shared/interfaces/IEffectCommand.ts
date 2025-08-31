@@ -1,4 +1,4 @@
-import { IDisposable } from "../../Interfaces/IDisposable";
+import { IDisposable } from "./IDisposable";
 
 export interface IEffectCommand <T = void> extends IDisposable {
     Execute(target: T): void;

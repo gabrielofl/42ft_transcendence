@@ -1,13 +1,7 @@
-import { Game } from "../../Game/Game";
-import { APlayer } from "../../Player/APlayer";
-import { Event } from "../../Utils/Event";
-import { IEffectCommand } from "./IEffectCommand";
-
-export type PlayerEffectFactory = () => APlayerEffect;
-export type AppliedEffectArgs = {
-    Target: APlayer,
-    Effect: APlayerEffect,
-};
+import { Game } from "../../frontend/src/screens/Game/Game";
+import { APlayer } from "../../frontend/src/screens/Player/APlayer";
+import { Event } from "../utils/Event";
+import { IEffectCommand } from "../interfaces/IEffectCommand";
 
 export abstract class APlayerEffect implements IEffectCommand<APlayer> {
     public OnDisposeEvent: Event<void> = new Event();
