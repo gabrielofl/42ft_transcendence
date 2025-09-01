@@ -54,19 +54,25 @@ async function openUserProfile(username: string | number) {
     statWinRate.textContent = `${winRate.toFixed(2)}%`;
 
 
-    // Friendship check: 0 = no; 1 = request send; 2 = yes;
+    // Friendship check: 0 = no; 1 = request sended by me, 2 request sended by user; 3 = friends;
 	// data.isFriend = 2;
-    if (data.isFriend === 2) {
-		friendBtn.textContent = "Remove Friend";
-		friendBtn.classList.replace("btn-primary", "btn-secondary");
-	  } 
-	  else if (data.isFriend === 1) {
+	
+	if (data.isFriend === 1) {
 		  friendBtn.textContent = "Request sended";
 		  friendBtn.classList.replace("btn-primary", "btn-disabled");
 		}
-	  else {
+	else if (data.isFriend === 2) {
+		friendBtn.textContent = "Accept request";
+		friendBtn.classList.replace("btn-primary", "btn-success");
+	} 
+	else if (data.isFriend === 3) {
+		friendBtn.textContent = "Remove Friend";
+		friendBtn.classList.replace("btn-primary", "btn-secondary");
+
+	}
+	 else {
 		friendBtn.textContent = "Add Friend";
-		friendBtn.classList.replace("btn-secondary" && "btn-disabled", "btn-primary");
+		friendBtn.classList.replace("btn-secondary", "btn-primary");
 	  }
 	 // Friend action
     // friendBtn.onclick = async () => {

@@ -65,7 +65,7 @@ const main = document.getElementById('main');
 	`;
 	setupProfileSidebar();
 	setTimeout(() => {
-	    document.querySelector('[data-tab="account"]')?.dispatchEvent(new Event('click'));
+	    document.querySelector('[data-tab="friends"]')?.dispatchEvent(new Event('click'));
   	}, 0);
 
 }
