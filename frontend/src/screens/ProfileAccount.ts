@@ -1,115 +1,34 @@
-
-import sidebar from "../screens/profile-sidebar.html?raw";
-import { renderAccountTab } from "../screens/ProfileAccount";
-import { renderPerformanceTab } from "../screens/ProfilePerformance";
-import { renderHistoryTab } from "../screens/ProfileHistory";
-import { renderFriendsTab } from "../screens/ProfileFriends";
-
-import { AppStore } from '../redux/AppStore';
-import { updateLangue } from '../redux/reducers/langueReducer';
+import profileAccount from "./profile-account.html?raw";
+import { apiService } from '../services/api.js';
 import { replaceTemplatePlaceholders } from "./utils";
 import { API_BASE_URL } from "./config";
 
-// API service interface for 2FA operations
-interface ApiService {
-  setup2FA(): Promise<any>;
-  verify2FA(data: { token: string }): Promise<any>;
-}
+export function renderAccountTab() {
 
-// Mock API service - replace with actual implementation
-const apiService: ApiService = {
-  setup2FA: async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/2fa/setup`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    return response.json();
-  },
-  verify2FA: async (data: { token: string }) => {
-    const response = await fetch(`${API_BASE_URL}/auth/2fa/verify`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(data)
-    });
-    return response.json();
+	const container = document.getElementById('profile-content');
+	if (!container) return ;
+  	try {
+		container.innerHTML = replaceTemplatePlaceholders(profileAccount, {API_BASE_URL});
+		setupAccountTab();
+	} catch (err) {
+    console.error("Failed to load account:", err);
+    container.innerHTML = `<p class="text-red-500">Failed to load account tab.</p>`;
+  	}
   }
-};
 
-// Function to update 2FA status in the UI
-function update2FAStatus(enabled: boolean) {
-  const setupBtn = document.getElementById('setup-2fa-btn');
-  const disableBtn = document.getElementById('disable-2fa-btn');
-  const statusText = document.getElementById('2fa-status');
-  
-  if (setupBtn && disableBtn && statusText) {
-    if (enabled) {
-      setupBtn.style.display = 'none';
-      disableBtn.style.display = 'block';
-      statusText.textContent = 'Enabled';
-      statusText.className = 'text-green-500';
-    } else {
-      setupBtn.style.display = 'block';
-      disableBtn.style.display = 'none';
-      statusText.textContent = 'Disabled';
-      statusText.className = 'text-red-500';
-    }
-  }
-}
-
-export function setupProfileSidebar() {
-  const sidebar = document.getElementById("profile-sidebar");
-  if (!sidebar)
-	return;
-
-  // Configurar eventos de tabs
-  sidebar.querySelectorAll(".sidebar-tab").forEach(btn => {
-	btn.addEventListener("click", async e => {
-	  const tab = (e.currentTarget as HTMLElement).dataset.tab;
-	  const container = document.getElementById("profile-content");
-	  if (!container)
-		return;
-
-	  // Reset de clases activas
-	  sidebar.querySelectorAll(".sidebar-tab").forEach(b =>
-		b.classList.remove("active")
-	  );
-	  (e.currentTarget as HTMLElement).classList.add("active");
-
-	  switch (tab) {
-		case "friends":
-		  await renderFriendsTab();
-		  break;
-		case "performance":
-		  await renderPerformanceTab();
-		  break;
-		case "history":
-		  await renderHistoryTab();
-		  break;
-		default:
-		  renderAccountTab();
-		  setupAccountTab();
-		  break;
-	  }
-	});
-  });
-}
 
 export function setupAccountTab() {
+
+	const avatarInput = document.getElementById('avatar-upload') as HTMLInputElement | null;
+	const nameInput = document.getElementById('name') as HTMLInputElement | null;
+	const lastnameInput = document.getElementById('lastname') as HTMLInputElement | null;
+	const updateNameBtn = document.getElementById('update-name-btn') as HTMLButtonElement | null;
 	const usernameInput = document.getElementById('username') as HTMLInputElement | null;
 	const updateUsernameBtn = document.getElementById('update-username-btn') as HTMLButtonElement | null;
+	const emailInput = document.getElementById('email') as HTMLInputElement | null;
+	const updateEmailBtn = document.getElementById('update-email-btn') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordSection = document.getElementById('password-section');
-	// const resultBox = document.getElementById('profile-username');
-
-	
-	
 
 	fetch(`${API_BASE_URL}/users/me`, {
 		credentials: 'include',
@@ -130,6 +49,7 @@ export function setupAccountTab() {
 			if (data.twoFactorEnabled !== undefined) {
 				update2FAStatus(data.twoFactorEnabled);
 			}
+			document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
 			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
@@ -145,12 +65,76 @@ export function setupAccountTab() {
 			// document.getElementById('losses-count')!.textContent = data.losses;
 			// document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
 			
+			
 		})
 		.catch(err => console.error('Error loading profile:', err));
 
+	avatarInput?.addEventListener('change', async () => {
+		const file = avatarInput.files?.[0];
+		if (!file) return;
+
+		const reader = new FileReader();
+		reader.onload = () => {
+			(document.getElementById('avatar-preview') as HTMLImageElement).src = reader.result as string;
+		};
+		reader.readAsDataURL(file);
+
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
+			method: 'POST',
+			credentials: 'include', 
+			body: formData
+		});
+		
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+
+		if (!result.success) alert('Avatar upload failed');
+	});
+
+
+	// Update name and lastname
+	updateNameBtn?.addEventListener('click', async () => {
+		const name = nameInput?.value.trim();
+		const lastname = lastnameInput?.value.trim();
+		if (!name || name.length < 3) return alert('Name too short');
+		if (!lastname || lastname.length < 3) return alert('Last name too short');
+
+		const res = await fetch(`${API_BASE_URL}/users/me`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
+			},
+			credentials: 'include', 
+			body: JSON.stringify({ name, lastname }),
+		});
+
+		if (!res.ok)
+			alert('Failed to update');
+		else
+			renderAccountTab();
+
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+		if (result.success) alert(result.message);
+		else alert(result.error || 'Failed to update');
+	});
+
+	// Update username
 	updateUsernameBtn?.addEventListener('click', async () => {
 		const username = usernameInput?.value.trim();
-		if (!username || username.length < 2) return alert('Name too short');
+		if (!username || username.length < 3) return alert('Name too short');
 
 		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			method: 'POST',
@@ -166,14 +150,49 @@ export function setupAccountTab() {
 			alert('Failed to update');
 		else
 			renderAccountTab();
-		// const result = await res.json();
-		// result.error.code 
-		// if (result.success) alert('Profile updated!');
-		// else alert(result.error || 'Failed to update');
+
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+		if (result.success) alert(result.message);
+		else alert(result.error || 'Failed to update');
+	});
+
+	// Update email
+	updateEmailBtn?.addEventListener('click', async () => {
+		const email = emailInput?.value.trim();
+		if (!email || email.length < 5) return alert('Invalid email: email too short');
+
+		const res = await fetch(`${API_BASE_URL}/users/me`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
+			},
+			credentials: 'include', 
+			body: JSON.stringify({ email }),
+		});
+
+		if (!res.ok)
+			alert('Failed to update');
+		else
+			renderAccountTab();
+		
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+
+		if (result.success) alert(result.message);
+		else alert(result.error || 'Failed to update');
 	});
 
 
-	//AAAAAAAAAAAAAAAAAA
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
 		const password = (document.getElementById('password') as HTMLInputElement).value;
 		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
@@ -191,7 +210,14 @@ export function setupAccountTab() {
 			credentials: 'include', 
 			body: JSON.stringify({ password, newPassword }),
 		});
-		const result = await res.json();
+		
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+
 		if (result.success) alert('Password changed!');
 		else alert(result.error || 'Failed to update password');
 	});
@@ -252,7 +278,7 @@ export function setupAccountTab() {
 										
 										<caption class="caption-bottom">⚠️ These codes can only be used once each. Keep them secure! </caption>
 											 <div class="grid grid-cols-2  score-table ">
-													${verifyData.backupCodes.map((code: string) => `<div class="td" >${code}</div>`).join('')}
+													${verifyData.backupCodes.map(code => `<div class="td" >${code}</div>`).join('')}
 											</div>	
 											
 
@@ -279,7 +305,7 @@ export function setupAccountTab() {
 								try {
 									await navigator.clipboard.writeText(codesText);
 									const btn = document.getElementById('copy-codes-btn');
-									const originalText = btn?.textContent || '';
+									const originalText = btn?.textContent;
 									if (btn) {
 										btn.textContent = 'Copied!';
 										btn.className = 'btn-success w-1/2';
@@ -302,7 +328,7 @@ Generated: ${new Date().toLocaleString()}
 Each code can only be used once to log in if you lose access to your authenticator app.
 
 Backup Codes:
-${verifyData.backupCodes.map((code: string, index: number) => `${index + 1}. ${code}`).join('\n')}
+${verifyData.backupCodes.map((code, index) => `${index + 1}. ${code}`).join('\n')}
 
 Store these codes in a safe place such as:
 - A password manager
@@ -323,7 +349,7 @@ Do NOT share these codes with anyone.`;
 
 								// Update button to show success
 								const btn = document.getElementById('download-codes-btn');
-								const originalText = btn?.textContent || '';
+								const originalText = btn?.textContent;
 								if (btn) {
 									btn.textContent = 'Downloaded!';
 									btn.className = 'btn-success w-1/2';
@@ -390,47 +416,24 @@ Do NOT share these codes with anyone.`;
 	});
 }
 
-export function renderProfile() {
-const main = document.getElementById('main');
-  if (!main) return;
 
-  main.innerHTML = `
-	<div class="flex p-10 text-white font-press mx-auto shadow-lg min-h-[600px] max-h-[720px] h-full">
-		<!-- Sidebar -->
-		${sidebar}
   
-		<!-- Main Content -->
-		<div class="flex-1 px-4 h-9/10" id="profile-content">
-		  <!-- Dynamic content will be injected here -->
-		</div>
-	  </div>
-	`;
-	setupProfileSidebar();
-	setTimeout(() => {
-	    document.querySelector('[data-tab="account"]')?.dispatchEvent(new Event('click'));
-  	}, 0);
-
+// Helper function to update 2FA UI status
+function update2FAStatus(enabled: boolean) {
+	const statusEl = document.getElementById('twofa-status');
+	const enableBtn = document.getElementById('setup-2fa-btn');
+	const disableBtn = document.getElementById('disable-2fa-btn');
+	
+	if (statusEl) {
+		statusEl.textContent = enabled ? '2FA is currently enabled' : '2FA is currently disabled';
+		statusEl.className = enabled ? 'txt-body-small mb-2 color-success' : 'txt-body-small mb-2 color-warning';
+	}
+	
+	if (enableBtn) {
+		enableBtn.style.display = enabled ? 'none' : 'block';
+	}
+	
+	if (disableBtn) {
+		disableBtn.style.display = enabled ? 'block' : 'none';
+	}
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  renderProfile();
-  setTimeout(() => {
-    document.querySelector('[data-tab="account"]')?.dispatchEvent(new Event('click'));
-  }, 0);
-});
-
-// interface PlayerStats {
-// name: string;
-// wins: number;
-// losses: number;
-// ratio: number;
-// time: string;
-// }
-// const davidStats: PlayerStats = {
-// name: "David",
-// wins: 10,
-// losses: 3,
-// ratio: 5.0,
-// time: "12:34"
-// };
-
