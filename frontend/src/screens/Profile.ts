@@ -30,8 +30,13 @@ export function renderAccountTab() {
   export function setupAccountTab() {
 
 	const avatarInput = document.getElementById('avatar-upload') as HTMLInputElement | null;
+	const nameInput = document.getElementById('name') as HTMLInputElement | null;
+	const lastnameInput = document.getElementById('lastname') as HTMLInputElement | null;
+	const updateNameBtn = document.getElementById('update-name-btn') as HTMLButtonElement | null;
 	const usernameInput = document.getElementById('username') as HTMLInputElement | null;
 	const updateUsernameBtn = document.getElementById('update-username-btn') as HTMLButtonElement | null;
+	const emailInput = document.getElementById('email') as HTMLInputElement | null;
+	const updateEmailBtn = document.getElementById('update-email-btn') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordSection = document.getElementById('password-section');
 	// const resultBox = document.getElementById('profile-username');
@@ -97,13 +102,54 @@ export function renderAccountTab() {
 			credentials: 'include', 
 			body: formData
 		});
-		const result = await res.json();
+		
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+
 		if (!result.success) alert('Avatar upload failed');
 	});
 
+
+	// Update name and lastname
+	updateNameBtn?.addEventListener('click', async () => {
+		const name = nameInput?.value.trim();
+		const lastname = lastnameInput?.value.trim();
+		if (!name || name.length < 3) return alert('Name too short');
+		if (!lastname || lastname.length < 3) return alert('Last name too short');
+
+		const res = await fetch(`${API_BASE_URL}/users/me`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
+			},
+			credentials: 'include', 
+			body: JSON.stringify({ name, lastname }),
+		});
+
+		if (!res.ok)
+			alert('Failed to update');
+		else
+			renderAccountTab();
+
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+		if (result.success) alert(result.message);
+		else alert(result.error || 'Failed to update');
+	});
+
+	// Update username
 	updateUsernameBtn?.addEventListener('click', async () => {
 		const username = usernameInput?.value.trim();
-		if (!username || username.length < 2) return alert('Name too short');
+		if (!username || username.length < 3) return alert('Name too short');
 
 		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			method: 'POST',
@@ -119,11 +165,48 @@ export function renderAccountTab() {
 			alert('Failed to update');
 		else
 			renderAccountTab();
-		// const result = await res.json();
-		// result.error.code 
-		// if (result.success) alert('Profile updated!');
-		// else alert(result.error || 'Failed to update');
+
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+		if (result.success) alert(result.message);
+		else alert(result.error || 'Failed to update');
 	});
+
+	// Update email
+	updateEmailBtn?.addEventListener('click', async () => {
+		const email = emailInput?.value.trim();
+		if (!email || email.length < 5) return alert('Invalid email: email too short');
+
+		const res = await fetch(`${API_BASE_URL}/users/me`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${localStorage.getItem('token')}`
+			},
+			credentials: 'include', 
+			body: JSON.stringify({ email }),
+		});
+
+		if (!res.ok)
+			alert('Failed to update');
+		else
+			renderAccountTab();
+		
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+
+		if (result.success) alert(result.message);
+		else alert(result.error || 'Failed to update');
+	});
+
 
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
 		const password = (document.getElementById('password') as HTMLInputElement).value;
@@ -142,7 +225,14 @@ export function renderAccountTab() {
 			credentials: 'include', 
 			body: JSON.stringify({ password, newPassword }),
 		});
-		const result = await res.json();
+		
+		let result;
+		try {
+		result = await res.json();
+		} catch {
+		result = {};
+		}
+
 		if (result.success) alert('Password changed!');
 		else alert(result.error || 'Failed to update password');
 	});

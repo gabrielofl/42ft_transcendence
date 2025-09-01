@@ -55,6 +55,16 @@ export default async function (fastify, opts) {
 		});
 
 
+		// Needed to send validation error on profile
+		fastify.setErrorHandler((error, request, reply) => {
+		console.error("\nGLOBAL ERROR HANDLER >>>", error);
+
+		if (error.validation) {
+			return reply.status(400).send({ error: error.message});
+		}
+
+		reply.status(500).send({ error: 'Internal Server Error' });
+		});
 
 
 		// Update user profile - PUT /api/users/me
@@ -64,19 +74,27 @@ export default async function (fastify, opts) {
 				body: {
 					type: 'object',
 					properties: {
-						username: { type: 'string', minLength: 1, maxLength: 50 },
+						name: { type: 'string', minLength: 3, maxLength: 50 },
+						lastname: { type: 'string', minLength: 3, maxLength: 50 },
+						username: { type: 'string', minLength: 3, maxLength: 50 },
 						email: { type: 'string', format: 'email' }
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { username, email } = request.body;
+			const { name, lastname, username, email } = request.body;
 			
 			try {
 				// Build dynamic query based on provided fields
 				const updates = [];
 				const values = [];
 				
+				if (name !== undefined && lastname !== undefined ) {
+					updates.push('first_name = ?');
+					values.push(name);
+					updates.push('last_name = ?');
+					values.push(lastname);
+				}
 				if (username !== undefined) {
 					updates.push('username = ?');
 					values.push(username);
@@ -97,15 +115,11 @@ export default async function (fastify, opts) {
 					`UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
 					values
 				);
-				
-				// Return updated user
-				// const updatedUser = await fastify.db.get(
-				// 	'SELECT id, username, email, avatar, wins, losses FROM users WHERE id = ?',
-				// 	[request.user.id]
-				// );
-				
-				// return updatedUser;
-				return 
+
+				return reply.send({
+					success: true,
+					message: 'Profile updated successfully',
+				});
 				
 			} catch (error) {
 				if (error.code === 'SQLITE_CONSTRAINT') {
