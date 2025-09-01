@@ -54,109 +54,8 @@ export default async function (fastify, opts) {
 			};
 		});
 
-
-		// Needed to send validation error on profile
-		fastify.setErrorHandler((error, request, reply) => {
-		console.error("\nGLOBAL ERROR HANDLER >>>", error);
-
-		if (error.validation) {
-			return reply.status(400).send({ error: error.message});
-		}
-
-		reply.status(500).send({ error: 'Internal Server Error' });
-		});
-
-
 		// Update user profile - PUT /api/users/me
 		fastify.post('/me', {
-			preHandler: authenticate,
-			schema: {
-				body: {
-					type: 'object',
-					properties: {
-						name: { type: 'string', minLength: 3, maxLength: 50 },
-						lastname: { type: 'string', minLength: 3, maxLength: 50 },
-						username: { type: 'string', minLength: 3, maxLength: 50 },
-						email: { type: 'string', format: 'email' }
-					}
-				}
-			}
-		}, async (request, reply) => {
-			const { name, lastname, username, email } = request.body;
-			
-			try {
-				// Build dynamic query based on provided fields
-				const updates = [];
-				const values = [];
-				
-				if (name !== undefined && lastname !== undefined ) {
-					updates.push('first_name = ?');
-					values.push(name);
-					updates.push('last_name = ?');
-					values.push(lastname);
-				}
-				if (username !== undefined) {
-					updates.push('username = ?');
-					values.push(username);
-				}
-				
-				if (email !== undefined) {
-					updates.push('email = ?');
-					values.push(email);
-				}
-				
-				if (updates.length === 0) {
-					return reply.code(400).send({ error: 'No fields to update' });
-				}
-				
-				values.push(request.user.id);  // Add user ID for WHERE clause
-				
-				await fastify.db.run(
-					`UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
-					values
-				);
-
-				return reply.send({
-					success: true,
-					message: 'Profile updated successfully',
-				});
-				
-			} catch (error) {
-				if (error.code === 'SQLITE_CONSTRAINT') {
-					return reply.code(409).send({ error: 'Email already in use' });
-				}
-				throw error;
-			}
-		});
-		
-		// Get user by ID - GET /api/users/:id
-		fastify.get('/:id', {
-			schema: {
-				params: {
-					type: 'object',
-					required: ['id'],
-					properties: {
-						id: { type: 'integer' }
-					}
-				}
-			}
-		}, async (request, reply) => {
-			const user = await fastify.db.get(
-				'SELECT id, username, display_name, avatar, wins, losses, online FROM users WHERE id = ?',
-				[request.params.id]
-			);
-			
-			if (!user) {
-				return reply.code(404).send({ error: 'User not found' });
-			}
-			
-			return user;
-		});
-
-
-
-		//update password
-		fastify.post('/profile/password', {
 			preHandler: authenticate,
 			schema: {
 				body: {
@@ -196,14 +95,7 @@ export default async function (fastify, opts) {
 					values
 				);
 				
-				// Return updated user
-				// const updatedUser = await fastify.db.get(
-				// 	'SELECT id, username, email, avatar, wins, losses FROM users WHERE id = ?',
-				// 	[request.user.id]
-				// );
-				
-				// return updatedUser;
-				return 
+				return { success: true, message: 'Profile updated successfully' };
 				
 			} catch (error) {
 				if (error.code === 'SQLITE_CONSTRAINT') {
@@ -212,8 +104,128 @@ export default async function (fastify, opts) {
 				throw error;
 			}
 		});
-
-
 		
+		// Get user by ID - GET /api/users/:id
+		fastify.get('/:id', {
+			schema: {
+				params: {
+					type: 'object',
+					required: ['id'],
+					properties: {
+						id: { type: 'integer' }
+					}
+				}
+			}
+		}, async (request, reply) => {
+			const user = await fastify.db.get(
+				'SELECT id, username, display_name, avatar, wins, losses, online FROM users WHERE id = ?',
+				[request.params.id]
+			);
+			
+			if (!user) {
+				return reply.code(404).send({ error: 'User not found' });
+			}
+			
+			return user;
+		});
+
+		// Serve avatar by filename - GET /api/users/avatar/:filename
+		fastify.get('/avatar/:filename', async (request, reply) => {
+			try {
+				const { filename } = request.params;
+				
+				// Security: only allow avatar files
+				if (!filename.startsWith('avatar_') || !filename.includes('.')) {
+					return reply.code(400).send({ error: 'Invalid filename' });
+				}
+
+				const { readFile } = await import('fs/promises');
+				const { join, dirname } = await import('path');
+				const { fileURLToPath } = await import('url');
+				
+				const __filename = fileURLToPath(import.meta.url);
+				const __dirname = dirname(__filename);
+				
+				const avatarPath = join(__dirname, '../../../uploads/avatars', filename);
+				const imageBuffer = await readFile(avatarPath);
+				
+				// Determine content type based on file extension
+				const ext = filename.split('.').pop()?.toLowerCase();
+				let contentType = 'image/jpeg'; // default
+				
+				if (ext === 'png') contentType = 'image/png';
+				else if (ext === 'gif') contentType = 'image/gif';
+				else if (ext === 'webp') contentType = 'image/webp';
+				
+				reply.header('Content-Type', contentType);
+				reply.header('Cache-Control', 'public, max-age=31536000');
+				reply.header('Access-Control-Allow-Origin', 'https://localhost:8080');
+				reply.header('Access-Control-Allow-Credentials', 'true');
+				return reply.send(imageBuffer);
+			} catch (error) {
+				return reply.code(404).send({ error: 'Avatar not found' });
+			}
+		});
+
+		// Update password - POST /api/users/profile/password
+		fastify.post('/profile/password', {
+			preHandler: authenticate,
+			schema: {
+				body: {
+					type: 'object',
+					required: ['password', 'newPassword'],
+					properties: {
+						password: { type: 'string', minLength: 1 },
+						newPassword: { type: 'string', minLength: 6 }
+					}
+				}
+			}
+		}, async (request, reply) => {
+			const { password, newPassword } = request.body;
+			
+			try {
+				// First, verify the current password
+				const currentUser = await fastify.db.get(
+					'SELECT password FROM users WHERE id = ?',
+					[request.user.id]
+				);
+				
+				if (!currentUser) {
+					return reply.code(404).send({ error: 'User not found' });
+				}
+				
+				// Import bcrypt for password comparison
+				const bcrypt = await import('bcrypt');
+				
+				// Verify current password using bcrypt
+				const isPasswordValid = await bcrypt.compare(password, currentUser.password);
+				if (!isPasswordValid) {
+					return reply.code(400).send({ error: 'Current password is incorrect' });
+				}
+				
+				if (password === newPassword) {
+					return reply.code(400).send({ error: 'New password must be different from current password' });
+				}
+				
+				// Hash the new password
+				const hashedNewPassword = await bcrypt.hash(
+					newPassword, 
+					10 // Use 10 rounds for bcrypt
+				);
+				
+				// Update the password with the hashed version
+				await fastify.db.run(
+					'UPDATE users SET password = ? WHERE id = ?',
+					[hashedNewPassword, request.user.id]
+				);
+				
+				return { success: true, message: 'Password updated successfully' };
+				
+			} catch (error) {
+				console.error('Password update error:', error);
+				return reply.code(500).send({ error: 'Failed to update password' });
+			}
+		});
+
 	}, { prefix: '/users' });
 }
