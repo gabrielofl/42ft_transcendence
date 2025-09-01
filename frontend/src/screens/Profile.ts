@@ -29,7 +29,6 @@ export function renderAccountTab() {
 
   export function setupAccountTab() {
 
-	const avatarInput = document.getElementById('avatar-upload') as HTMLInputElement | null;
 	const usernameInput = document.getElementById('username') as HTMLInputElement | null;
 	const updateUsernameBtn = document.getElementById('update-username-btn') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
@@ -58,8 +57,6 @@ export function renderAccountTab() {
 			if (data.twoFactorEnabled !== undefined) {
 				update2FAStatus(data.twoFactorEnabled);
 			}
-			// const avatarUrl = `${data.avatar}?t=${Date.now()}`;
-			document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
 			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
@@ -73,33 +70,11 @@ export function renderAccountTab() {
 
 			// document.getElementById('wins-count')!.textContent = data.wins;
 			// document.getElementById('losses-count')!.textContent = data.losses;
-			document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
-			
+			// document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
 			
 		})
 		.catch(err => console.error('Error loading profile:', err));
 
-	avatarInput?.addEventListener('change', async () => {
-		const file = avatarInput.files?.[0];
-		if (!file) return;
-
-		const reader = new FileReader();
-		reader.onload = () => {
-			(document.getElementById('avatar-preview') as HTMLImageElement).src = reader.result as string;
-		};
-		reader.readAsDataURL(file);
-
-		const formData = new FormData();
-		formData.append('file', file);
-
-		const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
-			method: 'POST',
-			credentials: 'include', 
-			body: formData
-		});
-		const result = await res.json();
-		if (!result.success) alert('Avatar upload failed');
-	});
 
 	updateUsernameBtn?.addEventListener('click', async () => {
 		const username = usernameInput?.value.trim();
@@ -125,6 +100,8 @@ export function renderAccountTab() {
 		// else alert(result.error || 'Failed to update');
 	});
 
+
+	//AAAAAAAAAAAAAAAAAA
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
 		const password = (document.getElementById('password') as HTMLInputElement).value;
 		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;

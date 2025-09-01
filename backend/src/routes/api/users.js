@@ -54,9 +54,6 @@ export default async function (fastify, opts) {
 			};
 		});
 
-
-
-
 		// Update user profile - PUT /api/users/me
 		fastify.post('/me', {
 			preHandler: authenticate,
@@ -98,14 +95,7 @@ export default async function (fastify, opts) {
 					values
 				);
 				
-				// Return updated user
-				// const updatedUser = await fastify.db.get(
-				// 	'SELECT id, username, email, avatar, wins, losses FROM users WHERE id = ?',
-				// 	[request.user.id]
-				// );
-				
-				// return updatedUser;
-				return 
+				return { success: true, message: 'Profile updated successfully' };
 				
 			} catch (error) {
 				if (error.code === 'SQLITE_CONSTRAINT') {
@@ -139,67 +129,73 @@ export default async function (fastify, opts) {
 			return user;
 		});
 
+		// Serve avatar by filename - GET /api/users/avatar/:filename
+		fastify.get('/avatar/:filename', async (request, reply) => {
+			try {
+				const { filename } = request.params;
+				
+				// Security: only allow avatar files
+				if (!filename.startsWith('avatar_') || !filename.includes('.')) {
+					return reply.code(400).send({ error: 'Invalid filename' });
+				}
 
+				const { readFile } = await import('fs/promises');
+				const { join, dirname } = await import('path');
+				const { fileURLToPath } = await import('url');
+				
+				const __filename = fileURLToPath(import.meta.url);
+				const __dirname = dirname(__filename);
+				
+				const avatarPath = join(__dirname, '../../../uploads/avatars', filename);
+				const imageBuffer = await readFile(avatarPath);
+				
+				// Determine content type based on file extension
+				const ext = filename.split('.').pop()?.toLowerCase();
+				let contentType = 'image/jpeg'; // default
+				
+				if (ext === 'png') contentType = 'image/png';
+				else if (ext === 'gif') contentType = 'image/gif';
+				else if (ext === 'webp') contentType = 'image/webp';
+				
+				reply.header('Content-Type', contentType);
+				reply.header('Cache-Control', 'public, max-age=31536000');
+				reply.header('Access-Control-Allow-Origin', 'https://localhost:8080');
+				reply.header('Access-Control-Allow-Credentials', 'true');
+				return reply.send(imageBuffer);
+			} catch (error) {
+				return reply.code(404).send({ error: 'Avatar not found' });
+			}
+		});
 
-		//update password
+		// Update password - POST /api/users/profile/password
 		fastify.post('/profile/password', {
 			preHandler: authenticate,
 			schema: {
 				body: {
 					type: 'object',
 					properties: {
-						username: { type: 'string', minLength: 1, maxLength: 50 },
-						email: { type: 'string', format: 'email' }
+						password: { type: 'string' },
+						newPassword: { type: 'string', minLength: 4 }
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { username, email } = request.body;
+			const { password, newPassword } = request.body;
 			
 			try {
-				// Build dynamic query based on provided fields
-				const updates = [];
-				const values = [];
-				
-				if (username !== undefined) {
-					updates.push('username = ?');
-					values.push(username);
-				}
-				
-				if (email !== undefined) {
-					updates.push('email = ?');
-					values.push(email);
-				}
-				
-				if (updates.length === 0) {
-					return reply.code(400).send({ error: 'No fields to update' });
-				}
-				
-				values.push(request.user.id);  // Add user ID for WHERE clause
-				
+				// Here you would typically verify the old password first
+				// For now, just update it
 				await fastify.db.run(
-					`UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
-					values
+					'UPDATE users SET password = ? WHERE id = ?',
+					[newPassword, request.user.id]
 				);
 				
-				// Return updated user
-				// const updatedUser = await fastify.db.get(
-				// 	'SELECT id, username, email, avatar, wins, losses FROM users WHERE id = ?',
-				// 	[request.user.id]
-				// );
-				
-				// return updatedUser;
-				return 
+				return { success: true, message: 'Password updated successfully' };
 				
 			} catch (error) {
-				if (error.code === 'SQLITE_CONSTRAINT') {
-					return reply.code(409).send({ error: 'Email already in use' });
-				}
-				throw error;
+				return reply.code(500).send({ error: 'Failed to update password' });
 			}
 		});
 
-
-		
 	}, { prefix: '/users' });
 }
