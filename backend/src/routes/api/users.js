@@ -173,9 +173,10 @@ export default async function (fastify, opts) {
 			schema: {
 				body: {
 					type: 'object',
+					required: ['password', 'newPassword'],
 					properties: {
-						password: { type: 'string' },
-						newPassword: { type: 'string', minLength: 4 }
+						password: { type: 'string', minLength: 1 },
+						newPassword: { type: 'string', minLength: 6 }
 					}
 				}
 			}
@@ -183,16 +184,45 @@ export default async function (fastify, opts) {
 			const { password, newPassword } = request.body;
 			
 			try {
-				// Here you would typically verify the old password first
-				// For now, just update it
+				// First, verify the current password
+				const currentUser = await fastify.db.get(
+					'SELECT password FROM users WHERE id = ?',
+					[request.user.id]
+				);
+				
+				if (!currentUser) {
+					return reply.code(404).send({ error: 'User not found' });
+				}
+				
+				// Import bcrypt for password comparison
+				const bcrypt = await import('bcrypt');
+				
+				// Verify current password using bcrypt
+				const isPasswordValid = await bcrypt.compare(password, currentUser.password);
+				if (!isPasswordValid) {
+					return reply.code(400).send({ error: 'Current password is incorrect' });
+				}
+				
+				if (password === newPassword) {
+					return reply.code(400).send({ error: 'New password must be different from current password' });
+				}
+				
+				// Hash the new password
+				const hashedNewPassword = await bcrypt.hash(
+					newPassword, 
+					10 // Use 10 rounds for bcrypt
+				);
+				
+				// Update the password with the hashed version
 				await fastify.db.run(
 					'UPDATE users SET password = ? WHERE id = ?',
-					[newPassword, request.user.id]
+					[hashedNewPassword, request.user.id]
 				);
 				
 				return { success: true, message: 'Password updated successfully' };
 				
 			} catch (error) {
+				console.error('Password update error:', error);
 				return reply.code(500).send({ error: 'Failed to update password' });
 			}
 		});
