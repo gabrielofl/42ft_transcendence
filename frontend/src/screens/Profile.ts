@@ -1,101 +1,24 @@
 // import Chart from '@toast-ui/chart';
 // import '@toast-ui/chart/dist/toastui-chart.min.css';
-
-// import {CategoryScale, Chart, LinearScale, LineController, LineElement, PointElement} from 'chart.js';
-import Chart from 'chart.js/auto'
+// import Chart from 'chart.js/auto'
 import sidebar from "../components/profile-sidebar.html?raw";
 import { apiService } from '../services/api.js';
 
 import profileAccount from "./profile-account.html?raw";
-import profileMatchHistory from "./profile-match-history.html?raw";
+import { setupHistoryTab } from "./ProfileHistory";
 import profilePerformance from "./profile-performance.html?raw";
+import setupFriendModal from './modal-friends.html?raw';
 
 import { setupProfileSidebar } from '../components/profile-sidebar';
 import { AppStore } from '../redux/AppStore';
 import { updateLangue } from '../redux/reducers/langueReducer';
-
-// const API_BASE_URL = 'https://localhost:4444/api'; Work on cluster
-const API_BASE_URL = 'https://localhost:443/api';
-
-// to replace vars on html injected. Check to include once.
-export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
-return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
-}
+import { replaceTemplatePlaceholders } from "./utils";
+import { API_BASE_URL } from "./config";
+// const API_BASE_URL = 'https://localhost:4444/api'; //Work on cluster
+// const API_BASE_URL = 'https://localhost:443/api';
 
 
-export function renderHistoryTab(matches: any[] = [], loading = false): string {
-
-	const rendered = replaceTemplatePlaceholders(profileMatchHistory, {API_BASE_URL});
-	return rendered;
-}
-
-// export function renderHistoryTab(matches: any[] = [], loading = false): string {
-// 	if (loading) {
-// 		return `<p class="text-xs text-gray-400">Loading match history...</p>`;
-// 	}
-
-// 	if (!matches.length) {
-// 		return `<p class="text-gray-400">No recent matches found.</p>`;
-// 	}
-
-// 	return `
-// 		<h2 class="text-xs font-semibold mb-4">Recent Matches</h2>
-// 		<div class="overflow-y-auto max-h-[60vh] pr-2">
-// 		<ul class="space-y-3">
-// 			${matches.map(m => {
-// 				const date = new Date(m.created_at).toLocaleString();
-// 				const winner =
-// 					m.winner_id === null
-// 						? 'Draw'
-// 						: m.winner_id === 'AI'
-// 						? 'AI'
-// 						: m.winner_id === m.player1_id
-// 						? m.player1_name
-// 						: m.player2_name ?? 'Unknown';
-
-// 				return `
-// 					<li class="p-3 btn-vs  shadow">
-// 						<div class="text-xs text-gray-400">${m.match_type.toUpperCase()} • ${date}</div>
-// 						<div class="font-semibold">${m.player1_name ?? 'Unknown'} vs ${m.player2_name ?? 'AI / Local'}</div>
-// 						<div class="text-green-400">Winner: ${winner}</div>
-// 					</li>
-// 				`;
-// 			}).join('')}
-// 		</ul>
-// 		</div>
-// 	`;
-// }
-
-export async function setupHistoryTab() {
-	const container = document.getElementById('profile-content');
-	if (!container) return;
-
-	container.innerHTML = renderHistoryTab([]);
-
-	try {
-		// const res = await fetch(`${API_BASE_URL}/profile/match-history`, {
-			// 	credentials: 'include',
-			// });
-			
-		// const res = await fetch(`${API_BASE_URL}/users/me`, {
-		// 	credentials: 'include',
-		// 	headers: {
-		// 		'Authorization': `Bearer ${localStorage.getItem('token')}`
-		// 		}
-		// })
-
-		// if (!res.ok) throw new Error(await res.text());
-
-		// const data = await res.json();
-		container.innerHTML = renderHistoryTab([]);
-
-	} catch (err) {
-		console.error('Failed to load match history:', err);
-		container.innerHTML = `<p class="text-red-500">Failed to load match history.</p>`;
-	}
-}
-
-  export function renderAccountTab() {
+export function renderAccountTab() {
 
 		const container = document.getElementById('profile-content');
 		if (!container) return ;

@@ -24,6 +24,39 @@ export default async function (fastify, opts) {
 			};
 		});
 		
+		// Get user profile by username - GET /api/users/username?username=...
+		fastify.get('/username', {
+			preHandler: authenticate  // Require authentication
+		}, async (request, reply) => {
+
+			console.log('Query params:', request.query);
+			const { username } = request.query;
+  			console.log('Username received:', username);
+			if (!username) {
+				return reply.code(400).send({ error: 'Username is required' });
+			}
+
+			// Get user data from database
+			const user = await fastify.db.get(
+				`SELECT id, first_name, last_name, username, email, display_name, avatar, wins, losses, online, two_factor_enabled, last_login 
+				FROM users 
+				WHERE username = ?`,
+				[username]
+			);
+
+			if (!user) {
+				return reply.code(404).send({ error: 'User not found' });
+			}
+
+			return {
+				...user,
+				twoFactorEnabled: !!user.two_factor_enabled
+			};
+		});
+
+
+
+
 		// Update user profile - PUT /api/users/me
 		fastify.post('/me', {
 			preHandler: authenticate,
