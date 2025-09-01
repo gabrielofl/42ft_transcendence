@@ -138,6 +138,68 @@ export default async function (fastify, opts) {
 			
 			return user;
 		});
+
+
+
+		//update password
+		fastify.post('/profile/password', {
+			preHandler: authenticate,
+			schema: {
+				body: {
+					type: 'object',
+					properties: {
+						username: { type: 'string', minLength: 1, maxLength: 50 },
+						email: { type: 'string', format: 'email' }
+					}
+				}
+			}
+		}, async (request, reply) => {
+			const { username, email } = request.body;
+			
+			try {
+				// Build dynamic query based on provided fields
+				const updates = [];
+				const values = [];
+				
+				if (username !== undefined) {
+					updates.push('username = ?');
+					values.push(username);
+				}
+				
+				if (email !== undefined) {
+					updates.push('email = ?');
+					values.push(email);
+				}
+				
+				if (updates.length === 0) {
+					return reply.code(400).send({ error: 'No fields to update' });
+				}
+				
+				values.push(request.user.id);  // Add user ID for WHERE clause
+				
+				await fastify.db.run(
+					`UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+					values
+				);
+				
+				// Return updated user
+				// const updatedUser = await fastify.db.get(
+				// 	'SELECT id, username, email, avatar, wins, losses FROM users WHERE id = ?',
+				// 	[request.user.id]
+				// );
+				
+				// return updatedUser;
+				return 
+				
+			} catch (error) {
+				if (error.code === 'SQLITE_CONSTRAINT') {
+					return reply.code(409).send({ error: 'Email already in use' });
+				}
+				throw error;
+			}
+		});
+
+
 		
 	}, { prefix: '/users' });
 }

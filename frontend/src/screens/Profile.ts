@@ -128,7 +128,7 @@ export function renderAccountTab() {
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
 		const password = (document.getElementById('password') as HTMLInputElement).value;
 		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
-		const rePassword = (document.getElementById('re-password') as HTMLInputElement).value;
+		// const rePassword = (document.getElementById('re-password') as HTMLInputElement).value;
 		if (newPassword.length < 4) return alert('Password too short');
 
 		// const currentPassword = prompt('Enter current password:');
@@ -140,7 +140,7 @@ export function renderAccountTab() {
 				'Content-Type': 'application/json',
 			},
 			credentials: 'include', 
-			body: JSON.stringify({ currentPassword, newPassword }),
+			body: JSON.stringify({ password, newPassword }),
 		});
 		const result = await res.json();
 		if (result.success) alert('Password changed!');
@@ -667,7 +667,7 @@ const main = document.getElementById('main');
 	// setupProfile('alice', false);
 	setupProfileSidebar();
 	setTimeout(() => {
-    document.querySelector('[data-tab="history"]')?.dispatchEvent(new Event('click'));
+    document.querySelector('[data-tab="account"]')?.dispatchEvent(new Event('click'));
   	}, 0);
 
 }
