@@ -7,12 +7,12 @@ export const API_BASE_URL = "https://localhost:4444"; //Work on cluster
 // export const API_BASE_URL = "https://localhost:443";
 
 document.addEventListener('DOMContentLoaded', () => {
-	// Check if user is already authenticated
+	// Initialize navigation system
 	initNavigation();
 
-	if (apiService.isAuthenticated()) {
-		navigateTo('home');
-	} else {
+	// Only redirect to login if not authenticated
+	if (!apiService.isAuthenticated()) {
 		navigateTo('login');
 	}
+	// If authenticated, let initNavigation() handle the current URL hash
 });
