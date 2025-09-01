@@ -57,10 +57,10 @@ function renderScreen(screen: Screen) {
 
   switch (screen) {
     case "login":
-    //   renderProfile();
-      renderAuthContainer();
-      break;
-    case "home":
+		renderAuthContainer();
+		break;
+	case "home":
+	//   renderProfile();
       renderHome();
       break;
     case "game":
