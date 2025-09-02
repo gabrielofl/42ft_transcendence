@@ -183,7 +183,7 @@ export function setupAccountTab() {
 		// const currentPassword = prompt('Enter current password:');
 		// if (!currentPassword) return;
 
-		const res = await fetch(`${API_BASE_URL}/profile/password`, {
+		const res = await fetch(`${API_BASE_URL}/users/profile/password`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

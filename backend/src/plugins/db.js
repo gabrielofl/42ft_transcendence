@@ -41,6 +41,10 @@ async function databasePlugin(fastify, opts) {
 			losses       INTEGER  DEFAULT 0,
 			two_factor_secret  TEXT,							-- TOTP secret key
     		two_factor_enabled INTEGER  DEFAULT 0,				-- 0 = disabled, 1 = enabled
+			allow_data_collection    INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
+			allow_data_processing    INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
+			allow_ai_training        INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
+			show_scores_publicly     INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
 			created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,	-- Auto-set on insert
 			updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP		-- Should update on change
 		);

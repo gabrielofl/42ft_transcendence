@@ -113,7 +113,7 @@ export function setupAccountTab() {
 				'Authorization': `Bearer ${localStorage.getItem('token')}`
 			},
 			credentials: 'include', 
-			body: JSON.stringify({ name, lastname }),
+			body: JSON.stringify({ firstName: name, lastName: lastname }),
 		});
 
 		if (!res.ok)
@@ -202,7 +202,7 @@ export function setupAccountTab() {
 		// const currentPassword = prompt('Enter current password:');
 		// if (!currentPassword) return;
 
-		const res = await fetch(`${API_BASE_URL}/profile/password`, {
+		const res = await fetch(`${API_BASE_URL}/users/profile/password`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

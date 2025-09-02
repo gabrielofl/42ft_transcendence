@@ -62,12 +62,14 @@ export default async function (fastify, opts) {
 					type: 'object',
 					properties: {
 						username: { type: 'string', minLength: 1, maxLength: 50 },
-						email: { type: 'string', format: 'email' }
+						email: { type: 'string', format: 'email' },
+						firstName: { type: 'string', minLength: 1, maxLength: 50 },
+						lastName: { type: 'string', minLength: 1, maxLength: 50 }
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { username, email } = request.body;
+			const { username, email, firstName, lastName } = request.body;
 			
 			try {
 				// Build dynamic query based on provided fields
@@ -82,6 +84,16 @@ export default async function (fastify, opts) {
 				if (email !== undefined) {
 					updates.push('email = ?');
 					values.push(email);
+				}
+				
+				if (firstName !== undefined) {
+					updates.push('first_name = ?');
+					values.push(firstName);
+				}
+				
+				if (lastName !== undefined) {
+					updates.push('last_name = ?');
+					values.push(lastName);
 				}
 				
 				if (updates.length === 0) {
@@ -99,9 +111,10 @@ export default async function (fastify, opts) {
 				
 			} catch (error) {
 				if (error.code === 'SQLITE_CONSTRAINT') {
-					return reply.code(409).send({ error: 'Email already in use' });
+					return reply.code(409).send({ error: 'Username or email already in use' });
 				}
-				throw error;
+				console.error('Profile update error:', error);
+				return reply.code(500).send({ error: 'Failed to update profile' });
 			}
 		});
 		
@@ -164,6 +177,150 @@ export default async function (fastify, opts) {
 				return reply.send(imageBuffer);
 			} catch (error) {
 				return reply.code(404).send({ error: 'Avatar not found' });
+			}
+		});
+
+		// Update GDPR privacy settings - POST /api/users/privacy-settings
+		fastify.post('/privacy-settings', {
+			preHandler: authenticate,
+			schema: {
+				body: {
+					type: 'object',
+					properties: {
+						allowDataCollection: { type: 'boolean' },
+						allowDataProcessing: { type: 'boolean' },
+						allowAiTraining: { type: 'boolean' },
+						showScoresPublicly: { type: 'boolean' }
+					}
+				}
+			}
+		}, async (request, reply) => {
+			const { allowDataCollection, allowDataProcessing, allowAiTraining, showScoresPublicly } = request.body;
+			
+			try {
+				// Build dynamic query based on provided fields
+				const updates = [];
+				const values = [];
+				
+				if (allowDataCollection !== undefined) {
+					updates.push('allow_data_collection = ?');
+					values.push(allowDataCollection ? 1 : 0);
+				}
+				
+				if (allowDataProcessing !== undefined) {
+					updates.push('allow_data_processing = ?');
+					values.push(allowDataProcessing ? 1 : 0);
+				}
+				
+				if (allowAiTraining !== undefined) {
+					updates.push('allow_ai_training = ?');
+					values.push(allowAiTraining ? 1 : 0);
+				}
+				
+				if (showScoresPublicly !== undefined) {
+					updates.push('show_scores_publicly = ?');
+					values.push(showScoresPublicly ? 1 : 0);
+				}
+				
+				if (updates.length === 0) {
+					return reply.code(400).send({ error: 'No privacy settings to update' });
+				}
+				
+				values.push(request.user.id);  // Add user ID for WHERE clause
+				
+				await fastify.db.run(
+					`UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+					values
+				);
+				
+				return { success: true, message: 'Privacy settings updated successfully' };
+				
+			} catch (error) {
+				console.error('Privacy settings update error:', error);
+				return reply.code(500).send({ error: 'Failed to update privacy settings' });
+			}
+		});
+
+		// Get GDPR privacy settings - GET /api/users/privacy-settings
+		fastify.get('/privacy-settings', {
+			preHandler: authenticate
+		}, async (request, reply) => {
+			try {
+				const user = await fastify.db.get(
+					'SELECT allow_data_collection, allow_data_processing, allow_ai_training, show_scores_publicly FROM users WHERE id = ?',
+					[request.user.id]
+				);
+				
+				if (!user) {
+					return reply.code(404).send({ error: 'User not found' });
+				}
+				
+				return {
+					allowDataCollection: !!user.allow_data_collection,
+					allowDataProcessing: !!user.allow_data_processing,
+					allowAiTraining: !!user.allow_ai_training,
+					showScoresPublicly: !!user.show_scores_publicly
+				};
+				
+			} catch (error) {
+				console.error('Privacy settings fetch error:', error);
+				return reply.code(500).send({ error: 'Failed to fetch privacy settings' });
+			}
+		});
+
+		// Export user data - GET /api/users/export
+		fastify.get('/export', {
+			preHandler: authenticate
+		}, async (request, reply) => {
+			try {
+				// Fetch user core profile
+				const user = await fastify.db.get(
+					`SELECT id, first_name, last_name, username, email, display_name, avatar, wins, losses, online,
+						last_login, created_at, updated_at,
+						COALESCE(allow_data_collection, 1) AS allow_data_collection,
+						COALESCE(allow_data_processing, 1) AS allow_data_processing,
+						COALESCE(allow_ai_training, 1) AS allow_ai_training,
+						COALESCE(show_scores_publicly, 1) AS show_scores_publicly
+					FROM users WHERE id = ?`,
+					[request.user.id]
+				);
+
+				if (!user) {
+					return reply.code(404).send({ error: 'User not found' });
+				}
+
+				const exportPayload = {
+					generatedAt: new Date().toISOString(),
+					user: {
+						id: user.id,
+						firstName: user.first_name,
+						lastName: user.last_name,
+						username: user.username,
+						email: user.email,
+						displayName: user.display_name,
+						avatar: user.avatar,
+						wins: user.wins,
+						losses: user.losses,
+						online: !!user.online,
+						lastLogin: user.last_login,
+						createdAt: user.created_at,
+						updatedAt: user.updated_at
+					},
+					privacy: {
+						allowDataCollection: !!user.allow_data_collection,
+						allowDataProcessing: !!user.allow_data_processing,
+						allowAiTraining: !!user.allow_ai_training,
+						showScoresPublicly: !!user.show_scores_publicly
+					},
+				};
+
+				const fileName = `account-export-${user.username}-${new Date().toISOString().split('T')[0]}.json`;
+				reply.header('Content-Type', 'application/json');
+				reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
+				return reply.send(JSON.stringify(exportPayload, null, 2));
+			} catch (error) {
+				fastify.log.error(error, 'Export user data failed');
+				return reply.code(500).send({ error: 'Failed to export user data' });
 			}
 		});
 
