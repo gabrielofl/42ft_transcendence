@@ -2,6 +2,9 @@
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// To read certificates
+import fs from 'fs';
+
 // Import Fastify plugins
 import autoLoad from '@fastify/autoload';    // Auto-load plugins/routes
 import fastifyStatic from '@fastify/static';  // Serve static files
@@ -18,13 +21,24 @@ import registerWebsocket from './websocket/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const httpsOptions = {
+  key: fs.readFileSync(join(__dirname, '../certs', 'localhost.key')),  // path to your key
+  cert: fs.readFileSync(join(__dirname, '../certs', 'localhost.crt')) // path to your CA-signed cert
+};
+
+
 // Main function that builds the app
 export async function buildApp(opts = {}) {
 	// Create Fastify instance (or use provided one)
+	// const app = opts.fastify || (await import('fastify')).default({
+	// 	logger: opts.logger ?? true,     // Enable logging
+	// 	trustProxy: true,                // Trust X-Forwarded headers
+	// 	https: opts.https,               // HTTPS configuration
+	// });
 	const app = opts.fastify || (await import('fastify')).default({
-		logger: opts.logger ?? true,     // Enable logging
-		trustProxy: true,                // Trust X-Forwarded headers
-		https: opts.https,               // HTTPS configuration
+	logger: opts.logger ?? true,
+	trustProxy: true,
+	https: httpsOptions,   // <-- use your signed certificate
 	});
 
 	// STEP 1: Load our custom plugins (config, database)
@@ -36,24 +50,23 @@ export async function buildApp(opts = {}) {
 
 	// STEP 2: Register core plugins (order matters!)
 	
-	// CORS - Control which websites can access our API
-	// await app.register(fastifyCors, app.config.cors);
-	// CORS - allow frontend at 8080 to access backend at 4444
-	await app.register(fastifyCors, (instance) => {
+// CORS - Control which websites can access our API
+// await app.register(fastifyCors, app.config.cors);
+// CORS - allow frontend at 8080 to access backend at 4444
+await app.register(fastifyCors, (instance) => {
   return (req, callback) => {
-    let corsOptions;
+    const origin = 'https://localhost:8080'; // your frontend SPA
 
-    // Default: APIs need credentials
-    corsOptions = {
-      origin: 'https://localhost:8080',
-      credentials: true,
+    let corsOptions = {
+      origin,
+      credentials: true, // allow cookies (needed for login, register, etc.)
     };
 
     // Special case: avatars don’t need credentials
     if (req.url.startsWith('/api/users/avatar/')) {
       corsOptions = {
-        origin: 'https://localhost:8080',
-        credentials: false,
+        origin,
+        credentials: false, // allow public image fetch without cookies
       };
     }
 

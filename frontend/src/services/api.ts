@@ -102,6 +102,7 @@ export class ApiService {
     
     const config: RequestInit = {
       ...options,
+	  mode: 'cors',             // Explicit for Firefox
       credentials: 'include', // Always include cookies
       headers
     };
