@@ -94,7 +94,7 @@ export function setupProfileSidebar() {
 		  break;
 		default:
 		  renderAccountTab();
-		  setupAccountTab();
+		//   setupAccountTab();
 		  break;
 	  }
 	});

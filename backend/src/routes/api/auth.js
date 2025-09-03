@@ -155,7 +155,6 @@ export default async function (fastify, opts) {
 					id: user.id,
 					username: user.username,
 					email: user.email,
-					display_name: user.display_name,
 					avatar: user.avatar,
 					wins: user.wins,
 					losses: user.losses,
@@ -388,7 +387,7 @@ export default async function (fastify, opts) {
 					}
 
 					const result = await fastify.db.run(
-						'INSERT INTO users (google_id, email, username, display_name, avatar, first_name, last_name, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+						'INSERT INTO users (google_id, email, username, avatar, first_name, last_name, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
 						[googleId, email, username, name, picture, firstName, lastName, 'GOOGLE_USER']
 					);
 
@@ -397,7 +396,6 @@ export default async function (fastify, opts) {
 						google_id: googleId,
 						email,
 						username: username,
-						display_name: name,
 						avatar: picture,
 						first_name: firstName,
 						last_name: lastName,
@@ -457,7 +455,6 @@ export default async function (fastify, opts) {
 						id: user.id,
 						username: user.username || user.email,
 						email: user.email,
-						display_name: user.display_name,
 						avatar: user.avatar,
 						wins: user.wins,
 						losses: user.losses,
@@ -668,7 +665,7 @@ export default async function (fastify, opts) {
 			preHandler: authenticate
 		}, async (request, reply) => {
 			const user = await fastify.db.get(
-				'SELECT id, username, email, display_name, avatar, wins, losses, two_factor_enabled FROM users WHERE id = ?',
+				'SELECT id, username, email, avatar, wins, losses, two_factor_enabled FROM users WHERE id = ?',
 				[request.user.id]
 			);
 			

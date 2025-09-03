@@ -7,13 +7,13 @@ export function renderAccountTab() {
 
 	const container = document.getElementById('profile-content');
 	if (!container) return ;
-  	try {
+	try {
 		container.innerHTML = replaceTemplatePlaceholders(profileAccount, {API_BASE_URL});
 		setupAccountTab();
 	} catch (err) {
-    console.error("Failed to load account:", err);
-    container.innerHTML = `<p class="text-red-500">Failed to load account tab.</p>`;
-  	}
+	console.error("Failed to load account:", err);
+	container.innerHTML = `<p class="text-red-500">Failed to load account tab.</p>`;
+	}
   }
 
 
@@ -45,26 +45,31 @@ export function setupAccountTab() {
 			profileName.textContent = data.first_name + ' ' + data.last_name;
 			profileUsername.textContent = '@' + data.username;
 			
-			// Update 2FA status if available
-			if (data.twoFactorEnabled !== undefined) {
-				update2FAStatus(data.twoFactorEnabled);
+			
+			// Avatar
+			if (data.avatar) {
+				const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
+				(document.getElementById('avatar-preview') as HTMLImageElement).src = avatarUrl;
 			}
-			document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
+			
+			// document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
 			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
 			document.getElementById('email')?.setAttribute('placeholder', data.email);
+
+			
+			
+			// Update 2FA status if available
+			if (data.twoFactorEnabled !== undefined) {
+				update2FAStatus(data.twoFactorEnabled);
+			}
 
 			// if (isGoogle) {
 			// 	googleIndicator?.classList.remove('hidden');
 			// 	passwordSection?.classList.add('hidden');
 			// }
 
-
-			// document.getElementById('wins-count')!.textContent = data.wins;
-			// document.getElementById('losses-count')!.textContent = data.losses;
-			// document.getElementById('last-login')!.textContent = new Date(data.last_login).toLocaleString();
-			
 			
 		})
 		.catch(err => console.error('Error loading profile:', err));

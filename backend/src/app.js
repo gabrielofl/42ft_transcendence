@@ -37,13 +37,30 @@ export async function buildApp(opts = {}) {
 	// STEP 2: Register core plugins (order matters!)
 	
 	// CORS - Control which websites can access our API
-	await app.register(fastifyCors, app.config.cors);
-	
-	// Helmet - Adds security headers
-	// Development
-	await app.register(fastifyHelmet, {
-		contentSecurityPolicy: false,  // Disable for development
-	});
+	// await app.register(fastifyCors, app.config.cors);
+	// CORS - allow frontend at 8080 to access backend at 4444
+	await app.register(fastifyCors, (instance) => {
+  return (req, callback) => {
+    let corsOptions;
+
+    // Default: APIs need credentials
+    corsOptions = {
+      origin: 'https://localhost:8080',
+      credentials: true,
+    };
+
+    // Special case: avatars don’t need credentials
+    if (req.url.startsWith('/api/users/avatar/')) {
+      corsOptions = {
+        origin: 'https://localhost:8080',
+        credentials: false,
+      };
+    }
+
+    callback(null, corsOptions);
+  };
+});
+
 
 	// Production
 	// await app.register(fastifyHelmet, {
