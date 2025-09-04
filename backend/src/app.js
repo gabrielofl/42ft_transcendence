@@ -38,7 +38,8 @@ export async function buildApp(opts = {}) {
 	const app = opts.fastify || (await import('fastify')).default({
 	logger: opts.logger ?? true,
 	trustProxy: true,
-	https: httpsOptions,   // <-- use your signed certificate
+	https:  opts.https,   // <-- use your signed certificate
+	// https: httpsOptions,   // <-- use your signed certificate
 	});
 
 	// STEP 1: Load our custom plugins (config, database)
