@@ -27,6 +27,7 @@ export function setupAccountTab() {
 	const updateUsernameBtn = document.getElementById('update-username-btn') as HTMLButtonElement | null;
 	const emailInput = document.getElementById('email') as HTMLInputElement | null;
 	const updateEmailBtn = document.getElementById('update-email-btn') as HTMLButtonElement | null;
+	const downloadDataBtn = document.getElementById('download-data') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordGoogleIndicator = document.getElementById('password-section-google');
 	const passwordSection = document.getElementById('password-section');
@@ -41,11 +42,17 @@ export function setupAccountTab() {
 		.then(data => {
 			const profileUsername = document.getElementById('profile-username');
 			const profileName = document.getElementById('profile-display-name');
-			if (!profileUsername || !profileName) return;
+			const profileScore = document.getElementById('profile-score');
+			const dataCollection = document.getElementById('data-collection-toggle') as HTMLInputElement;
+			const dataProcessing = document.getElementById('data-processing-toggle') as HTMLInputElement;
+			const dataAiUse = document.getElementById('data-ai-use-toggle') as HTMLInputElement;
+			const dataScore = document.getElementById('data-score-toggle') as HTMLInputElement;
+
+			if (!profileUsername || !profileName || !profileScore) return;
 			
 			profileName.textContent = data.first_name + ' ' + data.last_name;
 			profileUsername.textContent = '@' + data.username;
-			
+			profileScore.textContent = data.score ? `${data.score} pts` : `0 pts`;
 			
 			// Avatar
 			if (data.avatar) {
@@ -57,9 +64,49 @@ export function setupAccountTab() {
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
 			document.getElementById('email')?.setAttribute('placeholder', data.email);
+			
+			// Update checkboxes
+			dataCollection.checked = data.allow_data_collection;
+			dataProcessing.checked = data.allow_data_processing;
+			dataAiUse.checked = data.allow_ai_training;
+			dataScore.checked = data.show_scores_publicly;
+			
+			// === Add listeners for changes ===
+			[dataCollection, dataProcessing, dataAiUse, dataScore].forEach(cb => {
+			cb.addEventListener('change', async () => {
+				const res = await fetch(`${API_BASE_URL}/users/privacy-settings`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${localStorage.getItem('token')}`
+				},
+				credentials: 'include',
+				body: JSON.stringify({
+					allowDataCollection: dataCollection.checked,
+					allowDataProcessing: dataProcessing.checked,
+					allowAiTraining: dataAiUse.checked,
+					showScoresPublicly: dataScore.checked
+				})
+				});
 
-			
-			
+				let result;
+				try {
+				result = await res.json();
+				} catch {
+				result = {};
+				}
+
+				if (!res.ok || !result.success) {
+				alert(result.error || 'Failed to update privacy settings');
+				// rollback UI if update failed
+				cb.checked = !cb.checked;
+				} else {
+				console.log(result.message);
+				}
+			});
+			});
+
+
 			// Update 2FA status if available
 			if (data.twoFactorEnabled !== undefined) {
 				update2FAStatus(data.twoFactorEnabled);
@@ -198,7 +245,6 @@ export function setupAccountTab() {
 		else alert(result.error || 'Failed to update');
 	});
 
-
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
 		const password = (document.getElementById('password') as HTMLInputElement).value;
 		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
@@ -228,6 +274,81 @@ export function setupAccountTab() {
 		else alert(result.error || 'Failed to update password');
 	});
 
+	
+		// Download data button
+	downloadDataBtn?.addEventListener('click', async () => {
+
+		
+	fetch(`${API_BASE_URL}/users/me`, {
+		credentials: 'include',
+		headers: {
+			'Authorization': `Bearer ${localStorage.getItem('token')}`
+		}
+	})
+	
+	.then(res => res.json())
+		.then(data => {
+			
+			
+			// Avatar
+			if (data.avatar) {
+				const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
+				(document.getElementById('avatar-preview') as HTMLImageElement).src = avatarUrl;
+			}
+			
+			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
+			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
+			document.getElementById('username')?.setAttribute('placeholder', data.username);
+			document.getElementById('email')?.setAttribute('placeholder', data.email);
+
+			
+			const codesText = `Profile data downladed: ${new Date().toLocaleString()}
+<<< Personal data  >>>
+Name: ${data.first_name}
+Last Name: ${data.last_name}
+Username: ${data.username}
+Email: ${data.email}
+
+<<<  Statistics  >>>
+Win: ${data.wins}
+Losses: ${data.losses}
+Score: ${data.score}
+Matches: ${data.matches}
+Profile created: ${data.created_at}
+			`;
+
+								const blob = new Blob([codesText], { type: 'text/plain' });
+								const url = URL.createObjectURL(blob);
+								const a = document.createElement('a');
+								a.href = url;
+								a.download = `Profile-Data-${data.username}_${new Date().toISOString().split('T')[0]}.txt`;
+								document.body.appendChild(a);
+								a.click();
+								document.body.removeChild(a);
+								URL.revokeObjectURL(url);
+
+								// Update button to show success
+								const btn = document.getElementById('download-data');
+								const originalText = btn?.textContent;
+								if (btn) {
+									btn.textContent = 'Downloaded!';
+									btn.className = 'btn-success w-full';
+									setTimeout(() => {
+										btn.textContent = originalText;
+										btn.className = 'btn-primary w-full';
+									}, 2000);
+								}
+
+			
+		})
+		.catch(err => console.error('Error loading profile:', err));
+		
+		
+	});
+
+
+	
+	
 	// 2FA Event Listeners
 	document.getElementById('setup-2fa-btn')?.addEventListener('click', async () => {
 		try {
