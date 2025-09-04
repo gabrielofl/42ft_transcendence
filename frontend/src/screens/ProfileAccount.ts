@@ -28,6 +28,7 @@ export function setupAccountTab() {
 	const emailInput = document.getElementById('email') as HTMLInputElement | null;
 	const updateEmailBtn = document.getElementById('update-email-btn') as HTMLButtonElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
+	const passwordGoogleIndicator = document.getElementById('password-section-google');
 	const passwordSection = document.getElementById('password-section');
 
 	fetch(`${API_BASE_URL}/users/me`, {
@@ -52,7 +53,6 @@ export function setupAccountTab() {
 				(document.getElementById('avatar-preview') as HTMLImageElement).src = avatarUrl;
 			}
 			
-			// document.getElementById('avatar-preview')?.setAttribute('src', data.avatar);
 			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
@@ -65,10 +65,11 @@ export function setupAccountTab() {
 				update2FAStatus(data.twoFactorEnabled);
 			}
 
-			// if (isGoogle) {
-			// 	googleIndicator?.classList.remove('hidden');
-			// 	passwordSection?.classList.add('hidden');
-			// }
+			if (data.google_id) {
+				googleIndicator?.classList.remove('hidden');
+				passwordGoogleIndicator?.classList.remove('hidden');
+				passwordSection?.classList.add('hidden');
+			}
 
 			
 		})
@@ -421,6 +422,39 @@ Do NOT share these codes with anyone.`;
 	});
 }
 
+
+
+// API service interface for 2FA operations
+interface ApiService {
+  setup2FA(): Promise<any>;
+  verify2FA(data: { token: string }): Promise<any>;
+}
+
+// Mock API service - replace with actual implementation
+const apiService: ApiService = {
+  setup2FA: async () => {
+	const response = await fetch(`${API_BASE_URL}/auth/2fa/setup`, {
+	  method: 'POST',
+	  credentials: 'include',
+	  headers: {
+		'Authorization': `Bearer ${localStorage.getItem('token')}`
+	  }
+	});
+	return response.json();
+  },
+  verify2FA: async (data: { token: string }) => {
+	const response = await fetch(`${API_BASE_URL}/auth/2fa/verify`, {
+	  method: 'POST',
+	  credentials: 'include',
+	  headers: {
+		'Content-Type': 'application/json',
+		'Authorization': `Bearer ${localStorage.getItem('token')}`
+	  },
+	  body: JSON.stringify(data)
+	});
+	return response.json();
+  }
+};
 
   
 // Helper function to update 2FA UI status

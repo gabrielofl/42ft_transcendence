@@ -101,26 +101,27 @@
 		</div> 
 
 		<hr class="h-px my-8 bg-secondary border-0">
-		<div class="grid grid-cols-1  align-middle gap-4">
-			<label for="password" class="txt-body-base color-primary">Actual Password</label>
-		</div> 
-		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<input id="password" type="password" placeholder="[old password]" autocomplete="off" class="w-full retro-input col-span-2"/>
-		</div> 
-		<div class="grid grid-cols-1  align-middle gap-4">
-			<label for="new-password" class="txt-body-base color-primary">New Password</label>
-		</div> 
-		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<input id="new-password" type="password" placeholder="[new password]" autocomplete="off" class="w-full retro-input col-span-2"/>		</div> 
-		<!-- <div class="grid grid-cols-1  align-middle gap-4">
-			<label for="re-password" class="txt-body-base color-primary">Confirm password</label>
-		</div>  -->
-		<!-- <div id="re-password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<input id="re-password" type="text" placeholder="[re-password]" autocomplete="off" class="w-full retro-input col-span-2"/>
-		</div>  -->
-		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<button id="update-password-btn" class="btn-primary w-full">update password</button>
-		</div> 
+		<label for="edit-account-header" class="block txt-body-base">Change password</label>
+		
+		<div id="password-section-google" class="grid grid-cols-1 grid-row-2 align-middle gap-4 hidden">
+			<div class="txt-body-base color-warning">You registered using a Google account.</div>
+		</div>
+		<div id="password-section" class="grid grid-cols-1  align-middle gap-4">
+			<div class="grid grid-cols-1  align-middle gap-4">
+				<label for="password" class="txt-body-base color-primary">Actual Password</label>
+			</div> 
+			<div class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+				<input id="password" type="password" placeholder="[old password]" autocomplete="off" class="w-full retro-input col-span-2"/>
+			</div> 
+			<div class="grid grid-cols-1  align-middle gap-4">
+				<label for="new-password" class="txt-body-base color-primary">New Password</label>
+			</div> 
+			<div class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+				<input id="new-password" type="password" placeholder="[new password]" autocomplete="off" class="w-full retro-input col-span-2"/>		</div> 
+			<div class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+				<button id="update-password-btn" class="btn-primary w-full">update password</button>
+			</div> 
+		</div>
 
 
 	</div>
