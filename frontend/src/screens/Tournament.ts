@@ -67,9 +67,9 @@ function endGameNav(roomId: string) {
 
 
 function setMatchState(key: string, next: keyof typeof STATE_ORDER): boolean {
-  const curr = (tournamentState.matchStates[key] as keyof typeof STATE_ORDER) ?? 'assigned';
+  const curr = (tournamentState.matchStates[key as MatchKey] as keyof typeof STATE_ORDER) ?? 'assigned';
   if (STATE_ORDER[next] >= STATE_ORDER[curr]) {
-    tournamentState.matchStates[key] = next;
+    tournamentState.matchStates[key as MatchKey] = next;
     return true;
   }
   return false;
@@ -124,16 +124,34 @@ function getDisplayName(userOrId: any) {
     : String(userOrId);
 }
 
-let tournamentState: {
-  status: string;
-  players: any[];
-  bracket: any[];
+type UserId = number;
+type PlayerSlot = UserId | null;
+type MatchKey = `${number}-${number}`;
+type TournamentStatus = 'idle' | 'waiting' | 'in_progress' | 'finished';
+type MatchState = 'assigned' | 'waiting' | 'playing' | 'finished';
+
+type Bracket = Array<Array<PlayerSlot>>;
+type ScoreMap = Partial<Record<UserId, number>>;
+
+interface TournamentState {
+  status: TournamentStatus;
+  players: UserId[];
+  bracket: Bracket;
   currentRoundIndex: number;
   matchIndex: number;
-  winner: any;
-  matchScores: { [key: string]: any };
-  matchStates: { [key: string]: any };
-} = {
+  winner: UserId | null;
+
+  matchScores: Record<MatchKey, ScoreMap>;
+  matchStates: Record<MatchKey, MatchState>;
+	
+  roomToKey: Record<string, MatchKey>;
+}
+
+const matchKey = (roundIndex: number, matchIndex: number) =>
+  `${roundIndex}-${matchIndex}` as MatchKey;
+
+
+let tournamentState: TournamentState = {
   status: 'idle',
   players: [],
   bracket: [],
@@ -142,6 +160,7 @@ let tournamentState: {
   winner: null,
   matchScores: {},
   matchStates: {},
+  roomToKey: {}
 };
 
 function send(obj: object, ws?: WebSocket) {
@@ -247,9 +266,9 @@ function onSocketMessage(evt: MessageEvent) {
 		rememberRoom(msg.roomId, roundIndex, matchIndex, msg.player1, msg.player2);
 
 		const key = `${roundIndex}-${matchIndex}`;
-		if (!tournamentState.matchStates[key] || tournamentState.matchStates[key] === 'assigned') {
-	tournamentState.matchStates[key] = 'waiting';
-	}
+		if (!tournamentState.matchStates[key as MatchKey] || tournamentState.matchStates[key as MatchKey] === 'assigned') {
+			tournamentState.matchStates[key as MatchKey] = 'waiting';
+		}
 	}
 	renderTournamentStage();
 	break;
@@ -281,9 +300,9 @@ function onSocketMessage(evt: MessageEvent) {
 	case 'game_start': {
 		const key = keyForRoom(msg.roomId);
 	if (key) {
-		if (tournamentState.matchStates[key] !== 'playing') {
-		tournamentState.matchStates[key] = 'playing';
-		renderTournamentStage();
+		if (tournamentState.matchStates[key as MatchKey] !== 'playing') {
+			tournamentState.matchStates[key as MatchKey] = 'playing';
+			renderTournamentStage();
 		}
 	}
 	break;
@@ -394,15 +413,16 @@ function onSocketMessage(evt: MessageEvent) {
 	const info = roomIndexById[msg.roomId];
 	if (!info) break;
 
-	const { p1, p2 } = info;
-	const s = msg.scores || {};
+	const { p1, p2 } = info as { p1: PlayerSlot; p2: PlayerSlot };
+	const s = (msg.scores || {}) as { player1?: number; player2?: number };
 
-	tournamentState.matchScores[key] = {
-		[p1]: s.player1 ?? 0,
-		[p2]: s.player2 ?? 0,
-	};
+	const scores: ScoreMap = {};
+	if (p1 != null) scores[p1] = s.player1 ?? 0;
+	if (p2 != null) scores[p2] = s.player2 ?? 0;
 
-	if (tournamentState.matchStates[key] !== 'finished') {
+	tournamentState.matchScores[key as MatchKey] = scores;
+
+	if (tournamentState.matchStates[key as MatchKey] !== 'finished') {
 		setMatchState(key, 'playing');
 	}
 	renderTournamentStage();
@@ -454,7 +474,7 @@ if (setMatchState(key, 'playing')) {
     const p1 = tournamentState.bracket[roundIndex][matchIndex * 2];
     const p2 = tournamentState.bracket[roundIndex][matchIndex * 2 + 1];
     const s = payload.scores || {};
-    tournamentState.matchScores[key] = { [p1]: s.player1 ?? 1, [p2]: s.player2 ?? 0 };
+    tournamentState.matchScores[key as MatchKey] = { [p1 as UserId]: s.player1 ?? 1, [p2 as UserId]: s.player2 ?? 0 };
     setMatchState(key, 'finished');
     renderTournamentStage();
   }, UI_DELAY.toFinished);
@@ -497,9 +517,9 @@ function setMatchWinner(roundIndex: number, matchIndex: number) {
   const round = tournamentState.bracket[roundIndex] || [];
   const p1 = round[matchIndex * 2];
   const p2 = round[matchIndex * 2 + 1];
-  const scores = tournamentState.matchScores[key] || {};
-  const s1 = scores[p1] ?? 1;
-  const s2 = scores[p2] ?? 0;
+  const scores = tournamentState.matchScores[key as MatchKey] || {};
+  const s1 = scores[p1 as UserId] ?? 1;
+  const s2 = scores[p2 as UserId] ?? 0;
   return s1 >= s2 ? p1 : p2;
 }
 
@@ -791,7 +811,7 @@ function startTournamentFromMatches(matches: Array<{player1:any, player2:any}>) 
   tournamentState.matchStates = {};
   for (let i = 0; i < rounds[0].length; i += 2) {
     const key = `0-${i / 2}`;
-    tournamentState.matchStates[key] = 'waiting';
+    tournamentState.matchStates[key as MatchKey] = 'waiting';
   }
 
   renderTournamentStage();
@@ -826,6 +846,7 @@ function resetTournament() {
     winner: null,
     matchScores: {},
     matchStates: {},
+	roomToKey: {}
   };
   currentTournamentId = null;
   myMatch = { roomId: null, roundIndex: 0, matchIndex: 0, slot: null, opponent: null };
@@ -841,7 +862,7 @@ function getPreviewRoundIndex(): number {
   const prevHasActive = prevRound.some((_: any, idx: any) => {
     if (idx % 2 === 1) return false;
     const key = `${prev}-${idx / 2}`;
-    const st = tournamentState.matchStates[key];
+    const st = tournamentState.matchStates[key as MatchKey];
     return st !== 'finished' && st !== undefined;
   });
 
@@ -873,10 +894,10 @@ function renderMatchPreview() {
     const p1 = round[i] ?? '';
     const p2 = round[i + 1] ?? '';
     const key = `${roundIndex}-${i / 2}`;
-    const scores = tournamentState.matchScores[key];
-    const s1 = scores?.[p1];
-    const s2 = scores?.[p2];
-    const state = tournamentState.matchStates[key] ?? 'waiting';
+    const scores = tournamentState.matchScores[key as MatchKey];
+    const s1 = scores?.[p1 as UserId];
+    const s2 = scores?.[p2 as UserId];
+    const state = tournamentState.matchStates[key as MatchKey] ?? 'waiting';
 
     const getScoreSpan = (score: any, isWinner: any) => `
       <span class="${isWinner ? 'text-green-400' : 'text-yellow-400'} font-bold">${score ?? '-'}</span>
@@ -893,11 +914,11 @@ function renderMatchPreview() {
       <div class="border border-[--primary-color] p-3 w-full max-w-[500px] flex justify-between items-center gap-4 overflow-hidden">
         <div class="flex items-center gap-2">
           <span class="btn-looser">${getDisplayName(p1)}</span>
-          ${getScoreSpan(s1, s1 > s2)}
+          ${getScoreSpan(s1, (s1 ?? 0) > (s2 ?? 0))}
         </div>
         <div class="text-sm">${statusText}</div>
         <div class="flex items-center gap-2">
-          ${getScoreSpan(s2, s2 > s1)}
+          ${getScoreSpan(s1, (s1 ?? 0) > (s2 ?? 0))}
           <span class="btn-looser">${getDisplayName(p2)}</span>
         </div>
       </div>
