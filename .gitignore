@@ -3,6 +3,8 @@ frontend/node_modules
 backend/.env
 frontend/.env.production
 frontend/package-lock.json
-
+backend/pong.db
 /.vs
 /.vscode
+client_secret_*.json
+CLAUDE.md

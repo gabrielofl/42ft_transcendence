@@ -1,6 +1,6 @@
 // API Base URL - using the backend HTTPS endpoint (Docker maps to port 443)
-// const API_BASE_URL = 'https://localhost:4444/api'; Work on cluster
-const API_BASE_URL = 'https://localhost:443/api';
+const API_BASE_URL = 'https://localhost:4444/api'; //Work on cluster
+// const API_BASE_URL = 'https://localhost:443/api';
 
 // Types for API requests and responses
 export interface LoginRequest {
@@ -128,6 +128,22 @@ export class ApiService {
     }
   }
 
+  async googleLogin(credential: string): Promise<LoginResponse> {
+    try {
+      const response = await this.makeRequest('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ credential })
+      });
+
+      const result = await response.json();
+      
+      return result;
+    } catch (error) {
+      console.error('Google login error:', error);
+      return { success: false, error: 'Google authentication failed' };
+    }
+  }
+
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     try {
       const response = await this.makeRequest('/auth/register', {
@@ -248,9 +264,9 @@ export class ApiService {
 
   // Utility methods
   isAuthenticated(): boolean {
-    // Check if we have the authentication cookies
+    // Check if we have the CSRF token cookie (accessToken is HTTP-only and can't be read by JS)
     const cookies = document.cookie.split(';');
-    return cookies.some(cookie => cookie.trim().startsWith('accessToken='));
+    return cookies.some(cookie => cookie.trim().startsWith('csrfToken='));
   }
 }
 

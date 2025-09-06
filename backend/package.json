@@ -28,7 +28,8 @@
 		"jsonwebtoken": "^9.0.2",
 		"speakeasy": "^2.0.0",
     	"qrcode": "^1.5.3",
-		"crypto": "^1.0.1"
+		"crypto": "^1.0.1",
+		"google-auth-library": "^9.4.0"
 	},
 	"devDependencies": {
 		"nodemon": "^3.0.2",

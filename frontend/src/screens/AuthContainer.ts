@@ -8,6 +8,25 @@ interface Window {
 }
 }
 
+// Global Google Sign-In callback
+window.handleCredentialResponse = async (response: any) => {
+	try {
+		console.log('Google credential received:', response);
+		
+		const result = await apiService.googleLogin(response.credential);
+		
+		if (result.success) {
+			console.log('Google login successful:', result.user);
+			navigateTo('home');
+		} else {
+			alert(result.error || 'Google authentication failed');
+		}
+	} catch (error) {
+		console.error('Google authentication error:', error);
+		alert('Google authentication failed. Please try again.');
+	}
+};
+
 let isLogin = true;
 let loginCredentials: { username: string; password: string } | null = null;
 
@@ -39,14 +58,7 @@ if (!main) return;
 		</div>
 
 		<div class="p-1 mb-6">
-		<!-- g_id_onload contains Google Identity Services settings -->
-			<div
-			id="g_id_onload"
-			data-auto_prompt="false"
-			data-callback="handleCredentialResponse"
-			data-client_id="PUT_YOUR_WEB_CLIENT_ID_HERE"
-			></div>
-			<!-- g_id_signin places the button on a page and supports customization -->
+			<!-- Google Sign-In Button -->
 			<button id="google-login-btn" class="btn-primary w-full rounded-lg text-xs">
 			${isLogin ? 'SIGN IN WITH GOOGLE' : 'SIGN UP WITH GOOGLE'}
 			</button>
@@ -124,6 +136,7 @@ if (!main) return;
 `;
 
 setupAuthEvents();
+initializeGoogleSignIn();
 }
 
 function renderLoginForm(): string {
@@ -366,6 +379,30 @@ function renderRegisterForm(): string {
 `;
 }
 
+// Initialize Google Sign-In
+function initializeGoogleSignIn(retryCount = 0) {
+	const maxRetries = 10;
+	
+	if (window.google && window.google.accounts?.id) {
+		try {
+			window.google.accounts.id.initialize({
+				client_id: '723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com',
+				callback: window.handleCredentialResponse,
+				auto_select: false,
+				cancel_on_tap_outside: true,
+			});
+			console.log('Google Sign-In initialized successfully');
+		} catch (error) {
+			console.error('Error initializing Google Sign-In:', error);
+		}
+	} else if (retryCount < maxRetries) {
+		console.warn(`Google Identity Services not loaded yet, retrying... (${retryCount + 1}/${maxRetries})`);
+		setTimeout(() => initializeGoogleSignIn(retryCount + 1), 500);
+	} else {
+		console.error('Google Identity Services failed to load after maximum retries');
+	}
+}
+
 function setupAuthEvents(): void {
 document.getElementById('sign-in-tab')?.addEventListener('click', () => {
 	isLogin = true;
@@ -380,7 +417,17 @@ document.getElementById('sign-up-tab')?.addEventListener('click', () => {
 const googleLoginBtn = document.getElementById('google-login-btn');
 if (googleLoginBtn) {
 	googleLoginBtn.addEventListener('click', () => {
-		(window.google as any)?.accounts?.id?.prompt();
+		if (window.google?.accounts?.id) {
+			// Use the one_tap method instead of prompt() for better UX
+			window.google.accounts.id.prompt((notification: any) => {
+				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+					console.log('Google Sign-In prompt not shown:', notification);
+				}
+			});
+		} else {
+			console.error('Google Identity Services not loaded');
+			alert('Google Sign-In is not available. Please try again later.');
+		}
 	});
 }
 
