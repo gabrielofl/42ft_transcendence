@@ -9,7 +9,22 @@ export enum GameEvent {
     GameEnded,          // <Player[]>               El juego ha terminado.
     GameRestart,        // <null>                   Reinicia el juego sin cambiar de jugadores.
     PointMade,          // <Player>                 Un jugador ha anotado un punto.
-    InventoryChange,    // <PickUpEventArgs>        Un jugador ha anotado un punto.
+	InventoryChange,    // <PickUpEventArgs>        Un jugador ha anotado un punto.
+	T_Created = 'tournament_created',
+	T_JoinedExisting = 'joined_existing_tournament',
+	T_List = 'tournaments_list',
+	T_BracketCreated = 'tournament_bracket_created',
+	T_MatchAssigned = 'tournament_match_assigned',
+	T_JoinedRoom = 'joined_tournament_room',
+	T_GameStart = 'tournament_game_start',
+	T_GameStartGeneric = 'game_start',
+	T_MatchFinished = 'tournament_match_finished',
+	T_GameEnded = 'game_ended',
+	T_NextRoundCreated = 'tournament_next_round_created',
+	T_NextRound = 'tournament_next_round',
+	T_Finished = 'tournament_finished',
+	T_Countdown = 'countdown',
+	T_PlayerScored = 'player_scored',
 }
 
 export class MessageBroker {
