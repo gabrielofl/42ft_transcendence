@@ -22,7 +22,7 @@ async function openUserProfile(username: string | number) {
   const modal = document.getElementById("user-profile-modal");	
   const avatar = document.getElementById("profile-avatar") as HTMLImageElement;
   const profileUsername = document.getElementById("profile-username");
-  const profilePoints = document.getElementById("profile-points");
+  const profileScore = document.getElementById("profile-score");
   const statMatches = document.getElementById("stat-matches");
   const statWins = document.getElementById("stat-wins");
   const statLosses = document.getElementById("stat-losses");
@@ -40,10 +40,16 @@ async function openUserProfile(username: string | number) {
     const data = await res.json();
 
     // Fill modal
-    avatar.src = data.avatar || "https://via.placeholder.com/100";
-    // avatar.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3vQPQCznDHkGhIRUUpomLFTW7p6c9BNVSaw&s'; //test only
+	// Avatar
+	if (data.avatar) {
+		const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
+		avatar.src = avatarUrl;
+	}
+	else
+	    avatar.src = data.avatar || "https://via.placeholder.com/100";
+
     profileUsername.textContent = data.username.toUpperCase();
-    profilePoints.textContent = data.points ? `${data.points} pts` : `0 pts`;
+    profileScore.textContent = data.score ? `${data.score} pts` : `0 pts`;
     statMatches.textContent = data.matches ?? 0;
     statWins.textContent = data.wins ?? 0;
     statLosses.textContent = data.losses ?? 0;

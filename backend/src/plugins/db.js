@@ -39,6 +39,7 @@ async function databasePlugin(fastify, opts) {
 			wins         INTEGER  DEFAULT 0,					-- Game statistics
 			losses       INTEGER  DEFAULT 0,
 			score       INTEGER  DEFAULT 0,
+			max_score       INTEGER  DEFAULT 0,
 			matches       INTEGER  DEFAULT 0,
 			two_factor_secret  TEXT,							-- TOTP secret key
     		two_factor_enabled INTEGER  DEFAULT 0,				-- 0 = disabled, 1 = enabled
@@ -113,6 +114,24 @@ async function databasePlugin(fastify, opts) {
 			)
 			REFERENCES users (id) ON DELETE CASCADE
 		);
+
+		CREATE TABLE IF NOT EXISTS friends (
+			id            INTEGER  PRIMARY KEY AUTOINCREMENT,
+			player1_id    INTEGER,								-- References users.id
+			player2_id    INTEGER,								-- References users.id
+			status        TEXT     DEFAULT 'pending',			-- pending/active/finished
+			FOREIGN KEY (
+				player1_id,
+			)
+			REFERENCES users (id),								-- Link to users table
+			FOREIGN KEY (
+				player2_id
+			)
+			REFERENCES users (id),
+			REFERENCES users (id) ON DELETE SET NULL
+
+		);
+
 
 	`);
 
