@@ -14,9 +14,6 @@ import { AppStore } from '../redux/AppStore';
 import { updateLangue } from '../redux/reducers/langueReducer';
 import { replaceTemplatePlaceholders } from "./utils";
 import { API_BASE_URL } from "./config";
-// const API_BASE_URL = 'https://localhost:4444/api'; //Work on cluster
-// const API_BASE_URL = 'https://localhost:443/api';
-
 
 export function renderAccountTab() {
 

@@ -22,7 +22,7 @@ services:
         context: ./backend
       ports:
         - '443:443'
-        # - '4444:4444' Work on cluster
+        # - '4444:4444' #Work on cluster
       volumes:
         - frontend-dist:/app/static
         - ./backend/pong.db:/app/pong.db
