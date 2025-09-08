@@ -2,9 +2,10 @@ import { navigateTo } from '../navigation';
 import { renderPreTournamentView, PreMatch } from './pre-tournament-view';
 import { avatarImgHTML } from './fallback-avatar';
 import { showResultOverlay } from './match-result-view';
+import { API_BASE_URL } from './config';
+import { MessageBroker, GameEvent } from './Utils/MessageBroker';
 
 const MOCK_USER = 1;
-const API_BASE_URL = 'https://localhost:443';
 
 let socket: WebSocket | null = null;
 let currentTournamentId: string | null = null;
@@ -67,9 +68,9 @@ function endGameNav(roomId: string) {
 
 
 function setMatchState(key: string, next: keyof typeof STATE_ORDER): boolean {
-  const curr = (tournamentState.matchStates[key] as keyof typeof STATE_ORDER) ?? 'assigned';
+  const curr = (tournamentState.matchStates[key as MatchKey] as keyof typeof STATE_ORDER) ?? 'assigned';
   if (STATE_ORDER[next] >= STATE_ORDER[curr]) {
-    tournamentState.matchStates[key] = next;
+    tournamentState.matchStates[key as MatchKey] = next;
     return true;
   }
   return false;
@@ -124,16 +125,34 @@ function getDisplayName(userOrId: any) {
     : String(userOrId);
 }
 
-let tournamentState: {
-  status: string;
-  players: any[];
-  bracket: any[];
+type UserId = number;
+type PlayerSlot = UserId | null;
+type MatchKey = `${number}-${number}`;
+type TournamentStatus = 'idle' | 'waiting' | 'in_progress' | 'finished';
+type MatchState = 'assigned' | 'waiting' | 'playing' | 'finished';
+
+type Bracket = Array<Array<PlayerSlot>>;
+type ScoreMap = Partial<Record<UserId, number>>;
+
+interface TournamentState {
+  status: TournamentStatus;
+  players: UserId[];
+  bracket: Bracket;
   currentRoundIndex: number;
   matchIndex: number;
-  winner: any;
-  matchScores: { [key: string]: any };
-  matchStates: { [key: string]: any };
-} = {
+  winner: UserId | null;
+
+  matchScores: Record<MatchKey, ScoreMap>;
+  matchStates: Record<MatchKey, MatchState>;
+	
+  roomToKey: Record<string, MatchKey>;
+}
+
+const matchKey = (roundIndex: number, matchIndex: number) =>
+  `${roundIndex}-${matchIndex}` as MatchKey;
+
+
+let tournamentState: TournamentState = {
   status: 'idle',
   players: [],
   bracket: [],
@@ -142,6 +161,7 @@ let tournamentState: {
   winner: null,
   matchScores: {},
   matchStates: {},
+  roomToKey: {}
 };
 
 function send(obj: object, ws?: WebSocket) {
@@ -151,279 +171,285 @@ function send(obj: object, ws?: WebSocket) {
   }
 }
 
+const WS_TO_EVENT: Record<string, GameEvent | undefined> = {
+  tournament_created: GameEvent.T_Created,
+  joined_existing_tournament: GameEvent.T_JoinedExisting,
+  tournaments_list: GameEvent.T_List,
+  tournament_bracket_created: GameEvent.T_BracketCreated,
+  tournament_match_assigned: GameEvent.T_MatchAssigned,
+  joined_tournament_room: GameEvent.T_JoinedRoom,
+  tournament_game_start: GameEvent.T_GameStart,
+  game_start: GameEvent.T_GameStartGeneric,
+  tournament_match_finished: GameEvent.T_MatchFinished,
+  game_ended: GameEvent.T_GameEnded,
+  tournament_next_round_created: GameEvent.T_NextRoundCreated,
+  tournament_next_round: GameEvent.T_NextRound,
+  tournament_finished: GameEvent.T_Finished,
+  countdown: GameEvent.T_Countdown,
+  player_scored: GameEvent.T_PlayerScored,
+};
+
 function onSocketMessage(evt: MessageEvent) {
   let msg: any;
   try { msg = JSON.parse((evt as any).data); } catch { return; }
 
-  const ev = msg?.event;
+  const ev = msg?.event as string | undefined;
   if (!ev) return;
 
-	const SILENCE_EVENTS = new Set([
-		'game_state', 'player_scored', 'state', 'game_paused', 'game_over', 'tournament_countdown'
-  ]);
+  const eventKey = WS_TO_EVENT[ev];
+  if (eventKey) {
+    MessageBroker.Publish(eventKey, msg);
+    return;
+  }
 
-  switch (ev) {
-    case 'tournament_created': {
-      currentTournamentId = msg.tournamentId;
-      const t = msg.tournament;
-      if (t?.players) joinTournamentFromServer(t.players);
-      break;
-    }
-
-    case 'joined_existing_tournament': {
-      currentTournamentId = msg.tournamentId;
-      if (tournamentState.status === 'idle') {
-        tournamentState.status = 'waiting';
-        renderTournamentStage();
-      }
-      send({ userId: MOCK_USER, listTournaments: true });
-      break;
-    }
-
-    case 'tournaments_list': {
-      const list = msg.tournaments || [];
-      const t = list.find((tt: any) => tt.id === currentTournamentId);
-      if (t) {
-        if (t.status === 'waiting' || t.status === 'ready') {
-          joinTournamentFromServer(t.players || []);
-        } else if (t.status === 'in_progress') {
-          tournamentState.status = 'in_progress';
-          tournamentState.players = [...(t.players || [])];
-          renderTournamentStage();
-        } else if (t.status === 'finished') {
-          tournamentState.status = 'finished';
-          tournamentState.winner = t.winner;
-			renderTournamentStage();
-			scheduleAutoReturn(); 
-        }
-      }
-      break;
-    }
-
-    case 'tournament_bracket_created': {
-	PRE_MODE = true;
-	renderTournamentStage();
-	setPreMode(true);
-
-      const matches = msg.matches || [];
-	const pre: PreMatch[] = matches.map((m: any, i: number) => ({
-		p1: m.player1, p2: m.player2,
-	}));
-
-	renderPreTournamentView(pre, {
-		mountIn: 'pre-view',
-		autoStartMs: 10000,
-		getDisplayName,
-		onStart: () => {
-		setPreMode(false);
-		const pv = document.getElementById('pre-view'); if (pv) pv.innerHTML = '';
-
-      startTournamentFromMatches(matches);
-      matches.forEach((m: any, idx: number) => {
-        if (m.roomId) rememberRoom(m.roomId, 0, idx, m.player1, m.player2);
-      });
-      const mine = matches.find((m: any) => m.player1 === MOCK_USER || m.player2 === MOCK_USER);
-      if (mine) {
-			console.log('[ME] id=%d name=%s | myMatch=%o', MOCK_USER, getDisplayName(MOCK_USER), myMatch);
-        myMatch.roomId = mine.roomId;
-        myMatch.roundIndex = 0;
-        myMatch.matchIndex = matches.indexOf(mine);
-        myMatch.slot = (mine.player1 === MOCK_USER) ? 'player1' : 'player2';
-        myMatch.opponent = (mine.player1 === MOCK_USER) ? mine.player2 : mine.player1;
-        send({ userId: MOCK_USER, joinTournamentRoom: myMatch.roomId });
-      }
-      },
-	});
-      break;
-    }
-
-   case 'tournament_match_assigned': {
-	const roundIndex = (msg.round ?? 1) - 1;
-	const matchIndex = typeof msg.matchIndex === 'number'
-		? msg.matchIndex
-		: findMatchIndexByPlayers(roundIndex, msg.player1, msg.player2);
-
-	if (matchIndex >= 0 && msg.roomId) {
-		rememberRoom(msg.roomId, roundIndex, matchIndex, msg.player1, msg.player2);
-
-		const key = `${roundIndex}-${matchIndex}`;
-		if (!tournamentState.matchStates[key] || tournamentState.matchStates[key] === 'assigned') {
-	tournamentState.matchStates[key] = 'waiting';
-	}
-	}
-	renderTournamentStage();
-	break;
-	}
-
-    case 'joined_tournament_room': {
-		if (myMatch.roomId && msg.roomId === myMatch.roomId) {
-			const key = `${myMatch.roundIndex}-${myMatch.matchIndex}`;
-			scheduleUIFor(key, () => {
-			if (setMatchState(key, 'waiting')) renderTournamentStage();
-			}, UI_DELAY.assign);
-		}
-		break;
-	}
-
-	case 'tournament_game_start': {
-		const key = keyForRoom(msg.roomId);
-		if (key) {
-			scheduleUIFor(key, () => {
-			if (setMatchState(key, 'playing')) renderTournamentStage();
-			}, 0);
-		}
-		const info = roomIndexById[msg.roomId];
-		const isMine = !!info && (info.p1 === MOCK_USER || info.p2 === MOCK_USER);
-		if (isMine) beginGameNav(msg.roomId);
-		break;
-	}
-
-	case 'game_start': {
-		const key = keyForRoom(msg.roomId);
-	if (key) {
-		if (tournamentState.matchStates[key] !== 'playing') {
-		tournamentState.matchStates[key] = 'playing';
-		renderTournamentStage();
-		}
-	}
-	break;
-	}
-
-    case 'tournament_match_finished': {
-      handleServerMatchFinish(msg);
-      break;
-    }
-
-    case 'game_ended': {
-      if (msg.isTournament && msg.roomId) {
-        handleServerMatchFinish({
-          tournamentId: msg.tournamentId,
-          roomId: msg.roomId,
-          winner: msg.winner?.userId,
-          loser: msg.loser?.userId,
-          scores: { player1: msg.winner?.score ?? 1, player2: msg.loser?.score ?? 0 },
-        });
-      }
-      break;
-    }
-
-	case 'tournament_next_round_created': {
-		const roundIndex = (msg.round ?? 2) - 1;
-		const nextFlat: any[] = [];
-		(msg.matches || []).forEach((m: any, idx: number) => {
-			nextFlat.push(m.player1, m.player2);
-			rememberRoom(m.roomId, roundIndex, idx, m.player1, m.player2);
-		});
-
-	scheduleUIFor(`round-${roundIndex}`, () => {
-		clearRoundVisualQueue(roundIndex - 1);
-		tournamentState.bracket[roundIndex] = nextFlat;
-		tournamentState.currentRoundIndex = roundIndex;
-		renderTournamentStage();
-	}, UI_DELAY.nextRound);
-	break;
-	}
-
-    case 'tournament_next_round': {
-		const roundIndex = (msg.round ?? 2) - 1;
-
-		const p1 = msg.player1 ?? msg.p1;
-		const p2 = msg.player2 ?? msg.p2;
-
-		if (p1 !== MOCK_USER && p2 !== MOCK_USER) break;
-
-		const slot: 'player1' | 'player2' =
-			(msg.slot === 'player1' || msg.slot === 'player2')
-			? msg.slot
-			: (msg.player1 === MOCK_USER || msg.p1 === MOCK_USER) ? 'player1' : 'player2';
-
-		const opponent =
-			msg.opponent ??
-			(slot === 'player1'
-			? (msg.player2 ?? msg.p2)
-			: (msg.player1 ?? msg.p1));
-
-		myMatch = {
-			roomId: msg.roomId,
-			roundIndex,
-			matchIndex: msg.matchIndex ?? 0,
-			slot,
-			opponent,
-		};
-
-		rememberRoom(
-			msg.roomId,
-			roundIndex,
-			myMatch.matchIndex,
-			slot === 'player1' ? MOCK_USER : opponent,
-			slot === 'player1' ? opponent : MOCK_USER
-		);
-
-		send({ userId: MOCK_USER, joinTournamentRoom: msg.roomId });
-		break;
-		}
-
-	case 'tournament_finished': {
-	scheduleUIFor('champion', () => {
-		tournamentState.status = 'finished';
-		tournamentState.winner = msg.winner;
-		renderTournamentStage();
-		scheduleAutoReturn(); 
-	}, 0);
-	break;
-	}
-
-
-	case 'countdown': {
-	const key = keyForRoom(msg.roomId);
-	if (key) {
-		renderTournamentStage();
-	}
-	break;
-	}
-
-
-	case 'player_scored': {
-	let key = keyForRoom(msg.roomId);
-
-	if (!key && myMatch.roomId && msg.roomId === myMatch.roomId) {
-		key = `${myMatch.roundIndex}-${myMatch.matchIndex}`;
-	}
-	if (!key) break;
-
-	const info = roomIndexById[msg.roomId];
-	if (!info) break;
-
-	const { p1, p2 } = info;
-	const s = msg.scores || {};
-
-	tournamentState.matchScores[key] = {
-		[p1]: s.player1 ?? 0,
-		[p2]: s.player2 ?? 0,
-	};
-
-	if (tournamentState.matchStates[key] !== 'finished') {
-		setMatchState(key, 'playing');
-	}
-	renderTournamentStage();
-	break;
-	}
-
-    case 'game_state':
-    case 'state':
-    case 'game_paused':
-    case 'game_over': {
-      break;
-    }
-
-    default: {
-      if (!SILENCE_EVENTS.has(ev)) {
-        console.log('[ws] unhandled:', ev, msg);
-      }
-      break;
-    }
+  const SILENCE_EVENTS = new Set(['game_state','state','game_paused','game_over','tournament_countdown']);
+  if (!SILENCE_EVENTS.has(ev)) {
+    console.log('[ws] unhandled:', ev, msg);
   }
 }
+
+let _off: Array<() => void> = [];
+
+export function setupTournamentSubscriptions() {
+  teardownTournamentSubscriptions();
+
+  const onCreated = (m: any) => {
+    currentTournamentId = m.tournamentId;
+    const t = m.tournament;
+    if (t?.players) joinTournamentFromServer(t.players);
+  };
+  MessageBroker.Subscribe(GameEvent.T_Created, onCreated);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_Created, onCreated));
+
+  const onJoinedExisting = (m: any) => {
+    currentTournamentId = m.tournamentId;
+    if (tournamentState.status === 'idle') {
+      tournamentState.status = 'waiting';
+      renderTournamentStage();
+    }
+    send({ userId: MOCK_USER, listTournaments: true });
+  };
+  MessageBroker.Subscribe(GameEvent.T_JoinedExisting, onJoinedExisting);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_JoinedExisting, onJoinedExisting));
+
+  const onList = (m: any) => {
+    const list = m.tournaments || [];
+    const t = list.find((tt: any) => tt.id === currentTournamentId);
+    if (!t) return;
+    if (t.status === 'waiting' || t.status === 'ready') {
+      joinTournamentFromServer(t.players || []);
+    } else if (t.status === 'in_progress') {
+      tournamentState.status = 'in_progress';
+      tournamentState.players = [...(t.players || [])];
+      renderTournamentStage();
+    } else if (t.status === 'finished') {
+      tournamentState.status = 'finished';
+      tournamentState.winner = t.winner;
+      renderTournamentStage();
+      scheduleAutoReturn();
+    }
+  };
+  MessageBroker.Subscribe(GameEvent.T_List, onList);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_List, onList));
+
+  const onBracket = (m: any) => {
+    PRE_MODE = true; renderTournamentStage(); setPreMode(true);
+    const matches = m.matches || [];
+    const pre: PreMatch[] = matches.map((mm: any) => ({ p1: mm.player1, p2: mm.player2 }));
+
+    renderPreTournamentView(pre, {
+      mountIn: 'pre-view',
+      autoStartMs: 10000,
+      getDisplayName,
+      onStart: () => {
+        setPreMode(false);
+        const pv = document.getElementById('pre-view'); if (pv) pv.innerHTML = '';
+
+        startTournamentFromMatches(matches);
+        matches.forEach((mm: any, idx: number) => {
+          if (mm.roomId) rememberRoom(mm.roomId, 0, idx, mm.player1, mm.player2);
+        });
+
+        const mine = matches.find((mm: any) => mm.player1 === MOCK_USER || mm.player2 === MOCK_USER);
+        if (mine) {
+          myMatch.roomId = mine.roomId;
+          myMatch.roundIndex = 0;
+          myMatch.matchIndex = matches.indexOf(mine);
+          myMatch.slot = (mine.player1 === MOCK_USER) ? 'player1' : 'player2';
+          myMatch.opponent = (mine.player1 === MOCK_USER) ? mine.player2 : mine.player1;
+          send({ userId: MOCK_USER, joinTournamentRoom: myMatch.roomId });
+        }
+      },
+    });
+  };
+  MessageBroker.Subscribe(GameEvent.T_BracketCreated, onBracket);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_BracketCreated, onBracket));
+
+  const onAssigned = (m: any) => {
+    const roundIndex = (m.round ?? 1) - 1;
+    const matchIndex = typeof m.matchIndex === 'number'
+      ? m.matchIndex
+      : findMatchIndexByPlayers(roundIndex, m.player1, m.player2);
+
+    if (matchIndex >= 0 && m.roomId) {
+      rememberRoom(m.roomId, roundIndex, matchIndex, m.player1, m.player2);
+      const key = `${roundIndex}-${matchIndex}` as MatchKey;
+      if (!tournamentState.matchStates[key] || tournamentState.matchStates[key] === 'assigned') {
+        tournamentState.matchStates[key] = 'waiting';
+      }
+    }
+    renderTournamentStage();
+  };
+  MessageBroker.Subscribe(GameEvent.T_MatchAssigned, onAssigned);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_MatchAssigned, onAssigned));
+
+  const onJoinedRoom = (m: any) => {
+    if (myMatch.roomId && m.roomId === myMatch.roomId) {
+      const key = `${myMatch.roundIndex}-${myMatch.matchIndex}`;
+      scheduleUIFor(key, () => {
+        if (setMatchState(key, 'waiting')) renderTournamentStage();
+      }, UI_DELAY.assign);
+    }
+  };
+  MessageBroker.Subscribe(GameEvent.T_JoinedRoom, onJoinedRoom);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_JoinedRoom, onJoinedRoom));
+
+  const onTGameStart = (m: any) => {
+    const key = keyForRoom(m.roomId);
+    if (key) {
+      scheduleUIFor(key, () => {
+        if (setMatchState(key, 'playing')) renderTournamentStage();
+      });
+    }
+    const info = roomIndexById[m.roomId];
+    const isMine = !!info && (info.p1 === MOCK_USER || info.p2 === MOCK_USER);
+    if (isMine) beginGameNav(m.roomId);
+  };
+  MessageBroker.Subscribe(GameEvent.T_GameStart, onTGameStart);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_GameStart, onTGameStart));
+
+  const onGameStartGeneric = (m: any) => {
+    const key = keyForRoom(m.roomId);
+    if (key && tournamentState.matchStates[key as MatchKey] !== 'playing') {
+      tournamentState.matchStates[key as MatchKey] = 'playing';
+      renderTournamentStage();
+    }
+  };
+  MessageBroker.Subscribe(GameEvent.T_GameStartGeneric, onGameStartGeneric);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_GameStartGeneric, onGameStartGeneric));
+
+  const onPlayerScored = (m: any) => {
+    let key = keyForRoom(m.roomId);
+    if (!key && myMatch.roomId === m.roomId) key = `${myMatch.roundIndex}-${myMatch.matchIndex}`;
+    if (!key) return;
+
+    const info = roomIndexById[m.roomId]; if (!info) return;
+
+    const { p1, p2 } = info as { p1: PlayerSlot; p2: PlayerSlot };
+    const s = (m.scores || {}) as { player1?: number; player2?: number };
+
+    const scores: ScoreMap = {};
+    if (p1 != null) scores[p1] = s.player1 ?? 0;
+    if (p2 != null) scores[p2] = s.player2 ?? 0;
+
+    tournamentState.matchScores[key as MatchKey] = scores;
+
+    if (tournamentState.matchStates[key as MatchKey] !== 'finished') {
+      setMatchState(key, 'playing');
+    }
+    renderTournamentStage();
+  };
+  MessageBroker.Subscribe(GameEvent.T_PlayerScored, onPlayerScored);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_PlayerScored, onPlayerScored));
+
+  const onNextRoundCreated = (m: any) => {
+    const roundIndex = (m.round ?? 2) - 1;
+    const nextFlat: any[] = [];
+    (m.matches || []).forEach((mm: any, idx: number) => {
+      nextFlat.push(mm.player1, mm.player2);
+      rememberRoom(mm.roomId, roundIndex, idx, mm.player1, mm.player2);
+    });
+
+    scheduleUIFor(`round-${roundIndex}`, () => {
+      clearRoundVisualQueue(roundIndex - 1);
+      tournamentState.bracket[roundIndex] = nextFlat;
+      tournamentState.currentRoundIndex = roundIndex;
+      renderTournamentStage();
+    }, UI_DELAY.nextRound);
+  };
+  MessageBroker.Subscribe(GameEvent.T_NextRoundCreated, onNextRoundCreated);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_NextRoundCreated, onNextRoundCreated));
+
+  const onNextRound = (m: any) => {
+    const roundIndex = (m.round ?? 2) - 1;
+    const p1 = m.player1 ?? m.p1;
+    const p2 = m.player2 ?? m.p2;
+    if (p1 !== MOCK_USER && p2 !== MOCK_USER) return;
+
+    const slot: 'player1' | 'player2' =
+      (m.slot === 'player1' || m.slot === 'player2')
+        ? m.slot
+        : (p1 === MOCK_USER ? 'player1' : 'player2');
+
+    const opponent = m.opponent ?? (slot === 'player1' ? (m.player2 ?? m.p2) : (m.player1 ?? m.p1));
+
+    myMatch = { roomId: m.roomId, roundIndex, matchIndex: m.matchIndex ?? 0, slot, opponent };
+
+    rememberRoom(
+      m.roomId,
+      roundIndex,
+      myMatch.matchIndex,
+      slot === 'player1' ? MOCK_USER : opponent,
+      slot === 'player1' ? opponent : MOCK_USER
+    );
+
+    send({ userId: MOCK_USER, joinTournamentRoom: m.roomId });
+  };
+  MessageBroker.Subscribe(GameEvent.T_NextRound, onNextRound);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_NextRound, onNextRound));
+
+  const onMatchFinished = (m: any) => handleServerMatchFinish(m);
+  MessageBroker.Subscribe(GameEvent.T_MatchFinished, onMatchFinished);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_MatchFinished, onMatchFinished));
+
+  const onGameEnded = (m: any) => {
+    if (m.isTournament && m.roomId) {
+      handleServerMatchFinish({
+        tournamentId: m.tournamentId,
+        roomId: m.roomId,
+        winner: m.winner?.userId,
+        loser: m.loser?.userId,
+        scores: { player1: m.winner?.score ?? 1, player2: m.loser?.score ?? 0 },
+      });
+    }
+  };
+  MessageBroker.Subscribe(GameEvent.T_GameEnded, onGameEnded);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_GameEnded, onGameEnded));
+
+  const onFinished = (m: any) => {
+    scheduleUIFor('champion', () => {
+      tournamentState.status = 'finished';
+      tournamentState.winner = m.winner;
+      renderTournamentStage();
+      scheduleAutoReturn();
+    });
+  };
+  MessageBroker.Subscribe(GameEvent.T_Finished, onFinished);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_Finished, onFinished));
+
+  const onCountdown = (m: any) => {
+    const key = keyForRoom(m.roomId);
+    if (key) renderTournamentStage();
+  };
+  MessageBroker.Subscribe(GameEvent.T_Countdown, onCountdown);
+  _off.push(() => MessageBroker.Unsubscribe(GameEvent.T_Countdown, onCountdown));
+}
+
+export function teardownTournamentSubscriptions() {
+  _off.forEach(fn => { try { fn(); } catch {} });
+  _off = [];
+}
+
 
 function handleServerMatchFinish(payload: {
   roomId: string,
@@ -454,7 +480,7 @@ if (setMatchState(key, 'playing')) {
     const p1 = tournamentState.bracket[roundIndex][matchIndex * 2];
     const p2 = tournamentState.bracket[roundIndex][matchIndex * 2 + 1];
     const s = payload.scores || {};
-    tournamentState.matchScores[key] = { [p1]: s.player1 ?? 1, [p2]: s.player2 ?? 0 };
+    tournamentState.matchScores[key as MatchKey] = { [p1 as UserId]: s.player1 ?? 1, [p2 as UserId]: s.player2 ?? 0 };
     setMatchState(key, 'finished');
     renderTournamentStage();
   }, UI_DELAY.toFinished);
@@ -497,9 +523,9 @@ function setMatchWinner(roundIndex: number, matchIndex: number) {
   const round = tournamentState.bracket[roundIndex] || [];
   const p1 = round[matchIndex * 2];
   const p2 = round[matchIndex * 2 + 1];
-  const scores = tournamentState.matchScores[key] || {};
-  const s1 = scores[p1] ?? 1;
-  const s2 = scores[p2] ?? 0;
+  const scores = tournamentState.matchScores[key as MatchKey] || {};
+  const s1 = scores[p1 as UserId] ?? 1;
+  const s2 = scores[p2 as UserId] ?? 0;
   return s1 >= s2 ? p1 : p2;
 }
 
@@ -524,6 +550,7 @@ export function renderTournament() {
 
   renderTournamentStage();
   setupTournamentButtons();
+  setupTournamentSubscriptions();
 };
 
 function setupTournamentButtons() {
@@ -791,7 +818,7 @@ function startTournamentFromMatches(matches: Array<{player1:any, player2:any}>) 
   tournamentState.matchStates = {};
   for (let i = 0; i < rounds[0].length; i += 2) {
     const key = `0-${i / 2}`;
-    tournamentState.matchStates[key] = 'waiting';
+    tournamentState.matchStates[key as MatchKey] = 'waiting';
   }
 
   renderTournamentStage();
@@ -812,6 +839,7 @@ function scheduleAutoReturn(delay = AUTO_RESET_MS) {
 }
 
 function resetTournament() {
+  teardownTournamentSubscriptions();
   Object.values(socketsByUser).forEach(ws => {
     try { ws.close(); } catch {   console.log('[ws] close error at Tournament reset'); }
   });
@@ -826,6 +854,7 @@ function resetTournament() {
     winner: null,
     matchScores: {},
     matchStates: {},
+	roomToKey: {}
   };
   currentTournamentId = null;
   myMatch = { roomId: null, roundIndex: 0, matchIndex: 0, slot: null, opponent: null };
@@ -841,7 +870,7 @@ function getPreviewRoundIndex(): number {
   const prevHasActive = prevRound.some((_: any, idx: any) => {
     if (idx % 2 === 1) return false;
     const key = `${prev}-${idx / 2}`;
-    const st = tournamentState.matchStates[key];
+    const st = tournamentState.matchStates[key as MatchKey];
     return st !== 'finished' && st !== undefined;
   });
 
@@ -873,10 +902,10 @@ function renderMatchPreview() {
     const p1 = round[i] ?? '';
     const p2 = round[i + 1] ?? '';
     const key = `${roundIndex}-${i / 2}`;
-    const scores = tournamentState.matchScores[key];
-    const s1 = scores?.[p1];
-    const s2 = scores?.[p2];
-    const state = tournamentState.matchStates[key] ?? 'waiting';
+    const scores = tournamentState.matchScores[key as MatchKey];
+    const s1 = scores?.[p1 as UserId];
+    const s2 = scores?.[p2 as UserId];
+    const state = tournamentState.matchStates[key as MatchKey] ?? 'waiting';
 
     const getScoreSpan = (score: any, isWinner: any) => `
       <span class="${isWinner ? 'text-green-400' : 'text-yellow-400'} font-bold">${score ?? '-'}</span>
@@ -893,11 +922,11 @@ function renderMatchPreview() {
       <div class="border border-[--primary-color] p-3 w-full max-w-[500px] flex justify-between items-center gap-4 overflow-hidden">
         <div class="flex items-center gap-2">
           <span class="btn-looser">${getDisplayName(p1)}</span>
-          ${getScoreSpan(s1, s1 > s2)}
+          ${getScoreSpan(s1, (s1 ?? 0) > (s2 ?? 0))}
         </div>
         <div class="text-sm">${statusText}</div>
         <div class="flex items-center gap-2">
-          ${getScoreSpan(s2, s2 > s1)}
+          ${getScoreSpan(s1, (s1 ?? 0) > (s2 ?? 0))}
           <span class="btn-looser">${getDisplayName(p2)}</span>
         </div>
       </div>

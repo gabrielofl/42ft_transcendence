@@ -1,6 +1,4 @@
-// API Base URL - using the backend HTTPS endpoint (Docker maps to port 443)
-const API_BASE_URL = 'https://localhost:4444/api'; //Work on cluster
-// const API_BASE_URL = 'https://localhost:443/api';
+import { API_BASE_URL } from "../screens/config";
 
 // Types for API requests and responses
 export interface LoginRequest {

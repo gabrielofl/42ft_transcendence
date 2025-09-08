@@ -60,8 +60,7 @@ function renderScreen(screen: Screen) {
 		renderAuthContainer();
 		break;
 	case "home":
-	  renderProfile();
-    //   renderHome();
+      renderHome();
       break;
     case "game":
       renderGame("Jorge", "Miguel", "local");

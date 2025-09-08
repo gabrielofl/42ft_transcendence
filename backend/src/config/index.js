@@ -17,8 +17,8 @@ const config = {
 	
 	// Server settings
 	server: {
-		port: parseInt(process.env.PORT, 10) || 4444,  // Work on cluster
-		// port: parseInt(process.env.PORT, 10) || 443,  // Convert string to number
+		// port: parseInt(process.env.PORT, 10) || 4444,  // Work on cluster
+		port: parseInt(process.env.PORT, 10) || 443,  // Convert string to number
 		host: process.env.HOST || '0.0.0.0',
 		https: {
 			// Build full paths to certificate files
