@@ -12,7 +12,6 @@ export async function getUserInfo(db, userId) {
       SELECT 
         id,
         username,
-        display_name,
         avatar,
         online,
         wins,
@@ -128,7 +127,6 @@ export async function getLeaderboard(db, limit = 50) {
       SELECT 
         id,
         username,
-        display_name,
         avatar,
         wins,
         losses,
@@ -268,7 +266,6 @@ export async function getOnlineUsers(db) {
       SELECT 
         id,
         username,
-        display_name,
         avatar,
         last_login
       FROM users 

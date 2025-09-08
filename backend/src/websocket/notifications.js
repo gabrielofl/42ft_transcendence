@@ -13,10 +13,10 @@ export async function getUserName(userId, fastify) {
     }
 
     // Consultar base de datos usando async/await
-    const row = await fastify.db.get('SELECT username, display_name FROM users WHERE id = ?', [userId]);
+    const row = await fastify.db.get('SELECT username, FROM users WHERE id = ?', [userId]);
     
     if (row) {
-      const name = row.display_name || row.username;
+      const name = row.username;
       userNameCache.set(userId, name);
       return name;
     } else {

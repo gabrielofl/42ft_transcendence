@@ -23,7 +23,6 @@ export interface LoginResponse {
     id: number;
     username: string;
     email: string;
-    display_name: string;
     avatar?: string;
     wins: number;
     losses: number;
@@ -101,6 +100,7 @@ export class ApiService {
     
     const config: RequestInit = {
       ...options,
+	  mode: 'cors',             // Explicit for Firefox
       credentials: 'include', // Always include cookies
       headers
     };

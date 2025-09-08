@@ -22,7 +22,7 @@ async function databasePlugin(fastify, opts) {
 
 	// Create tables if they don't exist
 	await db.exec(`
-
+		
 		CREATE TABLE IF NOT EXISTS users (
 			id           INTEGER  PRIMARY KEY AUTOINCREMENT,	-- Auto-incrementing ID
 			first_name   TEXT,
@@ -34,13 +34,19 @@ async function databasePlugin(fastify, opts) {
 								NOT NULL,						-- Must be unique
 			google_id    TEXT,									-- For Google login (optional)
 			last_login   TEXT,									-- Timestamp
-			display_name TEXT     UNIQUE,						-- Shown name
 			avatar       TEXT     DEFAULT 'default.jpg',		-- Profile picture
-			online       INTEGER  DEFAULT 0,					-- 0 = offline, 1 = online
+			online       INTEGER  DEFAULT 0,					-- 0 = offline, 1 = online, 2 inactive
 			wins         INTEGER  DEFAULT 0,					-- Game statistics
 			losses       INTEGER  DEFAULT 0,
+			score       INTEGER  DEFAULT 0,
+			max_score       INTEGER  DEFAULT 0,
+			matches       INTEGER  DEFAULT 0,
 			two_factor_secret  TEXT,							-- TOTP secret key
     		two_factor_enabled INTEGER  DEFAULT 0,				-- 0 = disabled, 1 = enabled
+			allow_data_collection    INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
+			allow_data_processing    INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
+			allow_ai_training        INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
+			show_scores_publicly     INTEGER DEFAULT 1,			-- 0 = disabled, 1 = enabled
 			created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,	-- Auto-set on insert
 			updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP		-- Should update on change
 		);
@@ -108,6 +114,23 @@ async function databasePlugin(fastify, opts) {
 			)
 			REFERENCES users (id) ON DELETE CASCADE
 		);
+
+		CREATE TABLE IF NOT EXISTS friends (
+			id            INTEGER  PRIMARY KEY AUTOINCREMENT,
+			player1_id    INTEGER,								-- References users.id
+			player2_id    INTEGER,								-- References users.id
+			status        TEXT     DEFAULT 'pending',			-- pending/active/finished
+			FOREIGN KEY (
+				player1_id
+			)
+			REFERENCES users (id) ON DELETE SET NULL,			-- Link to users table
+			FOREIGN KEY (
+				player2_id
+			)
+			REFERENCES users (id) ON DELETE SET NULL
+
+		);
+
 
 	`);
 

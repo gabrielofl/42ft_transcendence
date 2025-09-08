@@ -9,14 +9,14 @@
 						<path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
 					</svg>
 				</label>
-				<img id="avatar-preview" src="${API_BASE_URL}/avatars/default.jpg"  class="w-32 h-32 mx-auto rounded-full border-4 border-blue-500 mb-4 ">
+				<img id="avatar-preview" src="/default-avatar.jpg"  class="w-32 h-32 mx-auto rounded-full border-4 border-blue-500 mb-4 ">
 				<input id="avatar-upload" type="file" accept="image/*" style="display:none" class="mb-2 w-full text-xs text-gray-300 plus" />
 			</div>
 			<div class="text-left grid gap-2">
 				<div id="profile-username" class="txt-body-base">username</div>
 				<div id="profile-display-name" class="txt-body-small">displayname</div>
 
-				<div class="txt-body-small color-warning">1526 Pts | 
+				<div  id="profile-score" class="txt-body-small color-warning">1526 Pts | 
 					<span class="txt-body-small color-warning">Battle Rank 6</span>
 				</div>
 				<div id="google-indicator" class="txt-body-small color-success hidden">Google Account</div>
@@ -25,7 +25,7 @@
 		
 		<!-- 2FA settings -->
 		<div class=" p-4  shadow-lg ">
-			<div  id="twofa-section" class="grid gap-4 ">
+			<div  id="twofa-section" class="grid gap-4 mb-4">
 				<span class="color-primary body-base">Two-factor authentication</span>
 				<button id="setup-2fa-btn"  class="btn-primary w-full">Enable 2FA</button>
 				<button id="disable-2fa-btn"  class="btn-secondary w-full hidden">Disable 2FA</button>
@@ -36,7 +36,7 @@
 			<!-- GDPR -->
 			<div class="grid gap-4 ">
 				<span class="color-primary body-base">Account data</span>
-				<button id="enable-2FA" class="btn-primary w-full ">Download data</button>
+				<button id="download-data" class="btn-primary w-full ">Download data</button>
 				<div id="delete-my-data-section" class="grid grid-cols-2 align-middle gap-4">
 					<input id="delete-data-password" type="password" placeholder="Enter password" class="w-full retro-input" />
 					<button id="delete-data-btn" class="btn-secondary w-full ">Delete account</button>
@@ -101,27 +101,27 @@
 		</div> 
 
 		<hr class="h-px my-8 bg-secondary border-0">
-		<div class="grid grid-cols-1  align-middle gap-4">
-			<label for="password" class="txt-body-base color-primary">Actual Password</label>
-		</div> 
-		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<input id="password" type="text" placeholder="[old password]" autocomplete="off" class="w-full retro-input col-span-2"/>
-		</div> 
-		<div class="grid grid-cols-1  align-middle gap-4">
-			<label for="new-password" class="txt-body-base color-primary">New Password</label>
-		</div> 
-		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<input id="new-password" type="text" placeholder="[new password]" autocomplete="off" class="w-full retro-input col-span-2"/>
-		</div> 
-		<!-- <div class="grid grid-cols-1  align-middle gap-4">
-			<label for="re-password" class="txt-body-base color-primary">Confirm password</label>
-		</div>  -->
-		<!-- <div id="re-password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<input id="re-password" type="text" placeholder="[re-password]" autocomplete="off" class="w-full retro-input col-span-2"/>
-		</div>  -->
-		<div id="password-section" class="grid grid-cols-1 grid-row-2 align-middle gap-4">
-			<button id="update-password-btn" class="btn-primary w-full">update password</button>
-		</div> 
+		<label for="edit-account-header" class="block txt-body-base">Change password</label>
+		
+		<div id="password-section-google" class="grid grid-cols-1 grid-row-2 align-middle gap-4 hidden">
+			<div class="txt-body-base color-warning">You registered using a Google account.</div>
+		</div>
+		<div id="password-section" class="grid grid-cols-1  align-middle gap-4">
+			<div class="grid grid-cols-1  align-middle gap-4">
+				<label for="password" class="txt-body-base color-primary">Actual Password</label>
+			</div> 
+			<div class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+				<input id="password" type="password" placeholder="[old password]" autocomplete="off" class="w-full retro-input col-span-2"/>
+			</div> 
+			<div class="grid grid-cols-1  align-middle gap-4">
+				<label for="new-password" class="txt-body-base color-primary">New Password</label>
+			</div> 
+			<div class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+				<input id="new-password" type="password" placeholder="[new password]" autocomplete="off" class="w-full retro-input col-span-2"/>		</div> 
+			<div class="grid grid-cols-1 grid-row-2 align-middle gap-4">
+				<button id="update-password-btn" class="btn-primary w-full">update password</button>
+			</div> 
+		</div>
 
 
 	</div>
