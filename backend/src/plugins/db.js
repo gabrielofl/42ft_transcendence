@@ -121,13 +121,12 @@ async function databasePlugin(fastify, opts) {
 			player2_id    INTEGER,								-- References users.id
 			status        TEXT     DEFAULT 'pending',			-- pending/active/finished
 			FOREIGN KEY (
-				player1_id,
+				player1_id
 			)
-			REFERENCES users (id),								-- Link to users table
+			REFERENCES users (id) ON DELETE SET NULL,			-- Link to users table
 			FOREIGN KEY (
 				player2_id
 			)
-			REFERENCES users (id),
 			REFERENCES users (id) ON DELETE SET NULL
 
 		);

@@ -52,29 +52,7 @@ export async function buildApp(opts = {}) {
 	// STEP 2: Register core plugins (order matters!)
 	
 // CORS - Control which websites can access our API
-// await app.register(fastifyCors, app.config.cors);
-// CORS - allow frontend at 8080 to access backend at 4444
-await app.register(fastifyCors, (instance) => {
-  return (req, callback) => {
-    const origin = 'https://localhost:8080'; // your frontend SPA
-
-    let corsOptions = {
-      origin,
-      credentials: true, // allow cookies (needed for login, register, etc.)
-    };
-
-    // Special case: avatars don’t need credentials
-    if (req.url.startsWith('/api/users/avatar/')) {
-      corsOptions = {
-        origin,
-        credentials: false, // allow public image fetch without cookies
-      };
-    }
-
-    callback(null, corsOptions);
-  };
-});
-
+await app.register(fastifyCors, app.config.cors);
 
 	// Production
 	// await app.register(fastifyHelmet, {
