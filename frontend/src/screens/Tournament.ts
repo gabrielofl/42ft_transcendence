@@ -2,7 +2,8 @@ import { navigateTo } from '../navigation';
 import { renderPreTournamentView, PreMatch } from './pre-tournament-view';
 import { avatarImgHTML } from './fallback-avatar';
 import { showResultOverlay } from './match-result-view';
-import { API_BASE_URL } from './config';
+import { initProfileModal, setupProfileLinks } from "./ProfileModal";
+import { API_BASE_URL } from "./config";
 import { MessageBroker, GameEvent } from './Utils/MessageBroker';
 
 const MOCK_USER = 1;
@@ -99,7 +100,7 @@ function rememberRoom(roomId: string, roundIndex: number, matchIndex: number, p1
 }
 
 const MOCK_USER_MAP: Record<number, string> = {
-  1: 'Jorge',
+  1: 'daviles-',
   2: 'David',
   3: 'Miguel',
   4: 'Gabriel',
@@ -551,6 +552,8 @@ export function renderTournament() {
   renderTournamentStage();
   setupTournamentButtons();
   setupTournamentSubscriptions();
+  	initProfileModal(); 
+  	setupProfileLinks(); 
 };
 
 function setupTournamentButtons() {
@@ -571,6 +574,7 @@ function renderTournamentStage() {
       stage.innerHTML = renderWaitingRoom(tournamentState.players);
     }
     setPreMode(true);
+
     return;
   }
 
@@ -645,9 +649,9 @@ function renderWaitingRoom(players: any) {
 
           return `
             <div class="flex items-center gap-4 px-4 py-2 border-2 ${border} shadow-md min-w-[220px]">
-			${avatarImgHTML(undefined, getDisplayName(p))}
+			<a  href="#" class="open-profile" data-user="${getDisplayName(p)}">${avatarImgHTML(undefined, getDisplayName(p))}</a>
               <div class="flex flex-col items-start text-left">
-                <div class="text-white font-bold text-sm">${getDisplayName(p).toUpperCase()}</div>
+                <div class="text-white font-bold text-sm"><a  href="#" class="open-profile" data-user="${getDisplayName(p)}">${getDisplayName(p).toUpperCase()}</a></div>
                 <div class="text-red-700 text-xs">1258 pts</div>
               </div>
               <div class="ml-auto text-white text-xs ">${symbol}</div>

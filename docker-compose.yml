@@ -25,7 +25,8 @@ services:
         # - '4444:4444' #Work on cluster
       volumes:
         - frontend-dist:/app/static
-        - ./backend/pong.db:/app/pong.db
+        - ./backend/db:/app/db
+        - ./backend/uploads/avatars:/app/uploads/avatars
       env_file:
         - ./backend/.env
       networks:
