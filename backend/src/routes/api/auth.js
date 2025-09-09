@@ -12,7 +12,6 @@ export default async function (fastify, opts) {
 		async function generateRefreshToken(userId) {
 			const token = crypto.randomBytes(32).toString('hex');
 			const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-			// console.log(userId, token, expiresAt.toISOString());
 			await fastify.db.run(
 				'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
 				[userId, token, expiresAt.toISOString()]
@@ -363,11 +362,8 @@ export default async function (fastify, opts) {
 					'SELECT * FROM users WHERE google_id = ? OR email = ?',
 					[googleId, email]
 				);
-					// console.log('USER ', user.id);
 
 				if (user) {
-					console.log('LALALAALALALALALALALALALALA');
-
 					// User exists - update Google ID if not set
 					if (!user.google_id) {
 						await fastify.db.run(
@@ -402,9 +398,6 @@ export default async function (fastify, opts) {
 						[googleId, email, username, 'default.jpg', firstName, lastName, 'GOOGLE_USER']
 					);
 					
-					console.log('\n RETULT: \n');
-					// console.log('\n RETULT: ',result, result.lastID);
-
 					user = {
 						id: result.lastID,
 						google_id: googleId,

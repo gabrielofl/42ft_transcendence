@@ -116,5 +116,47 @@ export default async function (fastify, opts) {
 			}
 		});
 
+		// Select all games(matches) from user id with pagination
+		fastify.get('/games/:id', {
+			schema: {
+				params: {
+				type: 'object',
+				required: ['id'],
+				properties: {
+					id: { type: 'integer' }
+				}
+				},
+				querystring: {
+				type: 'object',
+				properties: {
+					limit: { type: 'integer', minimum: 1, default: 10 },
+					offset: { type: 'integer', minimum: 0, default: 0 }
+				}
+				}
+				}
+			}, async (request, reply) => {
+			const { id } = request.params;
+			const { limit, offset } = request.query;
+
+			const matches = await fastify.db.all(
+				'SELECT * FROM games WHERE player1_id = ? OR player2_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
+				[id, id, limit, offset]
+			);
+
+			const total = await fastify.db.get(
+				'SELECT COUNT(*) as count FROM games WHERE player1_id = ? OR player2_id = ?',
+				[id, id]
+			);
+
+			return {
+				total: total.count,
+				limit,
+				offset,
+				matches
+			};
+		});
+
+
+
 	}, { prefix: '/profile' });
 }

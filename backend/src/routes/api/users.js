@@ -142,6 +142,7 @@ export default async function (fastify, opts) {
 			return user;
 		});
 
+		// Check if needed. Right now using profile endpoint
 		// Serve avatar by filename - GET /api/users/avatar/:filename
 		fastify.get('/avatar/:filename', async (request, reply) => {
 		try {
