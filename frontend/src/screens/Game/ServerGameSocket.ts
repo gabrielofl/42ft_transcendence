@@ -1,17 +1,27 @@
 import { GameEvent } from "@shared/types/types";
 // import { gameWebSocketConfig } from "../../config/websocket";
 import { Game } from "./Game";
+import { IPowerUp } from "@shared/interfaces/IPowerUp";
+import { PowerUpCreateBall } from "../PowerUps/PowerUpCreateBall";
+import { CreatePowerUpMessage, Message, MessagePayloads, PowerUpType } from "@shared/types/messages"
+import { PowerUpLessLength } from "../PowerUps/PowerUpLessLength";
+import { PowerUpMoreLength } from "../PowerUps/PowerUpMoreLength";
+import { PowerUpShield } from "../PowerUps/PowerUpShield";
+import { PowerUpSpeedDown } from "../PowerUps/PowerUpSpeedDown";
+import { PowerUpSpeedUp } from "../PowerUps/PowerUpSpeedUp";
+import { MessageBroker } from "@shared/utils/MessageBroker";
+import { PowerUpBox } from "../PowerUps/PowerUpBox";
 
-export class GameSocketServer {
+export class ServerGameSocket {
     private game: Game;
-    private mySlot: 'player1' | 'player2' | null = null;
+    public msgs: MessageBroker<MessagePayloads>;
     private roomId: string | null = null;
     private lastMoveSentAt = 0;
     private readonly MOVE_INTERVAL_MS = 33;
 
     constructor(game: Game) {
         this.game = game;
-
+        this.msgs = new MessageBroker<MessagePayloads>();
         // this.setupGameEventListeners();
                // Conectar al WebSocket para modo multijugador
         /* if (players.length === 2) {
@@ -26,14 +36,43 @@ export class GameSocketServer {
      */
     private setupGameEventListeners(): void {
         // Suscribirse a eventos del juego
-        this.game.MessageBroker.Subscribe(GameEvent.Game_Room_Joined, this.handleRoomJoined.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.Game_Updated, this.handleGameStateUpdated.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.Game_Countdown, this.handleCountdown.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.Websocket_Updated, this.handleWebSocketStatus.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.GameStart, this.handleGameStarted.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.PointMade, this.handlePlayerScored.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.GamePause, this.handleGamePaused.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.Game_Room_Joined, this.handleRoomJoined.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.Game_Updated, this.handleGameStateUpdated.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.Game_Countdown, this.handleCountdown.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.Websocket_Updated, this.handleWebSocketStatus.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.GameStart, this.handleGameStarted.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.PointMade, this.handlePlayerScored.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.GamePause, this.handleGamePaused.bind(this));
+        // this.game.MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
+        
+        // Funcionales
+        this.game.MessageBroker.Subscribe(GameEvent.CreatePowerUp, this.handleCreatePowerUp.bind(this));
+    }
+
+    private async handleCreatePowerUp(box: PowerUpBox) {
+        let powerUpType: PowerUpType = "CreateBall";
+        if (box.PowerUp instanceof PowerUpCreateBall)
+            powerUpType = "CreateBall"
+        else if (box.PowerUp instanceof PowerUpMoreLength)
+            powerUpType = "MoreLength";
+        else if (box.PowerUp instanceof PowerUpLessLength)
+            powerUpType = "LessLength";
+        else if (box.PowerUp instanceof PowerUpShield)
+            powerUpType = "Shield";
+        else if (box.PowerUp instanceof PowerUpSpeedDown)
+            powerUpType = "SpeedDown";
+        else if (box.PowerUp instanceof PowerUpSpeedUp)
+            powerUpType = "SpeedUp";
+
+        let msg: CreatePowerUpMessage = {
+            type: "CreatePowerUp",
+            powerUpType: powerUpType,
+            x: box.X,
+            z: box.Z,
+        }
+
+        // TODO: Enviar por socket.
+        this.msgs.Publish("CreatePowerUp", msg);
     }
 
     /**
@@ -53,7 +92,7 @@ export class GameSocketServer {
      */
     private handleRoomJoined(payload: any): void {
         this.roomId = payload.roomId;
-        this.mySlot = payload.slot;
+        // this.mySlot = payload.slot;
         console.log(`🎮 Conectado a sala ${payload.roomId} como ${payload.slot}`);
     }
 
@@ -86,7 +125,7 @@ export class GameSocketServer {
     private handlePlayerScored(payload: any): void {
         console.log(`🎯 ${payload.player} anotó! ${payload.scores.player1}-${payload.scores.player2}`);
         this.game.GetPlayers().forEach(p => {
-            p.Socket.Send({});
+            // p.Socket.Send({});
         });
         // Aquí puedes actualizar UI del marcador inmediatamente
     }

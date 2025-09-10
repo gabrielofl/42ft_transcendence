@@ -1,22 +1,22 @@
+import { PowerUpBox } from "src/screens/PowerUps/PowerUpBox";
 import { APlayer } from "../../frontend/src/screens/Player/APlayer";
 import { APlayerEffect } from "../abstract/APlayerEffect";
 import { IPowerUp } from "../interfaces/IPowerUp";
 
 export enum GameEvent {
-    SelfEffect,             // <PlayerEffectFactory>    Un jugador se aplica un efecto.
-    MassEffect,             // <PlayerEffectFactory>    Un jugador envía un efecto para otros jugadores.
-    AppliedEffect,          // <AppliedEffectArgs>      Un jugador envía un efecto que ha terminado.
-    GameStart,              // <Player[]>               Inicia una partida.
-    GamePause,              // <boolean>                Pausa o continua el juego.
-    GameEnded,              // <Player[]>               El juego ha terminado.
-    GameRestart,            // <null>                   Reinicia el juego sin cambiar de jugadores.
-    PointMade,              // <Player>                 Un jugador ha anotado un punto.
-    Message_CreatePowerUp,  //                  Un jugador ha anotado un punto.
-    InventoryChange,        // <PwrUpEventArgs>        Un jugador ha anotado un punto.
+    SelfEffect,             // Un jugador se aplica un efecto.
+    MassEffect,             // Un jugador envía un efecto para otros jugadores.
+    AppliedEffect,          // Un jugador envía un efecto que ha terminado.
+    GameStart,              // Inicia una partida.
+    GamePause,              // Pausa o continua el juego.
+    GameEnded,              // El juego ha terminado.
+    GameRestart,            // Reinicia el juego sin cambiar de jugadores.
+    PointMade,              // Un jugador ha anotado un punto.
+    CreatePowerUp,  // Un jugador ha anotado un punto.
+    InventoryChange,        // Un jugador ha anotado un punto.
     Game_Room_Joined,
     Game_Updated,
     Game_Countdown,
-    Message_GameStart,
     Websocket_Updated
 }
 
@@ -36,21 +36,8 @@ export type EventPayloads = {
     [GameEvent.Game_Updated]: any;
     [GameEvent.Game_Countdown]: any;
     [GameEvent.Websocket_Updated]: any;
-    [GameEvent.Message_CreatePowerUp]: any;
-    [GameEvent.Message_GameStart]: any;
+    [GameEvent.CreatePowerUp]: PowerUpBox;
 };
-
-export interface PlayerData {
-    // playertype: PlayerType;
-    id: string;
-    color: string;
-    name: string;
-    keys: string[];
-}
-
-export interface GameStartMessage extends Message {
-    players: PlayerData[];
-}
 
 export type PlayerEffectFactory = () => APlayerEffect;
 export type AppliedEffectArgs = {
@@ -64,15 +51,3 @@ export type PwrUpEventArgs = {
     Slot: number;
     Action: "Pick" | "Use" | "Clear";
 };
-
-export interface Message {
-    type: GameEvent
-}
-
-export type PowerUpType = "Len" | "CreateBall";
-
-export interface CreatePowerUpMessage extends Message {
-    x: number;
-    z: number;
-    powerUptype: PowerUpType;
-}

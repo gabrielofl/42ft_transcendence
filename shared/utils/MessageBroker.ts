@@ -1,29 +1,34 @@
 import { Event } from "./Event";
-import { EventPayloads, GameEvent } from "../types/types";
 
-export class MessageBroker {
-    private events: Map<GameEvent, Event<any>> = new Map();
+export class MessageBroker<EventMap extends Record<string | number | symbol, any>> {
+    private events: Map<keyof EventMap, Event<any>> = new Map();
 
-    private getEvent<T extends GameEvent>(eventType: T): Event<EventPayloads[T]> {
+    private getEvent<K extends keyof EventMap>(eventType: K): Event<EventMap[K]> {
         if (!this.events.has(eventType)) {
-            this.events.set(eventType, new Event<EventPayloads[T]>());
+            this.events.set(eventType, new Event<EventMap[K]>());
         }
         return this.events.get(eventType)!;
     }
 
-    public Subscribe<T extends GameEvent>(eventType: T, callback: (payload: EventPayloads[T]) => void): void {
+    public Subscribe<K extends keyof EventMap>(
+        eventType: K,
+        callback: (payload: EventMap[K]) => void
+    ): void {
         this.getEvent(eventType).Subscribe(callback);
     }
 
-    public Unsubscribe<T extends GameEvent>(eventType: T, callback: (payload: EventPayloads[T]) => void): void {
+    public Unsubscribe<K extends keyof EventMap>(
+        eventType: K,
+        callback: (payload: EventMap[K]) => void
+    ): void {
         this.getEvent(eventType).Unsubscribe(callback);
     }
 
-    public Publish<T extends GameEvent>(eventType: T, payload: EventPayloads[T]): void {
+    public Publish<K extends keyof EventMap>(eventType: K, payload: EventMap[K]): void {
         this.getEvent(eventType).Invoke(payload);
     }
 
-    public Clear<T extends GameEvent>(eventType: T): void {
+    public Clear<K extends keyof EventMap>(eventType: K): void {
         this.getEvent(eventType).Clear();
     }
 

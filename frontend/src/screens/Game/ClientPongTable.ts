@@ -15,6 +15,10 @@ export class ClientPongTable extends APongTable {
             this.markers = game.Map.spots.map(s => new SpotMarker(game, s));
     }
 
+    public CopyPowerUp(box: PowerUpBox): void {
+        new PowerUpBox(this.game,)
+    }
+
     public CreatePowerUp(x: number, z: number): void {
         new PowerUpBox(this.game, x, z);
     }

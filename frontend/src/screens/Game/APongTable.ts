@@ -29,6 +29,7 @@ export abstract class APongTable extends DisposableMesh {
 	}
 
     public abstract CreatePowerUp(x: number, z: number): void;
+    public CopyPowerUp(box: PowerUpBox) {}
 
     /**
      * Disposes TableGround, Walls and obstacles.

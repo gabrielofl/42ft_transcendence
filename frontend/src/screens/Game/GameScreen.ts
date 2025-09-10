@@ -7,13 +7,19 @@ import { Game } from "./Game";
 import { LocalPlayer } from "../Player/LocalPlayer";
 import { AIPlayer } from "../Player/AIPlayer";
 import { createPlayerCard } from "./player-card";
+import { ServerGameSocket } from "./ServerGameSocket";
+import { ClientGameSocket } from "./ClientGameSocket";
 
 let clientgame: Game;
 let servergame: Game;
+let serversocket: ServerGameSocket;
+let clientsocket: ClientGameSocket;
 
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
 }
+
+
 
 export async function renderGame(playerName: string, opponentName: string, mode: string = 'local') {
 	const main = document.getElementById('main');
@@ -27,21 +33,6 @@ export async function renderGame(playerName: string, opponentName: string, mode:
 }
 
 function setupGameEvents(): void { 
-	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
-	if (canvas) {
-		const container = document.getElementById("player-cards-client");
-		if (!container)
-			return;
-
-		container.innerHTML = "";
-		clientgame = new Game(canvas, false);
-		clientgame.ID = "client";
-		clientgame.CreateGame(createPlayers(clientgame, container));
-		setupGameEndedListener(clientgame);
-		setupPointMadeListener(clientgame);
-		console.log("Iniciando Pong local");
-	}
-	
 	const servercanvas = document.getElementById('server-pong-canvas') as HTMLCanvasElement | null;
 	if (servercanvas) {
 		const servercontainer = document.getElementById("player-cards-server");
@@ -55,7 +46,25 @@ function setupGameEvents(): void {
 		setupGameEndedListener(servergame);
 		setupPointMadeListener(servergame);
 		console.log("Iniciando Pong Server");
+		serversocket = new ServerGameSocket(clientgame);
 	}
+	
+	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
+	if (canvas) {
+		const container = document.getElementById("player-cards-client");
+		if (!container)
+			return;
+
+		container.innerHTML = "";
+		clientgame = new Game(canvas, false);
+		clientgame.ID = "client";
+		clientgame.CreateGame(createPlayers(clientgame, container));
+		setupGameEndedListener(clientgame);
+		setupPointMadeListener(clientgame);
+		console.log("Iniciando Pong local");
+		clientsocket = new ClientGameSocket(clientgame);
+	}
+	serversocket.msgs.Subscribe("CreatePowerUp", (p) => clientsocket.RecieveSocketMessage(p));
 }
 
 function createPlayers(game: Game, container: HTMLElement): APlayer[] {

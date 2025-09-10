@@ -18,7 +18,7 @@ import { Zone } from "../Utils/Zone";
 import { PowerUpBox } from "../PowerUps/PowerUpBox";
 import { ServerPongTable } from "./ServerPongTable";
 import { ClientPongTable } from "./ClientPongTable";
-import { GameEvent } from "@shared/types/types";
+import { EventPayloads as GamePayloads, GameEvent } from "@shared/types/types";
 // import "@babylonjs/loaders/glTF";
 
 export class Game implements IDisposable {
@@ -48,11 +48,12 @@ export class Game implements IDisposable {
 	private isServerSide: boolean;
 
 	// ---Instances ---
-	public MessageBroker: MessageBroker = new MessageBroker();
+	public MessageBroker: MessageBroker<GamePayloads> = new MessageBroker();
 	public Zones: ObservableList<Zone> = new ObservableList();
 	public Balls: ObservableList<Ball> = new ObservableList();
 	public PowerUps: ObservableList<PowerUpBox> = new ObservableList();
 	public Map: MAPS.MapDefinition = MAPS.MultiplayerMap;
+	public PongTable: APongTable;
 
     public constructor(canvas: HTMLCanvasElement, isServerSide: boolean) {
 		this.isServerSide = isServerSide;
@@ -95,6 +96,7 @@ else */
 		this.materialFact = new MaterialFactory(this);
 		
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
+		this.PongTable = this.isServerSide ? new ServerPongTable(this) : new ClientPongTable(this);
     }
 
 	/**
@@ -150,7 +152,6 @@ else */
 	public CreateGame(players: APlayer[]): void {
 		// TABLE
 		const inputMap: Record<string, boolean> = {};
-		const pongTable = this.isServerSide ? new ServerPongTable(this) : new ClientPongTable(this);
 		this.players = players;
 
 		players.forEach((p, idx) =>{
@@ -191,7 +192,7 @@ else */
 			this.processPlayerMoves(inputMap);
 		});
 		this.start();
-		this.dependents.Add(pongTable);
+		this.dependents.Add(this.PongTable);
 	}
 
 	private RandomWind(strength: number = 1): BABYLON.Vector3 {
