@@ -10,7 +10,7 @@ export default async function (fastify, opts) {
 		}, async (request, reply) => {
 			// Get user data from database
 			const user = await fastify.db.get(
-				'SELECT id, first_name, last_name, username, email, avatar,  online, two_factor_enabled,  wins, losses, score, matches, allow_data_collection, allow_data_processing, allow_ai_training, show_scores_publicly, created_at, updated_at, last_login FROM users WHERE id = ?',
+				'SELECT id, first_name, last_name, username, email, avatar,  status, two_factor_enabled,  wins, losses, score, matches, allow_data_collection, allow_data_processing, allow_ai_training, show_scores_publicly, created_at, updated_at, last_login FROM users WHERE id = ?',
 				[request.user.id]
 			);
 			
@@ -38,7 +38,7 @@ export default async function (fastify, opts) {
 
 			// Get user data from database
 			const user = await fastify.db.get(
-				`SELECT id, first_name, last_name, username, email, avatar, wins, losses, online, two_factor_enabled, last_login 
+				`SELECT id, first_name, last_name, username, email, avatar, wins, losses, status, two_factor_enabled, last_login 
 				FROM users 
 				WHERE username = ?`,
 				[username]
@@ -131,7 +131,7 @@ export default async function (fastify, opts) {
 			}
 		}, async (request, reply) => {
 			const user = await fastify.db.get(
-				'SELECT id, username, avatar, wins, losses, online FROM users WHERE id = ?',
+				'SELECT id, username, avatar, wins, losses, status FROM users WHERE id = ?',
 				[request.params.id]
 			);
 			
@@ -276,7 +276,7 @@ export default async function (fastify, opts) {
 			try {
 				// Fetch user core profile
 				const user = await fastify.db.get(
-					`SELECT id, first_name, last_name, username, email, avatar, wins, losses, online,
+					`SELECT id, first_name, last_name, username, email, avatar, wins, losses, status,
 						last_login, created_at, updated_at,
 						COALESCE(allow_data_collection, 1) AS allow_data_collection,
 						COALESCE(allow_data_processing, 1) AS allow_data_processing,
@@ -301,7 +301,7 @@ export default async function (fastify, opts) {
 						avatar: user.avatar,
 						wins: user.wins,
 						losses: user.losses,
-						online: !!user.online,
+						status: !!user.status,
 						lastLogin: user.last_login,
 						createdAt: user.created_at,
 						updatedAt: user.updated_at

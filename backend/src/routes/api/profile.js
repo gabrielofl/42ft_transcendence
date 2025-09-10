@@ -117,44 +117,69 @@ export default async function (fastify, opts) {
 		});
 
 		// Select all games(matches) from user id with pagination
+		// Select user data for each player involved on matches and return a map with key=userId
 		fastify.get('/games/:id', {
-			schema: {
-				params: {
-				type: 'object',
-				required: ['id'],
-				properties: {
-					id: { type: 'integer' }
-				}
-				},
-				querystring: {
-				type: 'object',
-				properties: {
-					limit: { type: 'integer', minimum: 1, default: 10 },
-					offset: { type: 'integer', minimum: 0, default: 0 }
-				}
-				}
-				}
-			}, async (request, reply) => {
-			const { id } = request.params;
-			const { limit, offset } = request.query;
+		schema: {
+			params: {
+			type: 'object',
+			required: ['id'],
+			properties: {
+				id: { type: 'integer' }
+			}
+			},
+			querystring: {
+			type: 'object',
+			properties: {
+				limit: { type: 'integer', minimum: 1, default: 10 },
+				offset: { type: 'integer', minimum: 0, default: 0 }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { id } = request.params;
+		const { limit, offset } = request.query;
 
-			const matches = await fastify.db.all(
-				'SELECT * FROM games WHERE player1_id = ? OR player2_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
-				[id, id, limit, offset]
-			);
+		// Fetch matches
+		const matches = await fastify.db.all(
+			'SELECT * FROM games WHERE player1_id = ? OR player2_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
+			[id, id, limit, offset]
+		);
 
-			const total = await fastify.db.get(
-				'SELECT COUNT(*) as count FROM games WHERE player1_id = ? OR player2_id = ?',
-				[id, id]
-			);
+		const total = await fastify.db.get(
+			'SELECT COUNT(*) as count FROM games WHERE player1_id = ? OR player2_id = ?',
+			[id, id]
+		);
 
-			return {
-				total: total.count,
-				limit,
-				offset,
-				matches
-			};
+		if (!matches.length) {
+			return { total: 0, limit, offset, matches: [], users: {} };
+		}
+
+		// Extract unique player IDs
+		const userIds = [...new Set(matches.flatMap(m => [m.player1_id, m.player2_id]))];
+
+		// Fetch all users in one query
+		const placeholders = userIds.map(() => '?').join(',');
+		const users = await fastify.db.all(
+			`SELECT id, username, avatar, score, show_scores_publicly, status FROM users WHERE id IN (${placeholders})`,
+			userIds
+		);
+
+		// Build a map (id → user object)
+		const userMap = {};
+		for (const u of users) {
+			userMap[u.id] = u;
+		}
+
+		// Return structured response
+		return {
+			total: total.count,
+			limit,
+			offset,
+			matches,
+			users: userMap
+		};
 		});
+
 
 
 

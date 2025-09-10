@@ -22,7 +22,6 @@ async function databasePlugin(fastify, opts) {
 
 	// Create tables if they don't exist
 	await db.exec(`
-		
 		CREATE TABLE IF NOT EXISTS users (
 			id           INTEGER  PRIMARY KEY AUTOINCREMENT,	-- Auto-incrementing ID
 			first_name   TEXT,
@@ -35,7 +34,7 @@ async function databasePlugin(fastify, opts) {
 			google_id    TEXT,									-- For Google login (optional)
 			last_login   TEXT,									-- Timestamp
 			avatar       TEXT     DEFAULT 'default.jpg',		-- Profile picture
-			online       INTEGER  DEFAULT 0,					-- 0 = offline, 1 = online, 2 inactive
+			status       INTEGER  DEFAULT 0,					-- 0 = offline, 1 = online, 2 inactive
 			wins         INTEGER  DEFAULT 0,					-- Game statistics
 			losses       INTEGER  DEFAULT 0,
 			score       INTEGER  DEFAULT 0,
