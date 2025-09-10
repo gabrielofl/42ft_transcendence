@@ -18,7 +18,8 @@ export function renderHome(): void {
 
 			<div class="flex flex-col py-4 items-center gap-4">
 				<hr class="lg:w-2/5 w-2/3 h-px  bg-secondary border-0">
-				<button id="local-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS 1P</button>
+				<button id="local-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS 2P Local</button>
+				<button id="local-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS 2P Remote</button>
 				<button id="ai-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS AI</button>
 				<button id="tournament-btn" class="btn-primary lg:w-1/4 w-2/4 ">TOURNAMENT MODE</button>
 				<button id="multiplayer-btn" class="btn-primary lg:w-1/4 w-2/4 ">MULTIPLAYER MODE</button>

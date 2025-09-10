@@ -7,6 +7,17 @@ import { API_BASE_URL } from "./config";
 let currentPage = 1;
 const perPage = 5;
 
+// Ask Jorge if already exist
+type UsersMap = Record<string, {
+  id: number;
+  username: string;
+  avatar?: string;
+  score?: number;
+  status?: number;
+  show_scores_publicly?: number;
+  // add other fields from db
+}>;
+
 
 // Add to utils?
 async function getCurrentUser() {
@@ -17,7 +28,7 @@ async function getCurrentUser() {
     }
   });
   if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
-  return res.json(); // { id, username, ... }
+  return res.json();
 }
 
 
@@ -28,8 +39,7 @@ export async function renderHistoryTab() {
   	try {
 		container.innerHTML = replaceTemplatePlaceholders(profileMatchHistory, {API_BASE_URL});
 		// Fetch current user
-		 const res = await getCurrentUser();
-		 const me = await res.json();
+		 const me = await getCurrentUser();
 		 const userId = me.id;
 		
 		setupHistoryTab(userId);
@@ -42,100 +52,11 @@ export async function renderHistoryTab() {
 export async function setupHistoryTab(userId: number) {
 	
 	// Load first page
-	loadMatches(userId, currentPage); 
+	await loadMatches(userId, currentPage); 
 	initProfileModal(); 
     setupProfileLinks(); 
 }
 
-// async function loadMatches(userId: number, page: number) {
-//   try {
-//     const data = await getUserMatches(userId, page, perPage);
-
-//     // Update total matches
-//     const totalMatchesEl = document.querySelector<HTMLParagraphElement>(
-//       '#profile-content p.txt-subheading'
-//     );
-//     if (totalMatchesEl) totalMatchesEl.textContent = `Number of matches played: ${data.total}`;
-
-//     // Update page info
-//     const pageEl = document.querySelector<HTMLParagraphElement>('#profile-content p.page-info');
-//     if (pageEl) pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
-
-//     // Render match rows
-//     const matchesContainer = document.querySelector<HTMLDivElement>('#matches-container');
-//     if (!matchesContainer) return;
-
-//     matchesContainer.innerHTML = data.matches.map(match => {
-//       const player1 = data.users[match.player1_id];
-//       const player2 = data.users[match.player2_id];
-
-//       return `
-//         <div class="flex justify-between items-center border-2 border-[--primary-color] p-4 gap-4">
-//           <!-- Player A -->
-//           <div class="player-card border-[--success-color]">
-//             <a href="#" class="open-profile" data-user="${player1.username}">
-//               <img class="w-12 h-12 rounded-full bg-gray-300" src="${player1.avatar}" alt="">
-//             </a>
-//             <div class="ml-3 flex flex-col">
-//               <div class="flex items-center space-x-2">
-//                 <span class="w-3 h-3 rounded-full bg-[--success-color]"></span>
-//                 <span class="font-bold text-white">
-//                   <a href="#" class="open-profile" data-user="${player1.username}">${player1.username}</a>
-//                 </span>
-//               </div>
-//               <div class="text-red-500 font-bold text-sm">${player1.score} pts</div>
-//             </div>
-//           </div>
-
-//           <div class="color-success text-2xl">${match.player1_score}</div>
-
-//           <div class="border-2 border-[--primary-color] px-6 py-2 text-white neon-border">
-//             ${new Date(match.date).toLocaleDateString()}
-//           </div>
-
-//           <div class="color-secondary text-2xl">${match.player2_score}</div>
-
-//           <!-- Player B -->
-//           <div class="player-card border-[--primary-color]">
-//             <a href="#" class="open-profile" data-user="${player2.username}">
-//               <img class="w-12 h-12 rounded-full bg-gray-300" src="${player2.avatar}" alt="">
-//             </a>
-//             <div class="ml-3 flex flex-col">
-//               <div class="flex items-center space-x-2">
-//                 <span class="w-3 h-3 rounded-full bg-[--warning-color]"></span>
-//                 <span class="font-bold text-white">${player2.username}</span>
-//               </div>
-//               <div class="text-red-500 font-bold text-sm">${player2.score} pts</div>
-//             </div>
-//           </div>
-//         </div>
-//       `;
-//     }).join('');
-
-//     // Setup Prev/Next buttons
-//     const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement;
-//     const nextBtn = document.getElementById('next-btn') as HTMLButtonElement;
-
-//     if (prevBtn) {
-//       prevBtn.disabled = data.page <= 1;
-//       prevBtn.onclick = () => {
-//         currentPage = data.page - 1;
-//         loadMatches(userId, currentPage);
-//       };
-//     }
-
-//     if (nextBtn) {
-//       nextBtn.disabled = data.page >= data.totalPages;
-//       nextBtn.onclick = () => {
-//         currentPage = data.page + 1;
-//         loadMatches(userId, currentPage);
-//       };
-//     }
-
-//   } catch (err) {
-//     console.error("Failed to load matches:", err);
-//   }
-// }
 async function loadMatches(userId: number, page: number) {
   try {
     const data = await getUserMatches(userId, page, perPage);
@@ -162,17 +83,45 @@ async function loadMatches(userId: number, page: number) {
     const usersMap = data.users || {};
 
     matchesContainer.innerHTML = data.matches.map(match => {
-      const player1 = getUserFromMap(usersMap, match.player1_id);
-      const player2 = getUserFromMap(usersMap, match.player2_id);
+	const player1 = getUserFromMap(usersMap, match.player1_id);
+	const player2 = getUserFromMap(usersMap, match.player2_id);
 
-      const dateStr = match.date ? new Date(match.date).toLocaleDateString() : '';
+	    // Normalize avatar URLs (fallback to default if missing)
+  	const player1Avatar = player1.avatar
+    ? `${API_BASE_URL}/profile/avatar/${player1.avatar}`
+    : 'default.jpg';
 
+  	const player2Avatar = player2.avatar
+    ? `${API_BASE_URL}/profile/avatar/${player2.avatar}`
+    : 'default.jpg';
+
+	console.log("Winner ",match.winner_id);
+    //   const dateStr = match.finished_at ? new Date(match.finished_at).toLocaleDateString() : '';
+	const dateStr = match.finished_at
+	? (() => {
+		const d = new Date(match.finished_at);
+		const day = String(d.getDate()).padStart(2, '0');
+		const month = String(d.getMonth() + 1).padStart(2, '0'); // months are 0-based
+		const year = d.getFullYear();
+		return `${day}/${month}/${year}`;
+		})()
+	: '';
+
+	// Winner highlight logic
+	const isPlayer1Winner = match.player1_id === match.winner_id;
+	const isPlayer2Winner = match.player2_id === match.winner_id;
+
+	const player1Border = isPlayer1Winner ? "border-[--success-color]" : "border-[--primary-color]";
+	const player2Border = isPlayer2Winner ? "border-[--success-color]" : "border-[--primary-color]";
+
+	const player1ScoreColor = isPlayer1Winner ? "color-success" : "color-secondary";
+	const player2ScoreColor = isPlayer2Winner ? "color-success" : "color-secondary";
       return `
         <div class="flex justify-between items-center border-2 border-[--primary-color] p-4 gap-4">
           <!-- Player A -->
-          <div class="player-card border-[--success-color]">
+          <div class="player-card ${player1Border}">
             <a href="#" class="open-profile" data-user="${player1.username}">
-              <img class="w-12 h-12 rounded-full bg-gray-300" src="${player1.avatar}" alt="${player1.username}">
+              <img class="w-12 h-12 rounded-full bg-gray-300" src="${player1Avatar}" alt="${player1.username}">
             </a>
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
@@ -185,18 +134,18 @@ async function loadMatches(userId: number, page: number) {
             </div>
           </div>
 
-          <div class="color-success text-2xl">${match.player1_score ?? '-'}</div>
+          <div class="${player1ScoreColor} text-2xl">${match.player1_score ?? '-'}</div>
 
           <div class="border-2 border-[--primary-color] px-6 py-2 text-white neon-border">
             ${dateStr}
           </div>
 
-          <div class="color-secondary text-2xl">${match.player2_score ?? '-'}</div>
+          <div class="${player2ScoreColor} text-2xl">${match.player2_score ?? '-'}</div>
 
           <!-- Player B -->
-          <div class="player-card border-[--primary-color]">
+          <div class="player-card ${player2Border}">
             <a href="#" class="open-profile" data-user="${player2.username}">
-              <img class="w-12 h-12 rounded-full bg-gray-300" src="${player2.avatar}" alt="${player2.username}">
+              <img class="w-12 h-12 rounded-full bg-gray-300" src="${player2Avatar}" alt="${player2.username}">
             </a>
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
@@ -214,20 +163,34 @@ async function loadMatches(userId: number, page: number) {
     const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement | null;
     const nextBtn = document.getElementById('next-btn') as HTMLButtonElement | null;
 
-    if (prevBtn) {
-      prevBtn.disabled = data.page <= 1;
-      prevBtn.onclick = () => {
-        currentPage = data.page - 1;
-        loadMatches(userId, currentPage);
-      };
-    }
-    if (nextBtn) {
-      nextBtn.disabled = data.page >= data.totalPages;
-      nextBtn.onclick = () => {
-        currentPage = data.page + 1;
-        loadMatches(userId, currentPage);
-      };
-    }
+		
+	if (prevBtn) {
+	const isDisabled = data.page <= 1;
+	prevBtn.disabled = isDisabled;
+	prevBtn.classList.toggle("btn-primary", !isDisabled);
+	prevBtn.classList.toggle("btn-disabled", isDisabled);
+
+	prevBtn.onclick = () => {
+		if (!isDisabled) {
+		currentPage = data.page - 1;
+		loadMatches(userId, currentPage);
+		}
+	};
+	}
+
+	if (nextBtn) {
+	const isDisabled = data.page >= data.totalPages;
+	nextBtn.disabled = isDisabled;
+	nextBtn.classList.toggle("btn-primary", !isDisabled);
+	nextBtn.classList.toggle("btn-disabled", isDisabled);
+
+	nextBtn.onclick = () => {
+		if (!isDisabled) {
+		currentPage = data.page + 1;
+		loadMatches(userId, currentPage);
+		}
+	};
+	}
 
   } catch (err) {
     console.error("Failed to load matches:", err);
@@ -236,24 +199,13 @@ async function loadMatches(userId: number, page: number) {
   }
 }
 
-type UsersMap = Record<string, {
-  id: number;
-  username: string;
-  avatar?: string;
-  score?: number;
-  status?: number;
-  show_scores_publicly?: number;
-  // add other fields you return from backend
-}>;
-
-const DEFAULT_AVATAR = `${API_BASE_URL}/uploads/avatars/default-avatar.png`; // replace with your default
 
 function getUserFromMap(usersMap: UsersMap, id: number) {
   // JSON object keys become strings, so try both forms
   return usersMap[id] ?? usersMap[String(id)] ?? {
     id,
     username: 'Unknown',
-    avatar: DEFAULT_AVATAR,
+    avatar: 'default.jpg',
     score: 0,
     status: 0,
   	show_scores_publicly: 1
@@ -264,7 +216,7 @@ function getUserFromMap(usersMap: UsersMap, id: number) {
 //Helper for fetch matches with pagination
 async function getUserMatches(userId: number, page = 1, perPage = 5) {
   const offset = (page - 1) * perPage;
-  const res = await fetch(`${API_BASE_URL}/games/${userId}?limit=${perPage}&offset=${offset}`, {
+  const res = await fetch(`${API_BASE_URL}/profile/games/${userId}?limit=${perPage}&offset=${offset}`, {
     credentials: 'include',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -286,26 +238,3 @@ async function getUserMatches(userId: number, page = 1, perPage = 5) {
     totalPages: Math.max(1, Math.ceil((data.total ?? 0) / perPage))
   };
 }
-
-
-
-// async function getUserMatches(userId: number, page = 1, perPage = 5) {
-//   const offset = (page - 1) * perPage;
-//   const res = await fetch(`${API_BASE_URL}/profile/games/${userId}?limit=${perPage}&offset=${offset}`, {
-//     credentials: 'include',
-//     headers: {
-//       'Authorization': `Bearer ${localStorage.getItem('token')}`
-//     }
-//   });
-
-//   if (!res.ok) throw new Error(`Failed to fetch matches: ${res.status}`);
-//   const data = await res.json();
-
-//   return {
-//     matches: data.matches,
-//     total: data.total,
-//     page,
-//     perPage,
-//     totalPages: Math.ceil(data.total / perPage)
-//   };
-// }

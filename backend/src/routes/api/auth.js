@@ -292,11 +292,11 @@ export default async function (fastify, opts) {
 					maxAge: 3 * 60 * 60
 				});
 
-					// Update last login time
-				// await fastify.db.run(
-				// 	'UPDATE users SET last_login = datetime("now") WHERE id = ?',
-				// 	[user.id]
-				// );
+				// Update last login time
+				await fastify.db.run(
+					'UPDATE users SET last_login = datetime("now") WHERE id = ?',
+					[user.id]
+				);
 
 				// Send success response with user data (NO TOKENS in body)
 				reply.code(201).send({  // 201 = Created

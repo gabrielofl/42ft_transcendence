@@ -141,7 +141,7 @@ export default async function (fastify, opts) {
 
 		// Fetch matches
 		const matches = await fastify.db.all(
-			'SELECT * FROM games WHERE player1_id = ? OR player2_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
+			'SELECT * FROM games WHERE player1_id = ? OR player2_id = ? ORDER BY finished_at DESC LIMIT ? OFFSET ?',
 			[id, id, limit, offset]
 		);
 
