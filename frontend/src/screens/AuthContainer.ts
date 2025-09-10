@@ -135,8 +135,8 @@ if (!main) return;
 
 `;
 
-setupAuthEvents();
-initializeGoogleSignIn();
+	setupAuthEvents();
+	initializeGoogleSignIn();
 }
 
 function renderLoginForm(): string {

@@ -14,11 +14,11 @@ async function databasePlugin(fastify, opts) {
 	// Log what we're doing
 	fastify.log.info(`Opening database at: ${dbPath}`);
 	
-	// Open database connection
 	const db = await open({
 		filename: dbPath,           // Path to database file
 		driver: sqlite3.Database    // Which SQLite driver to use
 	});
+
 
 	// Create tables if they don't exist
 	await db.exec(`
@@ -141,6 +141,7 @@ async function databasePlugin(fastify, opts) {
 	fastify.addHook('onClose', async () => {
 		await db.close();
 	});
+	
 }
 
 // Export with dependencies

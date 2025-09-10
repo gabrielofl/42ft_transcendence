@@ -56,7 +56,7 @@ export function setupAccountTab() {
 			
 			// Avatar
 			if (data.avatar) {
-				const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
+				const avatarUrl = `${API_BASE_URL}/profile/avatar/${data.avatar}`;
 				(document.getElementById('avatar-preview') as HTMLImageElement).src = avatarUrl;
 			}
 			

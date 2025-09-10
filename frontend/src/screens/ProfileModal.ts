@@ -3,6 +3,8 @@ import { API_BASE_URL } from "./config";
 
 export function initProfileModal() {
   // Only append once
+	console.log("Init ");
+
   if (!document.getElementById("user-profile-modal")) {
     document.body.insertAdjacentHTML("beforeend", profileModalHtml);
   }
@@ -13,6 +15,7 @@ export function setupProfileLinks() {
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const username = link.getAttribute("data-user");
+	  console.log("username ", username);
       if (username) openUserProfile(username);
     });
   });

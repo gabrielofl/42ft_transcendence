@@ -29,7 +29,7 @@ const config = {
 	
 	// Database settings
 	database: {
-		path: process.env.DB_PATH || './pong.db',
+		path: './db/pong.db',
 	},
 	
 	// Security settings
