@@ -4,7 +4,7 @@ import { renderHome } from "./screens/Home.js";
 import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
-import { renderGame } from "./screens/Game/GameScreen.js";
+import { PlayerData, renderGame } from "./screens/Game/GameScreen.js";
 import { renderHeader } from "./components/Header.js";
 import { AppStore } from "./redux/AppStore.js";
 import { Screen } from "./redux/reducers/navigationReducer.js";
@@ -63,7 +63,24 @@ function renderScreen(screen: Screen) {
       renderHome();
       break;
     case "game":
-      renderGame("Jorge", "Miguel", "local");
+      console.log("Lanzando juego");
+      let players: PlayerData[] = [];
+
+      players.push({
+        type: "AI",
+        username: "David",
+        userid: -1
+      });
+
+      players.push({
+        type: "Local",
+        username: "Gabriel",
+        leftkey: "a",
+        rightkey: "d",
+        userid: 5,
+      });
+
+      renderGame(players);
       break;
     case "tournament":
       renderTournament();
