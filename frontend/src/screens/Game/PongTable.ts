@@ -20,7 +20,7 @@ export class PongTable extends DisposableMesh {
     public static Zones: ObservableList<Zone> = new ObservableList();
     public static Balls: ObservableList<Ball> = new ObservableList();
     public static PowerUps: ObservableList<PowerUpBox> = new ObservableList();
-    public static Map: MapDefinition = MAPS.MultiplayerMap;
+    public static Map: MapDefinition = MAPS.BaseMap;
     public static Paused: boolean = false;
     public OnDisposeEvent: Event<void> = new Event();
 

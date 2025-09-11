@@ -20,11 +20,11 @@ export class PowerUpBox extends Zone {
         super(1.5, 1.5, 1.5);
 
         // this.rewardTypes.push(() => new PowerUpMoreLength());
-        this.rewardTypes.push(() => new PowerUpLessLength());
+        // this.rewardTypes.push(() => new PowerUpLessLength());
         // this.rewardTypes.push(() => new PowerUpSpeedUp());
         // this.rewardTypes.push(() => new PowerUpSpeedDown());
-        // this.rewardTypes.push(() => new PowerUpCreateBall());
-        this.rewardTypes.push(() => new PowerUpShield());
+        this.rewardTypes.push(() => new PowerUpCreateBall());
+        // this.rewardTypes.push(() => new PowerUpShield());
 
         // Posición aleatoria dentro del campo de juego
         const x = (Math.random() - 0.5) * tableWidth * 0.8;

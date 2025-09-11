@@ -17,6 +17,7 @@ export abstract class APlayer {
 
     // Propiedades
     protected name: string;
+    protected id: number;
     protected paddle: Paddle;
     public ScoreZone: Zone;
     protected score: number = 0;
@@ -27,7 +28,8 @@ export abstract class APlayer {
     public Shields: ObservableList<PaddleShieldEffect> = new ObservableList();;
     public PaddleLen: DependentValue<PaddleLenEffect, number>;
 
-    constructor(name: string) {
+    constructor(name: string, id: number) {
+        this.id = id;
         this.name = name;
         this.Inventory = new Inventory(this);
         this.paddle = this.CreatePaddle(8);

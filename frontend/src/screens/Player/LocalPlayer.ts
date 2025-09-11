@@ -6,8 +6,8 @@ export class LocalPlayer extends APlayer {
 	private rightKey: string;
 	private inventoryKeys: [string, string, string] | undefined;
 
-	constructor(name: string, leftKey: string, rightKey: string, skills?: [string, string, string]) {
-		super(name);
+	constructor(name: string, id: number, leftKey: string, rightKey: string, skills?: [string, string, string]) {
+		super(name, id);
 		this.leftKey = leftKey;
 		this.rightKey = rightKey;
 		this.inventoryKeys = skills;

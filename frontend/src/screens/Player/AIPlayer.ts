@@ -4,8 +4,8 @@ import { Ball } from "../Collidable/Ball";
 import { PongTable } from "../Game/PongTable";
 
 export class AIPlayer extends APlayer {
-    constructor(name: string) {
-        super(name);
+    constructor(name: string, id: number) {
+        super(name, id);
     }
 
     // Verifica si la bola se acerca al Paddle.
