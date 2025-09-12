@@ -1,10 +1,10 @@
 import * as BABYLON from "@babylonjs/core";
 import { Wall } from "../Collidable/Wall";
-import { PowerUpBox } from "../PowerUps/PowerUpBox";
 import { Obstacle } from "../Collidable/Obstacle";
 import { Event } from "@shared/utils/Event";
 import { Game } from "./Game";
 import { DisposableMesh } from "../Utils/DisposableMesh";
+import { IPowerUpBox } from "@shared/interfaces/IPowerUpBox";
 
 export abstract class APongTable extends DisposableMesh {
     protected readonly MAX_POWERUPS = 15;
@@ -28,8 +28,8 @@ export abstract class APongTable extends DisposableMesh {
         );
 	}
 
-    public abstract CreatePowerUp(x: number, z: number): void;
-    public CopyPowerUp(box: PowerUpBox) {}
+    public abstract CreatePowerUp(id: number, x: number, z: number): void;
+    public CopyPowerUp(box: IPowerUpBox) {}
 
     /**
      * Disposes TableGround, Walls and obstacles.
@@ -39,7 +39,7 @@ export abstract class APongTable extends DisposableMesh {
         this.walls = [];
         this.obstacles.forEach(o => o.Dispose());
         this.obstacles = [];
-        let pwrUps: PowerUpBox[] = this.game.PowerUps.GetAll();
+        let pwrUps: IPowerUpBox[] = this.game.PowerUps.GetAll();
         this.game.PowerUps.OnRemoveEvent.Clear();
         pwrUps.forEach(p => {
             p.Dispose();

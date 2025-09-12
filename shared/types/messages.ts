@@ -1,6 +1,6 @@
 export type MessageTypes =
 "CreatePowerUp" |
-"GameStart";
+"PickPowerUpBox";
 
 export interface Message {
     type: MessageTypes
@@ -10,6 +10,7 @@ export interface Message {
 // Esto permite que cada evento tenga su tipo específico.
 export type MessagePayloads = {
     ["CreatePowerUp"]: CreatePowerUpMessage;
+    ["PickPowerUpBox"]: PickPowerUpBoxMessage;
 };
 
 export type PowerUpType = "MoreLength" | "LessLength" | "CreateBall" | "Shield" | "SpeedDown" | "SpeedUp";
@@ -27,9 +28,15 @@ export interface GameStartMessage extends Message {
 }
 
 export interface CreatePowerUpMessage extends Message {
+    id: number;
     x: number;
     z: number;
     powerUpType: PowerUpType;
+}
+
+export interface PickPowerUpBoxMessage extends Message {
+    username: string;
+    id: number;
 }
 
 export type AllMessages = CreatePowerUpMessage | GameStartMessage;

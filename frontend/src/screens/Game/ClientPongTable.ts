@@ -1,5 +1,5 @@
 import { SpotMarker } from "../Player/SpotMarker";
-import { PowerUpBox } from "../PowerUps/PowerUpBox";
+import { ClientPowerUpBox } from "../PowerUps/ClientPowerUpBox";
 import { APongTable } from "./APongTable";
 import { Game } from "./Game";
 
@@ -15,12 +15,8 @@ export class ClientPongTable extends APongTable {
             this.markers = game.Map.spots.map(s => new SpotMarker(game, s));
     }
 
-    public CopyPowerUp(box: PowerUpBox): void {
-        new PowerUpBox(this.game,)
-    }
-
-    public CreatePowerUp(x: number, z: number): void {
-        new PowerUpBox(this.game, x, z);
+    public CreatePowerUp(id: number, x: number, z: number): void {
+        new ClientPowerUpBox(this.game, id, x, z);
     }
 
     public Dispose(): void {

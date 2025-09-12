@@ -13,14 +13,19 @@ import { APongTable } from "../Game/APongTable";
 import { PowerUpShield } from "./PowerUpShield";
 import { GameEvent } from "@shared/types/types";
 import { PowerUpType } from "@shared/types/messages";
+import { IPowerUpBox } from "../../../../shared/interfaces/IPowerUpBox";
+import { DisposableMesh } from "../Utils/DisposableMesh";
+import { APlayer } from "../Player/APlayer";
 
-export class PowerUpBox extends Zone {
+export class ClientPowerUpBox extends DisposableMesh implements IPowerUpBox {
     protected observable: BABYLON.Nullable<BABYLON.Observer<BABYLON.Scene>>;
     public X: number;
     public Z: number;
     public PowerUp: IPowerUp;
+    private game: Game;
+    public ID: number;
 
-      // 🔑 Factories centralizadas
+    // 🔑 Factories centralizadas
     private static factories: Record<PowerUpType, (game: Game) => IPowerUp> = {
         MoreLength: (game) => new PowerUpMoreLength(game),
         LessLength: (game) => new PowerUpLessLength(game),
@@ -30,18 +35,12 @@ export class PowerUpBox extends Zone {
         Shield: (game) => new PowerUpShield(game),
     };
 
-    constructor(game: Game, x: number, z: number, type?: PowerUpType) {
-        super(game, 1.5, 1.5, 1.5);
+    constructor(game: Game, id: number, x: number, z: number, type?: PowerUpType) {
+        let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("PowerUpBox", { width: 1.5, height: 1.5, depth: 1.5 }, scene);
+        super(game, fMeshBuilder);
+        this.game = game;
 
-        // let rewardTypes: (() => IPowerUp)[] = [];
-
-        // rewardTypes.push(() => new PowerUpMoreLength(game));
-        // rewardTypes.push(() => new PowerUpLessLength(game));
-        // rewardTypes.push(() => new PowerUpSpeedUp(game));
-        // rewardTypes.push(() => new PowerUpSpeedDown(game));
-        // rewardTypes.push(() => new PowerUpCreateBall());
-        // rewardTypes.push(() => new PowerUpShield(game));
-
+        this.ID = id;
         this.X = x;
         this.Z = z;
         this.mesh.position.set(x, 1, z);
@@ -57,36 +56,23 @@ export class PowerUpBox extends Zone {
 
         // 👉 Seleccionar power-up
         if (type) {
-            this.PowerUp = PowerUpBox.factories[type](game);
+            this.PowerUp = ClientPowerUpBox.factories[type](game);
         } else {
-            const types = Object.keys(PowerUpBox.factories) as PowerUpType[];
+            const types = Object.keys(ClientPowerUpBox.factories) as PowerUpType[];
             const randomType = types[Math.floor(Math.random() * types.length)];
-            this.PowerUp = PowerUpBox.factories[randomType](game);
+            this.PowerUp = ClientPowerUpBox.factories[randomType](game);
         }
         
         // Se añade a la lista de PowerUps.
         game.PowerUps.Add(this);
-        
-        // Registrarse a eventos.
-        this.OnEnterEvent.Subscribe((iMesh) => this.PickUp(iMesh));
-
-        // Notificar creación
-        game.MessageBroker.Publish(GameEvent.CreatePowerUp, this);
     }
 
-    private PickUp(iMesh: IMesh)
-    {
+    public PickUp(player: APlayer) {
         if (this.disposed)
             return;
 
-        if (iMesh instanceof Ball && iMesh.Owner != null)
-        {
-            if (iMesh.IsDisposed())
-                return;
-            
-            iMesh.Owner.Inventory.PickUpPwrUp(this.PowerUp);
-            this.Dispose();
-        }
+        player.Inventory.PickUpPwrUp(this.PowerUp);
+        this.Dispose();
     }
 
     /**
@@ -94,7 +80,6 @@ export class PowerUpBox extends Zone {
      */
     public Dispose(): void {
         super.Dispose();
-        this.OnEnterEvent.Clear();
         this.game.PowerUps.Remove(this);
         this.scene.onBeforeRenderObservable.remove(this.observable);
     }

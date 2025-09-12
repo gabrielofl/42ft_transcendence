@@ -1,16 +1,16 @@
-import { GameEvent } from "@shared/types/types";
+import { GameEvent, PickedPowerUpBoxArgs } from "@shared/types/types";
 // import { gameWebSocketConfig } from "../../config/websocket";
 import { Game } from "./Game";
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { PowerUpCreateBall } from "../PowerUps/PowerUpCreateBall";
-import { CreatePowerUpMessage, Message, MessagePayloads, PowerUpType } from "@shared/types/messages"
+import { CreatePowerUpMessage, Message, MessagePayloads, PickPowerUpBoxMessage, PowerUpType } from "@shared/types/messages"
 import { PowerUpLessLength } from "../PowerUps/PowerUpLessLength";
 import { PowerUpMoreLength } from "../PowerUps/PowerUpMoreLength";
 import { PowerUpShield } from "../PowerUps/PowerUpShield";
 import { PowerUpSpeedDown } from "../PowerUps/PowerUpSpeedDown";
 import { PowerUpSpeedUp } from "../PowerUps/PowerUpSpeedUp";
 import { MessageBroker } from "@shared/utils/MessageBroker";
-import { PowerUpBox } from "../PowerUps/PowerUpBox";
+import { IPowerUpBox } from "@shared/interfaces/IPowerUpBox";
 
 export class ServerGameSocket {
     private game: Game;
@@ -22,7 +22,7 @@ export class ServerGameSocket {
     constructor(game: Game) {
         this.game = game;
         this.msgs = new MessageBroker<MessagePayloads>();
-        // this.setupGameEventListeners();
+        this.setupGameEventListeners();
                // Conectar al WebSocket para modo multijugador
         /* if (players.length === 2) {
             // Simular userId para testing - en producción esto vendría del sistema de auth
@@ -46,10 +46,22 @@ export class ServerGameSocket {
         // this.game.MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
         
         // Funcionales
-        this.game.MessageBroker.Subscribe(GameEvent.CreatePowerUp, this.handleCreatePowerUp.bind(this));
+        this.game.MessageBroker.Subscribe(GameEvent.CreatePowerUp, (p) => this.handleCreatePowerUp(p));
+        this.game.MessageBroker.Subscribe(GameEvent.PickedPowerUp, (p) => this.handlePickedPowerUp(p));
     }
 
-    private async handleCreatePowerUp(box: PowerUpBox) {
+    private async handlePickedPowerUp(p: PickedPowerUpBoxArgs) {
+        let msg: PickPowerUpBoxMessage = {
+            type: "PickPowerUpBox",
+            id: p.id,
+            username: p.username,
+        }
+
+        // TODO: Enviar por socket.
+        this.msgs.Publish("PickPowerUpBox", msg);
+    }
+
+    private async handleCreatePowerUp(box: IPowerUpBox) {
         let powerUpType: PowerUpType = "CreateBall";
         if (box.PowerUp instanceof PowerUpCreateBall)
             powerUpType = "CreateBall"
@@ -66,11 +78,11 @@ export class ServerGameSocket {
 
         let msg: CreatePowerUpMessage = {
             type: "CreatePowerUp",
+            id: box.ID,
             powerUpType: powerUpType,
             x: box.X,
             z: box.Z,
         }
-
         // TODO: Enviar por socket.
         this.msgs.Publish("CreatePowerUp", msg);
     }

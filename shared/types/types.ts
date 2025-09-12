@@ -1,7 +1,7 @@
-import { PowerUpBox } from "src/screens/PowerUps/PowerUpBox";
 import { APlayer } from "../../frontend/src/screens/Player/APlayer";
 import { APlayerEffect } from "../abstract/APlayerEffect";
 import { IPowerUp } from "../interfaces/IPowerUp";
+import { IPowerUpBox } from "@shared/interfaces/IPowerUpBox";
 
 export enum GameEvent {
     SelfEffect,             // Un jugador se aplica un efecto.
@@ -12,8 +12,9 @@ export enum GameEvent {
     GameEnded,              // El juego ha terminado.
     GameRestart,            // Reinicia el juego sin cambiar de jugadores.
     PointMade,              // Un jugador ha anotado un punto.
-    CreatePowerUp,  // Un jugador ha anotado un punto.
-    InventoryChange,        // Un jugador ha anotado un punto.
+    CreatePowerUp,          // Se crea una caja de IPowerUpBox  
+    PickedPowerUp,          // Se coje una caja de IPowerUpBox
+    InventoryChange,
     Game_Room_Joined,
     Game_Updated,
     Game_Countdown,
@@ -36,13 +37,19 @@ export type EventPayloads = {
     [GameEvent.Game_Updated]: any;
     [GameEvent.Game_Countdown]: any;
     [GameEvent.Websocket_Updated]: any;
-    [GameEvent.CreatePowerUp]: PowerUpBox;
+    [GameEvent.CreatePowerUp]: IPowerUpBox;
+    [GameEvent.PickedPowerUp]: PickedPowerUpBoxArgs;
 };
 
 export type PlayerEffectFactory = () => APlayerEffect;
 export type AppliedEffectArgs = {
     Target: APlayer,
     Effect: APlayerEffect,
+};
+
+export type PickedPowerUpBoxArgs = {
+    username: string,
+    id: number,
 };
 
 export type PwrUpEventArgs = {

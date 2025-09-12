@@ -15,10 +15,10 @@ import { IMesh } from "../Interfaces/IMesh";
 import { SpotMarker } from "../Player/SpotMarker";
 import { WindCompass } from "./WindCompass";
 import { Zone } from "../Utils/Zone";
-import { PowerUpBox } from "../PowerUps/PowerUpBox";
 import { ServerPongTable } from "./ServerPongTable";
 import { ClientPongTable } from "./ClientPongTable";
 import { EventPayloads as GamePayloads, GameEvent } from "@shared/types/types";
+import { IPowerUpBox } from "../../../../shared/interfaces/IPowerUpBox";
 // import "@babylonjs/loaders/glTF";
 
 export class Game implements IDisposable {
@@ -51,7 +51,7 @@ export class Game implements IDisposable {
 	public MessageBroker: MessageBroker<GamePayloads> = new MessageBroker();
 	public Zones: ObservableList<Zone> = new ObservableList();
 	public Balls: ObservableList<Ball> = new ObservableList();
-	public PowerUps: ObservableList<PowerUpBox> = new ObservableList();
+	public PowerUps: ObservableList<IPowerUpBox> = new ObservableList();
 	public Map: MAPS.MapDefinition = MAPS.MultiplayerMap;
 	public PongTable: APongTable;
 

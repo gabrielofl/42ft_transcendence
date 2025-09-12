@@ -6,6 +6,7 @@ import { DisposableImpostor } from "../Utils/DisposableImpostor";
 import { APongTable } from "../Game/APongTable";
 import { DisposableMesh } from "../Utils/DisposableMesh";
 import { Game } from "../Game/Game";
+import { GameEvent } from "@shared/types/types";
 
 export class Paddle extends DisposableImpostor {
     public static SPEED: number = 0.5;
@@ -16,10 +17,12 @@ export class Paddle extends DisposableImpostor {
     protected defWidth: number;
     protected owner;
     private coloredmesh: DisposableMesh; 
+    protected game: Game;
 
     constructor(game: Game, player: APlayer, width: number) {
         let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox(player.GetName(), { width: width, height: 3.5, depth: 1 }, scene);
         super(game, fMeshBuilder, 0);
+        this.game = game;
         this.owner = player;
         this.mesh.material = game.GetMaterial("Transparent");
         
@@ -73,6 +76,14 @@ export class Paddle extends DisposableImpostor {
         if (BABYLON.Vector3.Distance(this.mesh.position, this.spawnPosition) > this.maxDistance)
             this.mesh.position = previousPos;
     }
+
+/*  public PreMove(direction: number): void {
+        this.game.MessageBroker.Publish(GameEvent.PreMove, 0);
+    }
+
+    public ClientMove(json: {x: number, y: number}) {
+        this.mesh.translate(BABYLON.Axis.X, x, BABYLON.Space.LOCAL);
+    } */
 
     public BallCollision(ball: Ball): void {
         ball.Owner = this.owner;

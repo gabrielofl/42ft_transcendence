@@ -46,7 +46,7 @@ function setupGameEvents(): void {
 		setupGameEndedListener(servergame);
 		setupPointMadeListener(servergame);
 		console.log("Iniciando Pong Server");
-		serversocket = new ServerGameSocket(clientgame);
+		serversocket = new ServerGameSocket(servergame);
 	}
 	
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;

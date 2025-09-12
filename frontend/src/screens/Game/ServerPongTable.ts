@@ -1,10 +1,10 @@
 import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
-import { PowerUpBox } from "../PowerUps/PowerUpBox";
 import { GameEvent } from "@shared/types/types";
 import { Zone } from "../Utils/Zone";
 import { APongTable } from "./APongTable";
 import { Game } from "./Game";
+import { ServerPowerUpBox } from "../PowerUps/ServerPowerUpBox";
 
 export class ServerPongTable extends APongTable {
     protected gameZone: Zone;
@@ -42,7 +42,7 @@ export class ServerPongTable extends APongTable {
     }
     
     public CreatePowerUp(x: number, z: number): void {
-        setTimeout(() => new PowerUpBox(this.game, x, z), 2000);
+        setTimeout(() => new ServerPowerUpBox(this.game, x, z), 2000);
     }
 
     public Dispose(): void {
