@@ -1,8 +1,6 @@
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
 import { PaddleSpeedEffect } from "./Effects/PaddleSpeedEffect";
-import { GameEvent } from "@shared/types/types";
-import { PlayerEffectFactory } from "@shared/types/types";
 import { Game } from "../Game/Game";
 
 export class PowerUpSpeedUp implements IPowerUp {
@@ -21,6 +19,10 @@ export class PowerUpSpeedUp implements IPowerUp {
             return effect;
         };
 
-        this.game.MessageBroker.Publish(GameEvent.SelfEffect, factory);
+        this.game.MessageBroker.Publish("SelfEffect", {
+            type: "SelfEffect",
+            effect: "SpeedUp",
+            origin: player.GetName(),
+        });
     }
 }

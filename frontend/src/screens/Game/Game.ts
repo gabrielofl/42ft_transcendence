@@ -7,18 +7,20 @@ import { Event } from "@shared/utils/Event";
 import { ObservableList } from "../Utils/ObservableList";
 import { APlayer } from "../Player/APlayer";
 import { APongTable } from "./APongTable";
-// import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { MaterialFactory } from "./MaterialFactory";
 import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
-import { SpotMarker } from "../Player/SpotMarker";
 import { WindCompass } from "./WindCompass";
 import { Zone } from "../Utils/Zone";
 import { ServerPongTable } from "./ServerPongTable";
 import { ClientPongTable } from "./ClientPongTable";
-import { EventPayloads as GamePayloads, GameEvent } from "@shared/types/types";
 import { IPowerUpBox } from "../../../../shared/interfaces/IPowerUpBox";
+import { EffectType, MessagePayloads, PlayerResult, PowerUpType } from "@shared/types/messages";
+import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect";
+import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect";
+import { PaddleSpeedEffect } from "../PowerUps/Effects/PaddleSpeedEffect";
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 // import "@babylonjs/loaders/glTF";
 
 export class Game implements IDisposable {
@@ -48,7 +50,7 @@ export class Game implements IDisposable {
 	private isServerSide: boolean;
 
 	// ---Instances ---
-	public MessageBroker: MessageBroker<GamePayloads> = new MessageBroker();
+	public MessageBroker: MessageBroker<MessagePayloads> = new MessageBroker();
 	public Zones: ObservableList<Zone> = new ObservableList();
 	public Balls: ObservableList<Ball> = new ObservableList();
 	public PowerUps: ObservableList<IPowerUpBox> = new ObservableList();
@@ -91,8 +93,9 @@ else */
 		this.engine.runRenderLoop(() => this.scene.render());
 		window.addEventListener('resize', () => this.engine.resize());
 		this.Balls.OnRemoveEvent.Subscribe(this.BallRemoved.bind(this));
-		this.MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
-		this.MessageBroker.Subscribe(GameEvent.GamePause, (paused: boolean) => this.scene.getPhysicsEngine()?.setTimeStep(paused ? 0 : 1/60));
+		// TODO Cambiar a Mensaje
+		// this.MessageBroker.Subscribe(GameEvent.GameRestart, this.GameRestart.bind(this));
+		// this.MessageBroker.Subscribe(GameEvent.GamePause, (paused: boolean) => this.scene.getPhysicsEngine()?.setTimeStep(paused ? 0 : 1/60));
 		this.materialFact = new MaterialFactory(this);
 		
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
@@ -173,7 +176,7 @@ else */
 				this.camera.setTarget(BABYLON.Vector3.Zero());
 			} else if (evt.sourceEvent.key === "p") {
 				console.log("Pause: " + !this.Paused);
-				this.MessageBroker.Publish(GameEvent.GamePause, !this.Paused);
+				this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: !this.Paused});
 			}
 		}));
 
@@ -206,14 +209,16 @@ else */
 		if (this.Paused === true)
 			return;
 
-		this.MessageBroker.Publish(GameEvent.GamePause, true);
+		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: true});
 		this.Balls.GetAll().forEach(ball => ball.Dispose());
-		this.MessageBroker.Publish(GameEvent.GameEnded, [...this.players]);
+		let results: PlayerResult[] = [];
+		this.players.forEach(p => results.push({username: p.GetName(), score: p.GetScore()}));
+		this.MessageBroker.Publish("GameEnded", {type: "GameEnded", results: results});
 	}
 
 	private GameRestart(): void {
 		this.players.forEach(p => p.Reset());
-		this.MessageBroker.Publish(GameEvent.GamePause, false);
+		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: false});
 		this.start()
 	}
 
@@ -221,6 +226,13 @@ else */
 		if (ball instanceof Ball)
 		{
 			this.players.filter(p => p != player).forEach(p => p.IncreaseScore());
+
+			let results: PlayerResult[] = [];
+			this.players.forEach(p => results.push({username: p.GetName(), score: p.GetScore()}));
+			this.MessageBroker.Publish("PointMade", {
+				type: "PointMade",
+				results: results,
+			});
 			ball.Dispose();
 		}
 	}
@@ -252,5 +264,17 @@ else */
 
 	public GetPlayers(): APlayer[] {
 		return [...this.players];
+	}
+
+	public CreatePlayerEffect(type: EffectType): APlayerEffect {
+		let powerUpFactory: Record<EffectType, () => APlayerEffect> = {
+			MoreLength: () => new PaddleLenEffect(this, "textures/PwrUpLessLength.jpg", -2),
+			LessLength: () => new PaddleLenEffect(this, "textures/PwrUpLong.jpg", 4),
+			Shield: () => new PaddleShieldEffect(this, "textures/PowerUpShield.jpg"),
+			SpeedDown: () => new PaddleSpeedEffect(this, "textures/PowerUpSpeedDown.jpg", -0.2),
+			SpeedUp: () => new PaddleSpeedEffect(this, "textures/PowerUpSpeedUp.jpg", 0.8)
+		};
+
+		return powerUpFactory[type]();
 	}
 }

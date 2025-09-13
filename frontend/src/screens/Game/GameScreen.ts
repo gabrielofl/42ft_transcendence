@@ -1,7 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import gameTemplate from "./game.html?raw";
 import gameEndedTemplate from "./game-ended.html?raw";
-import { GameEvent } from "@shared/types/types";
 import { APlayer } from "../Player/APlayer";
 import { Game } from "./Game";
 import { LocalPlayer } from "../Player/LocalPlayer";
@@ -9,6 +8,7 @@ import { AIPlayer } from "../Player/AIPlayer";
 import { createPlayerCard } from "./player-card";
 import { ServerGameSocket } from "./ServerGameSocket";
 import { ClientGameSocket } from "./ClientGameSocket";
+import { ScoreMessage } from "@shared/types/messages";
 
 let clientgame: Game;
 let servergame: Game;
@@ -97,8 +97,8 @@ function createPlayers(game: Game, container: HTMLElement): APlayer[] {
 
 // Subscripción al evento GameEnded.
 function setupGameEndedListener(game: Game): void {
-	game.MessageBroker.Subscribe(GameEvent.GameEnded, (players: APlayer[]) => {
-        const winner = players.sort((a, b) => a.GetScore() - b.GetScore())[0];
+	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
+        const winner = msg.results.sort((a, b) => a.score - b.score)[0];
 		const container = document.querySelector(".relative.w-full") as HTMLDivElement;
 		if (!container) 
 			return;
@@ -108,7 +108,7 @@ function setupGameEndedListener(game: Game): void {
 
 		// Actualizar nombre del ganador
 		const winnerNameSpan = document.getElementById("winner-name");
-		if (winnerNameSpan) winnerNameSpan.textContent = winner.GetName();
+		if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
 
 		// Configurar botón
 		const playAgainBtn = document.getElementById("play-again-btn");
@@ -117,8 +117,10 @@ function setupGameEndedListener(game: Game): void {
 				const panel = document.getElementById("game-ended-panel");
 				if (panel)
 					panel.remove();
-				game.MessageBroker.Publish(GameEvent.GameRestart, null);
-				players.forEach(p => setPlayerPoints(p, 0));
+				game.MessageBroker.Publish("GameRestart", null);
+				msg.results.forEach(result => 
+					setPlayerPoints(result.username, 0)
+				);
 			});
 		}
 	});
@@ -126,14 +128,16 @@ function setupGameEndedListener(game: Game): void {
 
 // Subscripción al evento PointMade
 function setupPointMadeListener(game: Game) {
-	game.MessageBroker.Subscribe(GameEvent.PointMade, (player: APlayer) => {
+	game.MessageBroker.Subscribe("PointMade", (msg: ScoreMessage) => {
 		// Buscar el elemento del marcador correspondiente al jugador
-		setPlayerPoints(player, player.GetScore());
+		msg.results.forEach(result => 
+			setPlayerPoints(result.username, result.score)
+		);
 	});
 }
 
-function setPlayerPoints(player: APlayer, score: number) {
-	const scoreEl = document.getElementById(`${player.GetName()}-score`);
+function setPlayerPoints(username: string, score: number) {
+	const scoreEl = document.getElementById(`${username}-score`);
 	if (scoreEl) {
 		scoreEl.textContent = score.toString();
 	}

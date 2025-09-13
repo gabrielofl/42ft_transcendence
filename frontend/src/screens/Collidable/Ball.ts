@@ -2,8 +2,8 @@ import * as BABYLON from "@babylonjs/core";
 import { APlayer } from "../Player/APlayer";
 import { DisposableImpostor } from "../Utils/DisposableImpostor";
 import { Wall } from "./Wall";
-import { GameEvent } from "@shared/types/types";
 import { Game } from "../Game/Game";
+import { GamePauseMessage } from "@shared/types/messages";
 
 export class Ball extends DisposableImpostor {
 	public static GROUP: number = 1;
@@ -38,12 +38,12 @@ export class Ball extends DisposableImpostor {
 		game.Balls.Add(this);
 		this.OnDisposeEvent.Subscribe(() => game.Balls.Remove(this));
 
-        this.game.MessageBroker.Subscribe(GameEvent.GamePause, this.GamePaused.bind(this));
+        this.game.MessageBroker.Subscribe("GamePause", this.GamePaused.bind(this));
 	}
 
-	private GamePaused(paused: boolean): void
+	private GamePaused(msg: GamePauseMessage): void
 	{
-		if (paused)
+		if (msg.pause)
 		{
 			this.scene.onBeforeRenderObservable.remove(this.observer);
 			this.velocity = this.GetImpostor().getLinearVelocity();

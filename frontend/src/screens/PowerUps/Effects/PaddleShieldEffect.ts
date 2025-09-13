@@ -2,7 +2,6 @@ import * as BABYLON from "@babylonjs/core";
 import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
 import { DisposableMesh } from "../../Utils/DisposableMesh";
-import { GameEvent } from "@shared/types/types";
 import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 
 export class PaddleShieldEffect extends APlayerEffect {
@@ -21,7 +20,11 @@ export class PaddleShieldEffect extends APlayerEffect {
 
         // Limpiar efectos negativos
         target.Effects.GetAll().Where(e => e.IsNegative).forEach(e => e.Undo(target));
-        this.game.MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        this.game.MessageBroker.Publish("AppliedEffect", {
+            type: "AppliedEffect",
+            effect: "Shield",
+            origin: target.GetName()
+        });
         super.Execute(target);
     }
 

@@ -1,7 +1,6 @@
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
 import { PaddleSpeedEffect } from "./Effects/PaddleSpeedEffect";
-import { GameEvent } from "@shared/types/types";
 import { Game } from "../Game/Game";
 
 export class PowerUpSpeedDown implements IPowerUp {
@@ -20,6 +19,10 @@ export class PowerUpSpeedDown implements IPowerUp {
             return effect;
         };
 
-        this.game.MessageBroker.Publish(GameEvent.MassEffect, factory);
+        this.game.MessageBroker.Publish("MassEffect", {
+            type: "MassEffect",
+            effect: "SpeedDown",
+            origin: player.GetName(),
+        });
     }
 }

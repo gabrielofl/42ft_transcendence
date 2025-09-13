@@ -4,7 +4,6 @@ import { Inventory } from "../Inventory";
 import { Zone } from "../Utils/Zone";
 import { ObservableList } from "../Utils/ObservableList";
 import { APlayerEffect } from "@shared/abstract/APlayerEffect";
-import { GameEvent, PlayerEffectFactory } from "@shared/types/types";
 import { Ball } from "../Collidable/Ball";
 import { DependentValue } from "../Utils/DependentValue";
 import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect";
@@ -12,6 +11,7 @@ import "../Utils/array.extensions";
 import { Event } from "@shared/utils/Event";
 import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect";
 import { Game } from "../Game/Game";
+import { PlayerEffectMessage } from "@shared/types/messages";
 
 export abstract class APlayer {
     public OnPaddleCreated: Event<APlayer> = new Event();
@@ -46,13 +46,13 @@ export abstract class APlayer {
          });
 
         // Subscripción a mensajería global.
-        this.game.MessageBroker.Subscribe(GameEvent.MassEffect, this.OnMassEffect.bind(this));
-        this.game.MessageBroker.Subscribe(GameEvent.SelfEffect, this.OnSelfEffect.bind(this));
+        this.game.MessageBroker.Subscribe("MassEffect", this.OnMassEffect.bind(this));
+        this.game.MessageBroker.Subscribe("SelfEffect", this.OnSelfEffect.bind(this));
     }
 
-    private OnSelfEffect(factory: PlayerEffectFactory): void {
-        let effect = factory();
-        if (effect.Origin === this)
+    private OnSelfEffect(msg: PlayerEffectMessage): void {
+        let effect = this.game.CreatePlayerEffect(msg.effect);
+        if (msg.origin === this.name)
         {
             effect.Execute(this);
             this.Effects.Add(effect);
@@ -60,9 +60,9 @@ export abstract class APlayer {
     }
 
     // Recibir un efecto global.
-    private OnMassEffect(factory: PlayerEffectFactory) {
-        let effect = factory();
-        if (effect.Origin != this && effect.CanExecute(this))
+    private OnMassEffect(msg: PlayerEffectMessage) {
+        let effect = this.game.CreatePlayerEffect(msg.effect);
+        if (msg.origin != this.name && effect.CanExecute(this))
         {
             effect.Execute(this);
             this.Effects.Add(effect);
@@ -133,7 +133,6 @@ export abstract class APlayer {
     
     public IncreaseScore(score: number = 1): void {
         this.score += score;
-        this.game.MessageBroker.Publish(GameEvent.PointMade, this);
     }
 
     public Reset() {

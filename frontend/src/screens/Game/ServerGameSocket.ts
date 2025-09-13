@@ -1,4 +1,3 @@
-import { GameEvent, PickedPowerUpBoxArgs } from "@shared/types/types";
 // import { gameWebSocketConfig } from "../../config/websocket";
 import { Game } from "./Game";
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
@@ -46,43 +45,16 @@ export class ServerGameSocket {
         // this.game.MessageBroker.Subscribe(GameEvent.GameEnded, this.handleGameEnded.bind(this));
         
         // Funcionales
-        this.game.MessageBroker.Subscribe(GameEvent.CreatePowerUp, (p) => this.handleCreatePowerUp(p));
-        this.game.MessageBroker.Subscribe(GameEvent.PickedPowerUp, (p) => this.handlePickedPowerUp(p));
+        this.game.MessageBroker.Subscribe("CreatePowerUp", (p) => this.handleCreatePowerUp(p));
+        this.game.MessageBroker.Subscribe("PickPowerUpBox", (p) => this.handlePickedPowerUp(p));
     }
 
-    private async handlePickedPowerUp(p: PickedPowerUpBoxArgs) {
-        let msg: PickPowerUpBoxMessage = {
-            type: "PickPowerUpBox",
-            id: p.id,
-            username: p.username,
-        }
-
+    private async handlePickedPowerUp(msg: PickPowerUpBoxMessage) {
         // TODO: Enviar por socket.
         this.msgs.Publish("PickPowerUpBox", msg);
     }
 
-    private async handleCreatePowerUp(box: IPowerUpBox) {
-        let powerUpType: PowerUpType = "CreateBall";
-        if (box.PowerUp instanceof PowerUpCreateBall)
-            powerUpType = "CreateBall"
-        else if (box.PowerUp instanceof PowerUpMoreLength)
-            powerUpType = "MoreLength";
-        else if (box.PowerUp instanceof PowerUpLessLength)
-            powerUpType = "LessLength";
-        else if (box.PowerUp instanceof PowerUpShield)
-            powerUpType = "Shield";
-        else if (box.PowerUp instanceof PowerUpSpeedDown)
-            powerUpType = "SpeedDown";
-        else if (box.PowerUp instanceof PowerUpSpeedUp)
-            powerUpType = "SpeedUp";
-
-        let msg: CreatePowerUpMessage = {
-            type: "CreatePowerUp",
-            id: box.ID,
-            powerUpType: powerUpType,
-            x: box.X,
-            z: box.Z,
-        }
+    private async handleCreatePowerUp(msg: CreatePowerUpMessage) {
         // TODO: Enviar por socket.
         this.msgs.Publish("CreatePowerUp", msg);
     }

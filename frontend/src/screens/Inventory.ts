@@ -3,7 +3,6 @@ import { APlayer } from "./Player/APlayer";
 import { IDisposable } from "@shared/interfaces/IDisposable";
 import { Event } from "@shared/utils/Event";
 import { Game } from "./Game/Game";
-import { GameEvent } from "@shared/types/types"
 
 export class Inventory implements IDisposable {
   public OnDisposeEvent: Event<void> = new Event();
@@ -38,7 +37,7 @@ export class Inventory implements IDisposable {
       if (!value)
       {
         this.powerUps.set(slot, aPwrUp);
-        this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: aPwrUp, Slot: slot, Action: "Pick" });
+        // this.game.MessageBroker.Publish("InventoryChange", {Player: this.owner, PowerUp: aPwrUp, Slot: slot, Action: "Pick" });
         break;
       }
     }
@@ -55,7 +54,7 @@ export class Inventory implements IDisposable {
     {
       value.UsePowerUp(this.owner);
       this.powerUps.set(index, undefined);
-      this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
+      // this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
     }
   }
 
@@ -74,7 +73,7 @@ export class Inventory implements IDisposable {
   public Clear(): void {
     for (const [slot, value] of this.powerUps)
     {
-      this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
+      // this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
       this.powerUps.set(slot, undefined);
     }
   }

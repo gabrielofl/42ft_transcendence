@@ -1,7 +1,6 @@
 import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
-import { GameEvent } from "@shared/types/types";
 
 export class PaddleLenEffect extends APlayerEffect {
     public Len: number;
@@ -17,7 +16,11 @@ export class PaddleLenEffect extends APlayerEffect {
             return;
         
         target.PaddleLen.Values.Add(this);
-        this.game.MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        this.game.MessageBroker.Publish("AppliedEffect", {
+            type: "AppliedEffect",
+            effect: this.IsNegative ? "LessLength" : "MoreLength",
+            origin: target.GetName(),
+        });
         super.Execute(target);
     }
 

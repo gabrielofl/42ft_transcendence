@@ -6,7 +6,6 @@ import { DisposableImpostor } from "../Utils/DisposableImpostor";
 import { APongTable } from "../Game/APongTable";
 import { DisposableMesh } from "../Utils/DisposableMesh";
 import { Game } from "../Game/Game";
-import { GameEvent } from "@shared/types/types";
 
 export class Paddle extends DisposableImpostor {
     public static SPEED: number = 0.5;

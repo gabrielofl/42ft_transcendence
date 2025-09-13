@@ -1,7 +1,6 @@
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
 import { PaddleShieldEffect } from "./Effects/PaddleShieldEffect";
-import { GameEvent } from "@shared/types/types";
 import { Game } from "../Game/Game";
 
 export class PowerUpShield implements IPowerUp {
@@ -20,6 +19,10 @@ export class PowerUpShield implements IPowerUp {
             return effect;
         };
        
-        this.game.MessageBroker.Publish(GameEvent.SelfEffect, factory);
+        this.game.MessageBroker.Publish("SelfEffect", {
+            type: "SelfEffect",
+            effect: "Shield",
+            origin: player.GetName(),
+        });
     }
 }

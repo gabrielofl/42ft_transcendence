@@ -1,10 +1,10 @@
 import playerCardTemplate from "./player-card.html?raw";
 import { APlayer } from "../Player/APlayer";
 import { LocalPlayer } from "../Player/LocalPlayer";
-import { AppliedEffectArgs, GameEvent, PwrUpEventArgs } from "@shared/types/types";
 import { replaceTemplatePlaceholders } from "./GameScreen";
 import { Game } from "./Game";
 import { APlayerEffect } from "@shared/abstract/APlayerEffect";
+import { PickPowerUpBoxMessage } from "@shared/types/messages";
 
 export function createPlayerCard(game: Game, player: APlayer, colorClass: string): string {
     let keysHTML = "";
@@ -31,11 +31,12 @@ function renderKey(key: string): string {
 }
 
 function setupEffectsListener(game: Game, player: APlayer) {
-	game.MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
-        if (player === args.Target)
-            addEffect(args.Target.GetName(), args.Effect);
-    });
-    game.MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
+	// TODO Reemplazar por Mensaje
+    // game.MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
+    //     if (player === args.Target)
+    //         addEffect(args.Target.GetName(), args.Effect);
+    // });
+    // game.MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
 }
 
 function addEffect(playerName: string, effect: APlayerEffect): void {
@@ -69,9 +70,9 @@ function removeEffect(effectsContainer: HTMLElement, effectIcon: HTMLDivElement)
 	}
 }
 
-function updateInventory(player: APlayer, args: PwrUpEventArgs) {
+/* function updateInventory(player: APlayer, args: PickPowerUpBoxMessage) {
     // Solo actualizamos si el evento es de ESTE jugador
-    if (args.Player !== player)
+    if (args.username !== player.GetName())
         return;
 
     const slotElement = document.querySelector<HTMLDivElement>(
@@ -90,4 +91,4 @@ function updateInventory(player: APlayer, args: PwrUpEventArgs) {
             slotElement.style.backgroundImage = "";
         }
     }
-}
+} */

@@ -1,7 +1,6 @@
 import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 import { Game } from "../../Game/Game";
 import { APlayer } from "../../Player/APlayer";
-import { GameEvent } from "@shared/types/types";
 
 export class PaddleSpeedEffect extends APlayerEffect {
     private speed: number;
@@ -17,7 +16,11 @@ export class PaddleSpeedEffect extends APlayerEffect {
             return;
 
         target.GetPaddle().Speed = this.speed;
-        this.game.MessageBroker.Publish(GameEvent.AppliedEffect, { Target: target, Effect: this });
+        this.game.MessageBroker.Publish("AppliedEffect", {
+            type: "AppliedEffect",
+            effect: this.IsNegative ? "SpeedDown" : "SpeedUp",
+            origin: target.GetName()
+        });
         super.Execute(target);
     }
 

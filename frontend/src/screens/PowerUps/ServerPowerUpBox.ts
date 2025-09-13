@@ -4,14 +4,11 @@ import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { PowerUpMoreLength } from "./PowerUpMoreLength";
 import { PowerUpSpeedUp } from "./PowerUpSpeedUp";
 import { Zone } from "../Utils/Zone";
-import { IMesh } from "../Interfaces/IMesh";
 import { PowerUpLessLength } from "./PowerUpLessLength";
 import { PowerUpSpeedDown } from "./PowerUpSpeedDown";
 import { PowerUpCreateBall } from "./PowerUpCreateBall";
 import { Game } from "../Game/Game";
-import { APongTable } from "../Game/APongTable";
 import { PowerUpShield } from "./PowerUpShield";
-import { GameEvent } from "@shared/types/types";
 import { PowerUpType } from "@shared/types/messages";
 import { APlayer } from "../Player/APlayer";
 import { IPowerUpBox } from "@shared/interfaces/IPowerUpBox";
@@ -52,6 +49,7 @@ export class ServerPowerUpBox extends Zone implements IPowerUpBox {
         } else {
             const types = Object.keys(ServerPowerUpBox.factories) as PowerUpType[];
             const randomType = types[Math.floor(Math.random() * types.length)];
+            type = randomType;
             this.PowerUp = ServerPowerUpBox.factories[randomType](game);
         }
 
@@ -71,7 +69,13 @@ export class ServerPowerUpBox extends Zone implements IPowerUpBox {
         });
 
         // Notificar creación
-        game.MessageBroker.Publish(GameEvent.CreatePowerUp, this);
+        game.MessageBroker.Publish("CreatePowerUp", {
+            type: "CreatePowerUp",
+            id: id,
+            x: x,
+            z: z,
+            powerUpType: type,
+        });
     }
 
     public PickUp(player: APlayer)
@@ -80,7 +84,11 @@ export class ServerPowerUpBox extends Zone implements IPowerUpBox {
             return;
 
         player.Inventory.PickUpPwrUp(this.PowerUp);
-        this.game.MessageBroker.Publish(GameEvent.PickedPowerUp, {username: player.GetName(), id: this.ID});
+        this.game.MessageBroker.Publish("PickPowerUpBox", {
+            type: "PickPowerUpBox",
+            username: player.GetName(),
+            id: this.ID
+        });
         this.Dispose();
     }
 

@@ -1,17 +1,12 @@
 import * as BABYLON from "@babylonjs/core";
-import { Ball } from "../Collidable/Ball";
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { PowerUpMoreLength } from "./PowerUpMoreLength";
 import { PowerUpSpeedUp } from "./PowerUpSpeedUp";
-import { Zone } from "../Utils/Zone";
-import { IMesh } from "../Interfaces/IMesh";
 import { PowerUpLessLength } from "./PowerUpLessLength";
 import { PowerUpSpeedDown } from "./PowerUpSpeedDown";
 import { PowerUpCreateBall } from "./PowerUpCreateBall";
 import { Game } from "../Game/Game";
-import { APongTable } from "../Game/APongTable";
 import { PowerUpShield } from "./PowerUpShield";
-import { GameEvent } from "@shared/types/types";
 import { PowerUpType } from "@shared/types/messages";
 import { IPowerUpBox } from "../../../../shared/interfaces/IPowerUpBox";
 import { DisposableMesh } from "../Utils/DisposableMesh";

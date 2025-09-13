@@ -1,7 +1,6 @@
 import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
 import { PaddleLenEffect } from "./Effects/PaddleLenEffect";
-import { GameEvent } from "@shared/types/types";
 import { Game } from "../Game/Game";
 
 export class PowerUpLessLength implements IPowerUp {
@@ -20,6 +19,10 @@ export class PowerUpLessLength implements IPowerUp {
             return effect;
         };
         
-        this.game.MessageBroker.Publish(GameEvent.MassEffect, factory);
+        this.game.MessageBroker.Publish("MassEffect", {
+            type: "MassEffect",
+            effect: "LessLength",
+            origin: player.GetName(),
+        });
     }
 }

@@ -1,6 +1,5 @@
 import { Ball } from "../Collidable/Ball";
 import { IMesh } from "../Interfaces/IMesh";
-import { GameEvent } from "@shared/types/types";
 import { Zone } from "../Utils/Zone";
 import { APongTable } from "./APongTable";
 import { Game } from "./Game";
@@ -22,7 +21,7 @@ export class ServerPongTable extends APongTable {
         this.gameZone = new Zone(game, game.Map.size.width, 10, game.Map.size.height);
         this.gameZone.OnLeaveEvent.Subscribe((iMesh) => this.BallLeaveGameZone(iMesh));
 
-        this.game.MessageBroker.Subscribe(GameEvent.GamePause, (paused: boolean) => game.Paused = paused);
+        this.game.MessageBroker.Subscribe("GamePause", (msg) => game.Paused = msg.pause);
     }
 
     /**
