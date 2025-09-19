@@ -1,5 +1,6 @@
 import profileModalHtml from "./profile-modal.html?raw";
 import { API_BASE_URL } from "./config";
+import { loadUserGameStats, loadUserStats } from "./ProfilePerformance";
 
 export function initProfileModal() {
   // Only append once
@@ -23,13 +24,21 @@ async function openUserProfile(username: string | number) {
   const modal = document.getElementById("user-profile-modal");	
   const avatar = document.getElementById("profile-avatar") as HTMLImageElement;
   const profileUsername = document.getElementById("profile-username");
+// Stats
   const profileScore = document.getElementById("profile-score");
   const statMatches = document.getElementById("stat-matches");
   const statWins = document.getElementById("stat-wins");
   const statLosses = document.getElementById("stat-losses");
   const statWinRate = document.getElementById("stat-winrate");
   const statMaxScore = document.getElementById("stat-maxscore");
+  const topVictim = document.getElementById("top-victim");
+  const winsVictim = document.getElementById("wins-victim");
+  const strongestOpp = document.getElementById("strongest-opp");
+  const lossesOpp = document.getElementById("losses-opp");
+ 
   const friendBtn = document.getElementById("friend-action-btn");
+  const status = document.getElementById("modal-profile-status");
+  const statusTooltip = document.getElementById("status-tooltip");
 
   try {
     const res = await fetch(`${API_BASE_URL}/users/username?username=${encodeURIComponent(username)}`, {
@@ -49,38 +58,72 @@ async function openUserProfile(username: string | number) {
 	else
 	    avatar.src = data.avatar || "https://via.placeholder.com/100";
 
-    profileUsername.textContent = data.username.toUpperCase();
-    profileScore.textContent = data.score ? `${data.score} pts` : `0 pts`;
-    statMatches.textContent = data.matches ?? 0;
-    statWins.textContent = data.wins ?? 0;
-    statLosses.textContent = data.losses ?? 0;
-    statMaxScore.textContent = data.max_score ?? 0;
-
-    const totalGames = data.wins + data.losses;
-    const winRate = totalGames > 0 ? (data.wins / totalGames) * 100 : 0;
-    statWinRate.textContent = `${winRate.toFixed(2)}%`;
-
-
-    // Friendship check: 0 = no; 1 = request sended by me, 2 request sended by user; 3 = friends;
-	// data.isFriend = 2;
+	if (profileUsername)
+		profileUsername.textContent = data.username.toUpperCase();
 	
-	if (data.isFriend === 1) {
-		  friendBtn.textContent = "Request sended";
-		  friendBtn.classList.replace("btn-primary", "btn-disabled");
-		}
-	else if (data.isFriend === 2) {
-		friendBtn.textContent = "Accept request";
-		friendBtn.classList.replace("btn-primary", "btn-success");
-	} 
-	else if (data.isFriend === 3) {
-		friendBtn.textContent = "Remove Friend";
-		friendBtn.classList.replace("btn-primary", "btn-secondary");
+	// Status logic
+	if (status && statusTooltip) {
+		let statusColor = "bg-gray-400";
+		let statusText = "Offline";
 
+		switch (data.status) {
+			case 1:
+			statusColor = "bg-[--success-color]";
+			statusText = "Online";
+			break;
+			case 2:
+			statusColor = "bg-[--warning-color]";
+			statusText = "Inactive";
+			break;
+			default:
+			statusColor = "bg-gray-400";
+			statusText = "Offline";
+			break;
+		}
+		statusTooltip.textContent = statusText;
+		// Reset + apply new color
+		status.classList.remove("bg-gray-400", "bg-[--success-color]", "bg-[--success-warning]");
+		status.classList.add(statusColor);
 	}
-	 else {
-		friendBtn.textContent = "Add Friend";
-		friendBtn.classList.replace("btn-secondary", "btn-primary");
-	  }
+
+	//Score
+	if (profileScore &&statMatches && statWins && statLosses && statMaxScore && statWinRate)
+	{
+		loadUserStats(data.username);
+	}
+	if (topVictim && winsVictim && strongestOpp && lossesOpp)
+	{
+		 loadUserGameStats(data.id);
+	}
+	
+
+	// Friendship check: 0 = no; 1 = request sended by me, 2 request sended by user; 3 = friends;
+	// data.isFriend = 2;
+	if (friendBtn)
+	{
+		let friendBtnStatus;
+		friendBtn.classList.remove("btn-primary", "btn-disabled", "btn-success", "btn-secondary");
+		if (data.isFriend === 1) {
+			friendBtn.textContent = "Request sended";
+			friendBtnStatus = "btn-disabled";
+			}
+		else if (data.isFriend === 2) {
+			friendBtn.textContent = "Accept request";
+			friendBtnStatus = "btn-success";
+		} 
+		else if (data.isFriend === 3) {
+			friendBtn.textContent = "Remove Friend";
+			friendBtnStatus = "btn-secondary";
+
+		}
+		else {
+			friendBtn.textContent = "Add Friend";
+			friendBtnStatus = "btn-primary";
+		}
+		friendBtn.classList.add(friendBtnStatus);
+	}
+	
+
 	 // Friend action
     // friendBtn.onclick = async () => {
     //   try {

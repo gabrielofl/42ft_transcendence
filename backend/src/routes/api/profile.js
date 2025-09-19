@@ -180,6 +180,93 @@ export default async function (fastify, opts) {
 		};
 		});
 
+		// Stats endpoint for user match/games
+		//returns top victim, strongest opponent, and users info.
+		fastify.get('/games/stats/:id', {
+		schema: {
+			params: {
+			type: 'object',
+			required: ['id'],
+			properties: {
+				id: { type: 'integer' }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { id } = request.params;
+
+		// Fetch all matches for this user
+		const matches = await fastify.db.all(
+			'SELECT * FROM games WHERE player1_id = ? OR player2_id = ?',
+			[id, id]
+		);
+
+		if (!matches.length) {
+			return {
+			total: 0,
+			topVictim: null,
+			strongestOpponent: null
+			};
+		}
+
+		// Track stats by opponent
+		const wins = {};   // key = opponentId, value = wins against them
+		const losses = {}; // key = opponentId, value = losses against them
+
+		for (const match of matches) {
+			// Determine winner & loser
+			const { player1_id, player2_id, winner_id } = match;
+			const opponentId = player1_id === id ? player2_id : player1_id;
+
+			if (winner_id === id) {
+			// user won
+			wins[opponentId] = (wins[opponentId] || 0) + 1;
+			} else if (winner_id === opponentId) {
+			// user lost
+			losses[opponentId] = (losses[opponentId] || 0) + 1;
+			}
+		}
+
+		// Find top victim (max wins)
+		let topVictimId = null, topVictimWins = 0;
+		for (const [opponentId, count] of Object.entries(wins)) {
+			if (count > topVictimWins) {
+			topVictimWins = count;
+			topVictimId = Number(opponentId);
+			}
+		}
+
+		// Find strongest opponent (max losses)
+		let strongestOpponentId = null, strongestOpponentLosses = 0;
+		for (const [opponentId, count] of Object.entries(losses)) {
+			if (count > strongestOpponentLosses) {
+			strongestOpponentLosses = count;
+			strongestOpponentId = Number(opponentId);
+			}
+		}
+
+		// Fetch user info for those opponents (if any)
+		const opponentIds = [topVictimId, strongestOpponentId].filter(Boolean);
+		let opponentMap = {};
+		if (opponentIds.length) {
+			const placeholders = opponentIds.map(() => '?').join(',');
+			const users = await fastify.db.all(
+			`SELECT id, username, avatar, score FROM users WHERE id IN (${placeholders})`,
+			opponentIds
+			);
+			opponentMap = Object.fromEntries(users.map(u => [u.id, u]));
+		}
+
+		return {
+			total: matches.length,
+			topVictim: topVictimId
+			? { user: opponentMap[topVictimId], wins: topVictimWins }
+			: null,
+			strongestOpponent: strongestOpponentId
+			? { user: opponentMap[strongestOpponentId], losses: strongestOpponentLosses }
+			: null
+		};
+		});
 
 
 

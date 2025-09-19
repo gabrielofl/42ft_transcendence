@@ -40,7 +40,8 @@ export function setupProfileSidebar() {
 		  await renderHistoryTab();
 		  break;
 		default:
-		  await renderAccountTab();
+		  await renderHistoryTab();
+		//   await renderAccountTab();
 		//   setupAccountTab();
 		  break;
 	  }

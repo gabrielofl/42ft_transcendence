@@ -95,7 +95,6 @@ async function loadMatches(userId: number, page: number) {
     ? `${API_BASE_URL}/profile/avatar/${player2.avatar}`
     : 'default.jpg';
 
-	console.log("Winner ",match.winner_id);
     //   const dateStr = match.finished_at ? new Date(match.finished_at).toLocaleDateString() : '';
 	const dateStr = match.finished_at
 	? (() => {
@@ -125,7 +124,17 @@ async function loadMatches(userId: number, page: number) {
             </a>
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
-                <span class="w-3 h-3 rounded-full bg-[--success-color]"></span>
+                <!-- Tooltip wrapper -->
+            <div class="relative group flex items-center">
+              <span id="profile-status" class="w-4 h-4 rounded-full bg-[--success-color] "></span>
+              
+              <!-- Tooltip -->
+              <div id="status-tootip" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap 
+                          rounded-lg bg-gray-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 
+                          transition-opacity duration-300 z-10">
+                Online
+              </div>
+            </div>
                 <span class="font-bold text-white">
                   <a href="#" class="open-profile" data-user="${player1.username}">${player1.username}</a>
                 </span>
@@ -150,7 +159,9 @@ async function loadMatches(userId: number, page: number) {
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
                 <span class="w-3 h-3 rounded-full bg-[--warning-color]"></span>
-                <span class="font-bold text-white">${player2.username}</span>
+            <a href="#" class="open-profile" data-user="${player2.username}">
+				<span class="font-bold text-white">${player2.username}</span>
+			</a>
               </div>
               <div class="text-red-500 font-bold text-sm">${player2.score ?? 0} pts</div>
             </div>
