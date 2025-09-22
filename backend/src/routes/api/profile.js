@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';  // Password hashing library
 import { authenticate } from '../../middleware/auth.js';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join, dirname } from 'path';
@@ -115,6 +116,226 @@ export default async function (fastify, opts) {
 				return reply.code(404).send({ error: 'Avatar not found' });
 			}
 		});
+
+		// Select all games(matches) from user id with pagination
+		// Select user data for each player involved on matches and return a map with key=userId
+		fastify.get('/games/:id', {
+		schema: {
+			params: {
+			type: 'object',
+			required: ['id'],
+			properties: {
+				id: { type: 'integer' }
+			}
+			},
+			querystring: {
+			type: 'object',
+			properties: {
+				limit: { type: 'integer', minimum: 1, default: 10 },
+				offset: { type: 'integer', minimum: 0, default: 0 }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { id } = request.params;
+		const { limit, offset } = request.query;
+
+		// Fetch matches
+		const matches = await fastify.db.all(
+			'SELECT * FROM games WHERE player1_id = ? OR player2_id = ? ORDER BY finished_at DESC LIMIT ? OFFSET ?',
+			[id, id, limit, offset]
+		);
+
+		const total = await fastify.db.get(
+			'SELECT COUNT(*) as count FROM games WHERE player1_id = ? OR player2_id = ?',
+			[id, id]
+		);
+
+		if (!matches.length) {
+			return { total: 0, limit, offset, matches: [], users: {} };
+		}
+
+		// Extract unique player IDs
+		const userIds = [...new Set(matches.flatMap(m => [m.player1_id, m.player2_id]))];
+
+		// Fetch all users in one query
+		const placeholders = userIds.map(() => '?').join(',');
+		const users = await fastify.db.all(
+			`SELECT id, username, avatar, score, show_scores_publicly, status FROM users WHERE id IN (${placeholders})`,
+			userIds
+		);
+
+		// Build a map (id → user object)
+		const userMap = {};
+		for (const u of users) {
+			userMap[u.id] = u;
+		}
+
+		// Return structured response
+		return {
+			total: total.count,
+			limit,
+			offset,
+			matches,
+			users: userMap
+		};
+		});
+
+		// Stats endpoint for user match/games
+		//returns top victim, strongest opponent, and users info.
+		fastify.get('/games/stats/:id', {
+		schema: {
+			params: {
+			type: 'object',
+			required: ['id'],
+			properties: {
+				id: { type: 'integer' }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { id } = request.params;
+
+		// Fetch all matches for this user
+		const matches = await fastify.db.all(
+			'SELECT * FROM games WHERE player1_id = ? OR player2_id = ?',
+			[id, id]
+		);
+
+		if (!matches.length) {
+			return {
+			total: 0,
+			topVictim: null,
+			strongestOpponent: null
+			};
+		}
+
+		// Track stats by opponent
+		const wins = {};   // key = opponentId, value = wins against them
+		const losses = {}; // key = opponentId, value = losses against them
+
+		for (const match of matches) {
+			// Determine winner & loser
+			const { player1_id, player2_id, winner_id } = match;
+			const opponentId = player1_id === id ? player2_id : player1_id;
+
+			if (winner_id === id) {
+			// user won
+			wins[opponentId] = (wins[opponentId] || 0) + 1;
+			} else if (winner_id === opponentId) {
+			// user lost
+			losses[opponentId] = (losses[opponentId] || 0) + 1;
+			}
+		}
+
+		// Find top victim (max wins)
+		let topVictimId = null, topVictimWins = 0;
+		for (const [opponentId, count] of Object.entries(wins)) {
+			if (count > topVictimWins) {
+			topVictimWins = count;
+			topVictimId = Number(opponentId);
+			}
+		}
+
+		// Find strongest opponent (max losses)
+		let strongestOpponentId = null, strongestOpponentLosses = 0;
+		for (const [opponentId, count] of Object.entries(losses)) {
+			if (count > strongestOpponentLosses) {
+			strongestOpponentLosses = count;
+			strongestOpponentId = Number(opponentId);
+			}
+		}
+
+		// Fetch user info for those opponents (if any)
+		const opponentIds = [topVictimId, strongestOpponentId].filter(Boolean);
+		let opponentMap = {};
+		if (opponentIds.length) {
+			const placeholders = opponentIds.map(() => '?').join(',');
+			const users = await fastify.db.all(
+			`SELECT id, username, avatar, score FROM users WHERE id IN (${placeholders})`,
+			opponentIds
+			);
+			opponentMap = Object.fromEntries(users.map(u => [u.id, u]));
+		}
+
+		return {
+			total: matches.length,
+			topVictim: topVictimId
+			? { user: opponentMap[topVictimId], wins: topVictimWins }
+			: null,
+			strongestOpponent: strongestOpponentId
+			? { user: opponentMap[strongestOpponentId], losses: strongestOpponentLosses }
+			: null
+		};
+		});
+
+		// Delete account endpoint - POST /api/profile/delete
+		//takes id from session to avoid user delete another user
+		fastify.post('/delete', {
+		preHandler: authenticate, // Require valid JWT
+		schema: {
+			body: {
+			type: 'object',
+			required: ['password'],
+			properties: {
+				password: { type: 'string' }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { password } = request.body;
+
+		const tokenUser = request.user?.id;
+		// console.log("Decoded user:", request.user);
+		// console.log("User ID:", request.user?.id);
+		// console.log("Username:", request.user?.username);
+
+		// Fetch user from DB
+		const user = await fastify.db.get(
+			'SELECT * FROM users WHERE id = ?',
+			[tokenUser]
+		);
+
+		if (!user) {
+			return reply.code(404).send({ error: 'User not found' });
+		}
+
+		if (user.google_id)
+		{
+			// Validate word typed
+			if (password !== "DELETE") {
+				return reply.code(401).send({ error: 'Invalid input. Please type DELETE.' });
+			}
+		}
+		else
+		{
+			// Validate password
+			const validPassword = await bcrypt.compare(password, user.password);
+			if (!validPassword) {
+				return reply.code(401).send({ error: 'Invalid password' });
+			}
+		}
+		
+
+		// Delete related data first (adjust to your schema)
+		// await fastify.db.run('DELETE FROM games WHERE player1_id = ? OR player2_id = ?', [user.id, user.id]);
+		await fastify.db.run('DELETE FROM two_factor_backup_codes WHERE user_id = ?', [user.id]);
+
+		// Delete the user
+		await fastify.db.run('DELETE FROM users WHERE id = ?', [user.id]);
+
+		// Clear cookies
+		reply.clearCookie('accessToken', { path: '/' });
+		reply.clearCookie('refreshToken', { path: '/' });
+		reply.clearCookie('csrfToken', { path: '/' });
+
+		return {
+			success: true,
+			message: 'Account deleted successfully'
+		};
+		});
+
+
 
 	}, { prefix: '/profile' });
 }

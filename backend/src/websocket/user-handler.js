@@ -117,7 +117,7 @@ export async function handleUserId({ data, connection, assignedRoom, playerSlot,
       connection.send(JSON.stringify({ event: 'online', userId, roomId: room.id, slot }));
     }, 3000);
     
-    fastify.db.run('UPDATE users SET online = 1 WHERE id = ?', [userId], function(err) {
+    fastify.db.run('UPDATE users SET status = 1 WHERE id = ?', [userId], function(err) {
       clearTimeout(writeTimeout);
       if (err) {
         console.error('Error setting user online:', err.message, 'userId:', userId);
@@ -256,7 +256,7 @@ export async function handleClose({ assignedRoom, playerSlot, userId, fastify, c
   }
   
   if (currentUserId) {
-    fastify.db.run('UPDATE users SET online = 0 WHERE id = ?', [currentUserId], function(err) {
+    fastify.db.run('UPDATE users SET status = 0 WHERE id = ?', [currentUserId], function(err) {
       if (err) {
         console.error('Error setting user offline:', err, 'userId:', currentUserId);
       } else {

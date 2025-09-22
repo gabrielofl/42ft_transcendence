@@ -13,7 +13,7 @@ export async function getUserInfo(db, userId) {
         id,
         username,
         avatar,
-        online,
+        status,
         wins,
         losses,
         created_at,
@@ -31,7 +31,7 @@ export async function getUserInfo(db, userId) {
         ...user,
         totalGames,
         winRate: parseFloat(winRate),
-        isOnline: user.online === 1
+        isOnline: user.status === 1
       };
     }
     
@@ -136,7 +136,7 @@ export async function getLeaderboard(db, limit = 50) {
           THEN ROUND((wins * 100.0) / (wins + losses), 1)
           ELSE 0 
         END as winRate,
-        online,
+        status,
         created_at
       FROM users
       WHERE (wins + losses) > 0
@@ -148,7 +148,7 @@ export async function getLeaderboard(db, limit = 50) {
     return leaderboard.map((player, index) => ({
       ...player,
       rank: index + 1,
-      isOnline: player.online === 1
+      isOnline: player.status === 1
     }));
   } catch (error) {
     console.error('Error getting leaderboard:', error);
@@ -244,7 +244,7 @@ export async function updateUserOnlineStatus(db, userId, isOnline) {
   try {
     const result = await db.run(`
       UPDATE users 
-      SET online = ?, last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      SET status = ?, last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `, [isOnline ? 1 : 0, userId]);
     
@@ -269,7 +269,7 @@ export async function getOnlineUsers(db) {
         avatar,
         last_login
       FROM users 
-      WHERE online = 1
+      WHERE status = 1
       ORDER BY last_login DESC
     `);
     
@@ -291,7 +291,7 @@ export async function getSystemStats(db) {
     const totalUsers = await db.get('SELECT COUNT(*) as count FROM users');
     
     // Usuarios online
-    const onlineUsers = await db.get('SELECT COUNT(*) as count FROM users WHERE online = 1');
+    const onlineUsers = await db.get('SELECT COUNT(*) as count FROM users WHERE status = 1');
     
     // Total partidas
     const totalGames = await db.get('SELECT COUNT(*) as count FROM games');

@@ -28,8 +28,14 @@ export function setupAccountTab() {
 	const emailInput = document.getElementById('email') as HTMLInputElement | null;
 	const updateEmailBtn = document.getElementById('update-email-btn') as HTMLButtonElement | null;
 	const downloadDataBtn = document.getElementById('download-data') as HTMLButtonElement | null;
+	const deleteDataSection = document.getElementById('delete-my-data-section') as HTMLButtonElement | null;
+	const deleteDataBtn = document.getElementById('delete-data-btn') as HTMLButtonElement | null;
+	const deletePassInput = document.getElementById('delete-data-password') as HTMLInputElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordGoogleIndicator = document.getElementById('password-section-google');
+	const googleDeleteDataSection = document.getElementById('isgoogle-delete-my-data-section') as HTMLButtonElement | null;
+	const googleDeleteDataBtn = document.getElementById('isgoogle-delete-data-btn') as HTMLButtonElement | null;
+	const googleDeletePassInput = document.getElementById('isgoogle-delete-data-password') as HTMLInputElement | null;
 	const passwordSection = document.getElementById('password-section');
 
 	fetch(`${API_BASE_URL}/users/me`, {
@@ -111,11 +117,13 @@ export function setupAccountTab() {
 			if (data.twoFactorEnabled !== undefined) {
 				update2FAStatus(data.twoFactorEnabled);
 			}
-
+			// Google account settings
 			if (data.google_id) {
 				googleIndicator?.classList.remove('hidden');
 				passwordGoogleIndicator?.classList.remove('hidden');
+				googleDeleteDataSection?.classList.remove('hidden');
 				passwordSection?.classList.add('hidden');
+				deleteDataSection?.classList.add('hidden');
 			}
 
 			
@@ -289,18 +297,10 @@ export function setupAccountTab() {
 	.then(res => res.json())
 		.then(data => {
 			
-			
-			// Avatar
-			if (data.avatar) {
-				const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
-				(document.getElementById('avatar-preview') as HTMLImageElement).src = avatarUrl;
-			}
-			
 			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
 			document.getElementById('email')?.setAttribute('placeholder', data.email);
-
 			
 			const codesText = `Profile data downladed: ${new Date().toLocaleString()}
 <<< Personal data  >>>
@@ -310,10 +310,11 @@ Username: ${data.username}
 Email: ${data.email}
 
 <<<  Statistics  >>>
+Matches: ${data.matches}
 Win: ${data.wins}
 Losses: ${data.losses}
 Score: ${data.score}
-Matches: ${data.matches}
+Max Score: ${data.max_score}
 Profile created: ${data.created_at}
 			`;
 
@@ -344,6 +345,93 @@ Profile created: ${data.created_at}
 		.catch(err => console.error('Error loading profile:', err));
 		
 		
+	});
+
+
+	//Delete account listener
+	deleteDataBtn?.addEventListener('click', async () => {
+		const password = deletePassInput?.value.trim();
+		if (!password || password.length < 3) return alert('Password is required');
+
+		const modalDelete = document.getElementById("user-delete-modal");	
+		 // Show modal
+		modalDelete?.classList.remove("hidden");
+
+		// Close modal
+		document.getElementById("close-delete-btn")?.addEventListener("click", () => {
+			modalDelete?.classList.add("hidden");
+		});
+		const deleteConfirmBtn = document.getElementById('delete-confirm-btn') as HTMLButtonElement | null;
+		deleteConfirmBtn?.addEventListener('click', async () => {
+
+		try {
+			const res = await fetch(`${API_BASE_URL}/profile/delete`, {
+			method: "POST",
+			credentials: 'include',
+			headers: {
+					"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ password }),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+			throw new Error(data.error || "Failed to delete account");
+			}
+
+			// Success → maybe redirect to homepage
+			alert("Account deleted successfully!");
+			window.location.href = "/"; // redirect after deletion
+		} catch (err) { //err: unknown
+			console.error("Error deleting account:", err);
+			const message = err instanceof Error ? err.message : String(err);
+			alert(message || "Something went wrong");
+		}
+		});
+	});
+
+	//Delete Google account listener
+	googleDeleteDataBtn?.addEventListener('click', async () => {
+		const password = googleDeletePassInput?.value.trim();
+		if (!password || password.length < 3) return alert('Type DELETE to continue');
+
+		const modalDelete = document.getElementById("user-delete-modal");	
+		 // Show modal
+		modalDelete?.classList.remove("hidden");
+
+		// Close modal
+		document.getElementById("close-delete-btn")?.addEventListener("click", () => {
+			modalDelete?.classList.add("hidden");
+		});
+		const deleteConfirmBtn = document.getElementById('delete-confirm-btn') as HTMLButtonElement | null;
+		deleteConfirmBtn?.addEventListener('click', async () => {
+
+		try {
+			const res = await fetch(`${API_BASE_URL}/profile/delete`, {
+			method: "POST",
+			credentials: 'include',
+			headers: {
+					"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ password }),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+			throw new Error(data.error || "Failed to delete account");
+			}
+
+			// Success → maybe redirect to homepage
+			alert("Account deleted successfully!");
+			window.location.href = "/"; // redirect after deletion
+		} catch (err) { //err: unknown
+			console.error("Error deleting account:", err);
+			const message = err instanceof Error ? err.message : String(err);
+			alert(message || "Something went wrong");
+		}
+		});
 	});
 
 
