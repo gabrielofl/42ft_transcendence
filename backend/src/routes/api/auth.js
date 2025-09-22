@@ -295,7 +295,7 @@ export default async function (fastify, opts) {
 				// Update last login time
 				await fastify.db.run(
 					'UPDATE users SET last_login = datetime("now") WHERE id = ?',
-					[user.id]
+					[result.lastID]
 				);
 
 				// Send success response with user data (NO TOKENS in body)
