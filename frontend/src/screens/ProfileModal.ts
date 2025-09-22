@@ -51,12 +51,9 @@ async function openUserProfile(username: string | number) {
 
     // Fill modal
 	// Avatar
-	if (data.avatar) {
-		const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
-		avatar.src = avatarUrl;
-	}
-	else
-	    avatar.src = data.avatar || "https://via.placeholder.com/100";
+	avatar.src  = data.avatar
+    ? `${API_BASE_URL}/profile/avatar/${data.avatar}`
+    : 'default.jpg';	
 
 	if (profileUsername)
 		profileUsername.textContent = data.username.toUpperCase();

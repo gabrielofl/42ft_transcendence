@@ -142,45 +142,6 @@ export default async function (fastify, opts) {
 			return user;
 		});
 
-		// Check if needed. Right now using profile endpoint
-		// Serve avatar by filename - GET /api/users/avatar/:filename
-		fastify.get('/avatar/:filename', async (request, reply) => {
-		try {
-			const { filename } = request.params;
-
-			// Security: only allow avatar files
-			if (!filename.startsWith('avatar_') || !filename.includes('.')) {
-			return reply.code(400).send({ error: 'Invalid filename' });
-			}
-
-			const { readFile } = await import('fs/promises');
-			const { join, dirname } = await import('path');
-			const { fileURLToPath } = await import('url');
-
-			const __filename = fileURLToPath(import.meta.url);
-			const __dirname = dirname(__filename);
-
-			const avatarPath = join(__dirname, '../../../uploads/avatars', filename);
-			const imageBuffer = await readFile(avatarPath);
-
-			// Determine content type based on extension
-			const ext = filename.split('.').pop()?.toLowerCase();
-			let contentType = 'image/jpeg'; // default
-			if (ext === 'png') contentType = 'image/png';
-			else if (ext === 'gif') contentType = 'image/gif';
-			else if (ext === 'webp') contentType = 'image/webp';
-
-			reply
-			.header('Content-Type', contentType)
-			.header('Cache-Control', 'public, max-age=31536000');
-
-			return reply.send(imageBuffer);
-		} catch (error) {
-			return reply.code(404).send({ error: 'Avatar not found' });
-		}
-		});
-
-
 		// Update GDPR privacy settings - POST /api/users/privacy-settings
 		fastify.post('/privacy-settings', {
 			preHandler: authenticate,

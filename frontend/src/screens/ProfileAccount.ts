@@ -297,18 +297,10 @@ export function setupAccountTab() {
 	.then(res => res.json())
 		.then(data => {
 			
-			
-			// Avatar
-			if (data.avatar) {
-				const avatarUrl = `${API_BASE_URL}/users/avatar/${data.avatar}`;
-				(document.getElementById('avatar-preview') as HTMLImageElement).src = avatarUrl;
-			}
-			
 			document.getElementById('name')?.setAttribute('placeholder', data.first_name);
 			document.getElementById('lastname')?.setAttribute('placeholder', data.last_name);
 			document.getElementById('username')?.setAttribute('placeholder', data.username);
 			document.getElementById('email')?.setAttribute('placeholder', data.email);
-
 			
 			const codesText = `Profile data downladed: ${new Date().toLocaleString()}
 <<< Personal data  >>>
@@ -318,11 +310,11 @@ Username: ${data.username}
 Email: ${data.email}
 
 <<<  Statistics  >>>
+Matches: ${data.matches}
 Win: ${data.wins}
 Losses: ${data.losses}
 Score: ${data.score}
 Max Score: ${data.max_score}
-Matches: ${data.matches}
 Profile created: ${data.created_at}
 			`;
 
