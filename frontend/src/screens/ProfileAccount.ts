@@ -315,33 +315,29 @@ Max Score: ${data.max_score}
 Profile created: ${data.created_at}
 			`;
 
-								const blob = new Blob([codesText], { type: 'text/plain' });
-								const url = URL.createObjectURL(blob);
-								const a = document.createElement('a');
-								a.href = url;
-								a.download = `Profile-Data-${data.username}_${new Date().toISOString().split('T')[0]}.txt`;
-								document.body.appendChild(a);
-								a.click();
-								document.body.removeChild(a);
-								URL.revokeObjectURL(url);
+		const blob = new Blob([codesText], { type: 'text/plain' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `Profile-Data-${data.username}_${new Date().toISOString().split('T')[0]}.txt`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
 
-								// Update button to show success
-								const btn = document.getElementById('download-data');
-								const originalText = btn?.textContent;
-								if (btn) {
-									btn.textContent = 'Downloaded!';
-									btn.className = 'btn-success w-full';
-									setTimeout(() => {
-										btn.textContent = originalText;
-										btn.className = 'btn-primary w-full';
-									}, 2000);
-								}
-
-			
+		// Update button to show success
+		const btn = document.getElementById('download-data');
+		const originalText = btn?.textContent;
+		if (btn) {
+			btn.textContent = 'Downloaded!';
+			btn.className = 'btn-success w-full';
+			setTimeout(() => {
+				btn.textContent = originalText;
+				btn.className = 'btn-primary w-full';
+			}, 2000);
+		}
 		})
 		.catch(err => console.error('Error loading profile:', err));
-		
-		
 	});
 
 
