@@ -95,6 +95,43 @@ async function loadMatches(userId: number, page: number) {
     ? `${API_BASE_URL}/profile/avatar/${player2.avatar}`
     : 'default.jpg';
 
+	// Status logic
+	
+		let p1StatusColor = "bg-gray-400";
+		let p2StatusColor = "bg-gray-400";
+		let p1StatusText = "Offline";
+		let p2StatusText = "Offline";
+
+		switch (player1.status) {
+			case 1:
+			p1StatusColor = "bg-[--success-color]";
+			p1StatusText = "Online";
+			break;
+			case 2:
+			p1StatusColor = "bg-[--warning-color]";
+			p1StatusText = "Inactive";
+			break;
+			default:
+			p1StatusColor = "bg-gray-400";
+			p1StatusText = "Offline";
+			break;
+		}
+
+		switch (player2.status) {
+			case 1:
+			p2StatusColor = "bg-[--success-color]";
+			p2StatusText = "Online";
+			break;
+			case 2:
+			p2StatusColor = "bg-[--warning-color]";
+			p2StatusText = "Inactive";
+			break;
+			default:
+			p2StatusColor = "bg-gray-400";
+			p2StatusText = "Offline";
+			break;
+		}
+
     //   const dateStr = match.finished_at ? new Date(match.finished_at).toLocaleDateString() : '';
 	const dateStr = match.finished_at
 	? (() => {
@@ -124,16 +161,16 @@ async function loadMatches(userId: number, page: number) {
             </a>
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
-                <!-- Tooltip wrapper -->
-            <div class="relative group flex items-center">
-              <span id="profile-status" class="w-4 h-4 rounded-full bg-[--success-color] "></span>
-              
-              <!-- Tooltip -->
-              <div id="status-tootip" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap 
-                          rounded-lg bg-gray-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 
-                          transition-opacity duration-300 z-10">
-                Online
-              </div>
+				<!-- Tooltip wrapper -->
+				<div class="relative group flex items-center">
+				<span id="profile-status" class="w-4 h-4 rounded-full ${p1StatusColor} "></span>
+				
+				<!-- Tooltip -->
+				<div id="status-tootip" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap 
+							rounded-lg bg-gray-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 
+							transition-opacity duration-300 z-10">
+					${p1StatusText}
+				</div>
             </div>
                 <span class="font-bold text-white">
                   <a href="#" class="open-profile" data-user="${player1.username}">${player1.username}</a>
@@ -158,7 +195,17 @@ async function loadMatches(userId: number, page: number) {
             </a>
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
-                <span class="w-3 h-3 rounded-full bg-[--warning-color]"></span>
+                <!-- Tooltip wrapper -->
+				<div class="relative group flex items-center">
+				<span id="profile-status" class="w-4 h-4 rounded-full ${p2StatusColor} "></span>
+				
+				<!-- Tooltip -->
+				<div id="status-tootip" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap 
+							rounded-lg bg-gray-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 
+							transition-opacity duration-300 z-10">
+					${p2StatusText}
+				</div>
+			</div>
             <a href="#" class="open-profile" data-user="${player2.username}">
 				<span class="font-bold text-white">${player2.username}</span>
 			</a>

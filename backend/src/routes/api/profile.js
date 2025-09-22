@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';  // Password hashing library
 import { authenticate } from '../../middleware/auth.js';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join, dirname } from 'path';
@@ -265,6 +266,72 @@ export default async function (fastify, opts) {
 			strongestOpponent: strongestOpponentId
 			? { user: opponentMap[strongestOpponentId], losses: strongestOpponentLosses }
 			: null
+		};
+		});
+
+		// Delete account endpoint - POST /api/profile/delete
+		//takes id from session to avoid user delete another user
+		fastify.post('/delete', {
+		preHandler: authenticate, // Require valid JWT
+		schema: {
+			body: {
+			type: 'object',
+			required: ['password'],
+			properties: {
+				password: { type: 'string' }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { password } = request.body;
+
+		const tokenUser = request.user?.id;
+		// console.log("Decoded user:", request.user);
+		// console.log("User ID:", request.user?.id);
+		// console.log("Username:", request.user?.username);
+
+		// Fetch user from DB
+		const user = await fastify.db.get(
+			'SELECT * FROM users WHERE id = ?',
+			[tokenUser]
+		);
+
+		if (!user) {
+			return reply.code(404).send({ error: 'User not found' });
+		}
+
+		if (user.google_id)
+		{
+			// Validate word typed
+			if (password !== "DELETE") {
+				return reply.code(401).send({ error: 'Invalid input. Please type DELETE.' });
+			}
+		}
+		else
+		{
+			// Validate password
+			const validPassword = await bcrypt.compare(password, user.password);
+			if (!validPassword) {
+				return reply.code(401).send({ error: 'Invalid password' });
+			}
+		}
+		
+
+		// Delete related data first (adjust to your schema)
+		// await fastify.db.run('DELETE FROM games WHERE player1_id = ? OR player2_id = ?', [user.id, user.id]);
+		await fastify.db.run('DELETE FROM two_factor_backup_codes WHERE user_id = ?', [user.id]);
+
+		// Delete the user
+		await fastify.db.run('DELETE FROM users WHERE id = ?', [user.id]);
+
+		// Clear cookies
+		reply.clearCookie('accessToken', { path: '/' });
+		reply.clearCookie('refreshToken', { path: '/' });
+		reply.clearCookie('csrfToken', { path: '/' });
+
+		return {
+			success: true,
+			message: 'Account deleted successfully'
 		};
 		});
 

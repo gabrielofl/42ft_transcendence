@@ -41,6 +41,10 @@
 					<input id="delete-data-password" type="password" placeholder="Enter password" class="w-full retro-input" />
 					<button id="delete-data-btn" class="btn-secondary w-full ">Delete account</button>
 				</div>
+				<div id="isgoogle-delete-my-data-section hidden" class="grid grid-cols-2 align-middle gap-4">
+					<input id="isgoogle-delete-data-password" type="text" placeholder="Type DELETE" class="w-full retro-input" />
+					<button id="isgoogle-delete-data-btn" class="btn-secondary w-full ">Delete account</button>
+				</div>
 			</div>
 			<hr class="h-px my-8 bg-secondary border-0">
 			
@@ -128,7 +132,29 @@
 	
 	<!-- ********************************************************************************************* -->
 
-	
+	<div id="user-delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+		<div class="retro-modal w-3/5 max-h-[90vh] p-6 border-2 border-[primary-color] rounded-lg bg-[--bg-color] text-center ">
+		  <!-- Header -->
+		  <h2 class="block txt-subtitle text-center color-primary p-4">Delete account</h2>
+		<p for="edit-account-header" class="block txt-subheading text-center pb-6">This action can't be undone.</p>
+
+	  
+		
+	  
+		  <!-- Action Buttons -->
+		  <div class="flex flex-col items-center gap-3 ">
+			  <hr class="h-px my-8 bg-secondary w-2/5 border-0">
+			<button id="delete-confirm-btn" class="w-2/5 btn-secondary">
+			 Confirm
+			</button>
+			<button id="close-delete-btn" class="w-2/5 btn-primary">
+			  Close
+			</button>
+			  <hr class="h-px my-8 bg-secondary w-2/5 border-0">
+	  
+		  </div>
+		</div>
+	  </div>
 
 
 	
