@@ -28,14 +28,11 @@ export function setupAccountTab() {
 	const emailInput = document.getElementById('email') as HTMLInputElement | null;
 	const updateEmailBtn = document.getElementById('update-email-btn') as HTMLButtonElement | null;
 	const downloadDataBtn = document.getElementById('download-data') as HTMLButtonElement | null;
-	const deleteDataSection = document.getElementById('delete-my-data-section') as HTMLButtonElement | null;
 	const deleteDataBtn = document.getElementById('delete-data-btn') as HTMLButtonElement | null;
 	const deletePassInput = document.getElementById('delete-data-password') as HTMLInputElement | null;
+	const googleDeletePassInput = document.getElementById('isgoogle-delete-data-password') as HTMLInputElement | null;
 	const googleIndicator = document.getElementById('google-indicator');
 	const passwordGoogleIndicator = document.getElementById('password-section-google');
-	const googleDeleteDataSection = document.getElementById('isgoogle-delete-my-data-section') as HTMLButtonElement | null;
-	const googleDeleteDataBtn = document.getElementById('isgoogle-delete-data-btn') as HTMLButtonElement | null;
-	const googleDeletePassInput = document.getElementById('isgoogle-delete-data-password') as HTMLInputElement | null;
 	const passwordSection = document.getElementById('password-section');
 
 	fetch(`${API_BASE_URL}/users/me`, {
@@ -121,9 +118,9 @@ export function setupAccountTab() {
 			if (data.google_id) {
 				googleIndicator?.classList.remove('hidden');
 				passwordGoogleIndicator?.classList.remove('hidden');
-				googleDeleteDataSection?.classList.remove('hidden');
+				googleDeletePassInput?.classList.remove('hidden');
 				passwordSection?.classList.add('hidden');
-				deleteDataSection?.classList.add('hidden');
+				deletePassInput?.classList.add('hidden');
 			}
 
 			
@@ -348,10 +345,19 @@ Profile created: ${data.created_at}
 	});
 
 
-	//Delete account listener
+	//Delete account open modal listener
 	deleteDataBtn?.addEventListener('click', async () => {
-		const password = deletePassInput?.value.trim();
-		if (!password || password.length < 3) return alert('Password is required');
+		let password;
+		if (!deletePassInput?.classList.contains("hidden"))
+		{
+			password = deletePassInput?.value.trim();
+			if (!password || password.length < 3) return alert('Password is required');
+		}
+		else if (!googleDeletePassInput?.classList.contains("hidden"))
+		{
+			password = googleDeletePassInput?.value.trim();
+			if (!password || password.length < 3) return alert('Type DELETE to continue');
+		}
 
 		const modalDelete = document.getElementById("user-delete-modal");	
 		 // Show modal
@@ -361,9 +367,22 @@ Profile created: ${data.created_at}
 		document.getElementById("close-delete-btn")?.addEventListener("click", () => {
 			modalDelete?.classList.add("hidden");
 		});
-		const deleteConfirmBtn = document.getElementById('delete-confirm-btn') as HTMLButtonElement | null;
-		deleteConfirmBtn?.addEventListener('click', async () => {
+	});
 
+	//Delete account confirmation button listener
+	const deleteConfirmBtn = document.getElementById('delete-confirm-btn') as HTMLButtonElement | null;
+	deleteConfirmBtn?.addEventListener('click', async () => {
+		let password;
+		if (!deletePassInput?.classList.contains("hidden"))
+		{
+			password = deletePassInput?.value.trim();
+			if (!password || password.length < 3) return alert('Password is required');
+		}
+		else if (!googleDeletePassInput?.classList.contains("hidden"))
+		{
+			password = googleDeletePassInput?.value.trim();
+			if (!password || password.length < 3) return alert('Type DELETE to continue');
+		}
 		try {
 			const res = await fetch(`${API_BASE_URL}/profile/delete`, {
 			method: "POST",
@@ -389,54 +408,7 @@ Profile created: ${data.created_at}
 			alert(message || "Something went wrong");
 		}
 		});
-	});
 
-	//Delete Google account listener
-	googleDeleteDataBtn?.addEventListener('click', async () => {
-		const password = googleDeletePassInput?.value.trim();
-		if (!password || password.length < 3) return alert('Type DELETE to continue');
-
-		const modalDelete = document.getElementById("user-delete-modal");	
-		 // Show modal
-		modalDelete?.classList.remove("hidden");
-
-		// Close modal
-		document.getElementById("close-delete-btn")?.addEventListener("click", () => {
-			modalDelete?.classList.add("hidden");
-		});
-		const deleteConfirmBtn = document.getElementById('delete-confirm-btn') as HTMLButtonElement | null;
-		deleteConfirmBtn?.addEventListener('click', async () => {
-
-		try {
-			const res = await fetch(`${API_BASE_URL}/profile/delete`, {
-			method: "POST",
-			credentials: 'include',
-			headers: {
-					"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ password }),
-			});
-
-			const data = await res.json();
-
-			if (!res.ok) {
-			throw new Error(data.error || "Failed to delete account");
-			}
-
-			// Success → maybe redirect to homepage
-			alert("Account deleted successfully!");
-			window.location.href = "/"; // redirect after deletion
-		} catch (err) { //err: unknown
-			console.error("Error deleting account:", err);
-			const message = err instanceof Error ? err.message : String(err);
-			alert(message || "Something went wrong");
-		}
-		});
-	});
-
-
-	
-	
 	// 2FA Event Listeners
 	document.getElementById('setup-2fa-btn')?.addEventListener('click', async () => {
 		try {
