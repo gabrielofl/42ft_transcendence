@@ -1,5 +1,5 @@
 import profileAccount from "./profile-account.html?raw";
-import { apiService } from '../services/api.js';
+// import { apiService } from '../services/api.js';
 import { replaceTemplatePlaceholders } from "./utils";
 import { API_BASE_URL } from "./config";
 
@@ -38,7 +38,7 @@ export function setupAccountTab() {
 	fetch(`${API_BASE_URL}/users/me`, {
 		credentials: 'include',
 		headers: {
-			'Authorization': `Bearer ${localStorage.getItem('token')}`
+			
 		}
 	})
 		.then(res => res.json())
@@ -81,7 +81,7 @@ export function setupAccountTab() {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${localStorage.getItem('token')}`
+					
 				},
 				credentials: 'include',
 				body: JSON.stringify({
@@ -168,7 +168,7 @@ export function setupAccountTab() {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${localStorage.getItem('token')}`
+				
 			},
 			credentials: 'include', 
 			body: JSON.stringify({ firstName: name, lastName: lastname }),
@@ -198,7 +198,7 @@ export function setupAccountTab() {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${localStorage.getItem('token')}`
+				
 			},
 			credentials: 'include', 
 			body: JSON.stringify({ username }),
@@ -228,7 +228,7 @@ export function setupAccountTab() {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${localStorage.getItem('token')}`
+				
 			},
 			credentials: 'include', 
 			body: JSON.stringify({ email }),
@@ -287,7 +287,7 @@ export function setupAccountTab() {
 	fetch(`${API_BASE_URL}/users/me`, {
 		credentials: 'include',
 		headers: {
-			'Authorization': `Bearer ${localStorage.getItem('token')}`
+			
 		}
 	})
 	
@@ -614,7 +614,7 @@ const apiService: ApiService = {
 	  method: 'POST',
 	  credentials: 'include',
 	  headers: {
-		'Authorization': `Bearer ${localStorage.getItem('token')}`
+		
 	  }
 	});
 	return response.json();
@@ -625,7 +625,7 @@ const apiService: ApiService = {
 	  credentials: 'include',
 	  headers: {
 		'Content-Type': 'application/json',
-		'Authorization': `Bearer ${localStorage.getItem('token')}`
+		
 	  },
 	  body: JSON.stringify(data)
 	});

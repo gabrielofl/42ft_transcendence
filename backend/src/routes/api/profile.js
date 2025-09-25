@@ -272,7 +272,7 @@ export default async function (fastify, opts) {
 		// Delete account endpoint - POST /api/profile/delete
 		//takes id from session to avoid user delete another user
 		fastify.post('/delete', {
-		preHandler: authenticate, // Require valid JWT
+		preHandler: authenticate, // Require valid JWT // Require to read id from request
 		schema: {
 			body: {
 			type: 'object',
@@ -332,6 +332,77 @@ export default async function (fastify, opts) {
 		return {
 			success: true,
 			message: 'Account deleted successfully'
+		};
+		});
+
+
+		// Get all friends from current user with pagination
+		fastify.get('/friends', {
+		preHandler: authenticate, // Require to read id from request
+		schema: {
+			querystring: {
+			type: 'object',
+			properties: {
+				limit: { type: 'integer', minimum: 1, default: 10 },
+				offset: { type: 'integer', minimum: 0, default: 0 }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const id = request.user?.id;  // current user id
+		const { limit, offset } = request.query;
+
+		// Fetch all friend rows involving this user
+		const friends = await fastify.db.all(
+			`SELECT * FROM friends 
+			WHERE player1_id = ? OR player2_id = ? 
+			ORDER BY id DESC LIMIT ? OFFSET ?`,
+			[id, id, limit, offset]
+		);
+
+		const total = await fastify.db.get(
+			'SELECT COUNT(*) as count FROM friends WHERE player1_id = ? OR player2_id = ?',
+			[id, id]
+		);
+
+		if (!friends.length) {
+			return { total: 0, limit, offset, friends: [] };
+		}
+
+		// Extract the "other player" ids (friend IDs)
+		const friendIds = friends.map(f => 
+			f.player1_id === id ? f.player2_id : f.player1_id
+		);
+
+		// Fetch all friend user info
+		const placeholders = friendIds.map(() => '?').join(',');
+		const users = await fastify.db.all(
+			`SELECT id, username, avatar, score, show_scores_publicly, status 
+			FROM users WHERE id IN (${placeholders})`,
+			friendIds
+		);
+
+		// Attach user info to each friend row
+		const userMap = {};
+		for (const u of users) {
+			userMap[u.id] = u;
+		}
+
+		const friendList = friends.map(f => {
+			const friendId = f.player1_id === id ? f.player2_id : f.player1_id;
+			return {
+			id: f.id,           // friendship id
+			status: f.status,   // friendship status
+			friend: userMap[friendId] // the other user’s data
+			};
+		});
+
+		return {
+			total: total.count,
+			limit,
+			offset,
+			friends: friendList,
+			currentUserId: request.user?.id
 		};
 		});
 

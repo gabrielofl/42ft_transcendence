@@ -20,7 +20,7 @@ export async function setupPerformanceTab() {
 		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			credentials: 'include',
 			headers: {
-				'Authorization': `Bearer ${localStorage.getItem('token')}`
+				
 			}
 		});
 
