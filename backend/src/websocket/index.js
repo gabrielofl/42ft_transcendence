@@ -1,5 +1,5 @@
 // WebSocket Main Entry Point - Punto de entrada principal
-import { ServerGameSocket } from "../game/Game/ServerGameSocket.js"
+
 import db from '../plugins/db.js';
 import { 
   createTournament,
@@ -78,65 +78,9 @@ function patchSocketLogging(fastify, connection) {
     return rawSend(data);
   };
 }
-// let sockets: Record<number, ServerGameSocket>
-
-// export async function registerGame_Websocket(fastify) {
-//   try {
-//     fastify.get('/game-ws', { websocket: true }, (connection, req) => {
-// 	  patchSocketLogging(fastify, connection);  
-    
-//         // Si no existe la sala, la creamos
-//         //if (!sockets[room]) {
-//         //    sockets[room] = new ServerGameSocket(connection);
-//         //}
-
-//         //const gameSocket = sockets[room];
-//         patchSocketLogging(fastify, connection);
-
-//         // Agregamos la conexión a la sala
-//         //gameSocket.addConnection(connection);
-
-//         // Manejo de mensajes usando el handler central
-//         connection.on('message', (rawMessage) => {
-//           console.log(JSON.parse(rawMessage.toString()));
-//             try {
-//                 const message = JSON.parse(rawMessage.toString());
-//                 SocketGameHandler.handleMessage(room, connection, message);
-//             } catch (err) {
-//                 console.error("Mensaje inválido:", err);
-//             }
-//         });
-
-//         // Limpieza cuando el cliente se desconecta
-//         connection.on('close', () => {
-//             gameSocket.removeConnection(connection);
-
-//             if (gameSocket.isEmpty()) {
-//                 delete sockets[room];
-//             }
-//         });
-
-//     });
-//   } catch {}
-// }
-
-let socket;
 
 // --- Main WebSocket registration ---
 export default async function registerWebsocket(fastify) {
-  try {
-        fastify.get('/gamews', { websocket: true }, (connection, req) => {
-    	    patchSocketLogging(fastify, connection);  
-          console.log("Conectando socket");
-
-          if (!socket) {
-            socket = new ServerGameSocket(connection);
-          }
-        });
-      } catch {
-        console.log("Error on: /game-ws");
-      }
-
   try {
     fastify.get('/ws', { websocket: true }, (connection, req) => {
 	  patchSocketLogging(fastify, connection);  

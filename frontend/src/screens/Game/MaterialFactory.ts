@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
-import { Event } from "@shared/utils/Event"
-import { IDisposable } from "@shared/interfaces/IDisposable";
-import { ClientGame } from "./ClientGame";
+import { Game } from "./Game";
+import { IDisposable } from "../Interfaces/IDisposable";
+import { Event } from "../Utils/Event";
 
 type MaterialConfig = {
     color?: [number, number, number];
@@ -13,7 +13,6 @@ export class MaterialFactory implements IDisposable {
     public OnDisposeEvent: Event<void> = new Event();
     private isDisposed: boolean = false;
     private cache: Map<string, BABYLON.StandardMaterial> = new Map();
-    protected game: ClientGame;
 
     // Configuración básica, esto podría venir de un JSON externo
     private configs: Record<string, MaterialConfig> = {
@@ -26,10 +25,6 @@ export class MaterialFactory implements IDisposable {
         "Compass":      { color: [0.75, 0.75, 0]},
         "Shield":       { color: [0.2, 0.6, 1.0], alpha: 0.3},
     };
-
-    public constructor(game: ClientGame) {
-        this.game = game;
-    }
 
     public GetMaterial(name: string): BABYLON.StandardMaterial {
         // Si ya está cacheado, lo devolvemos
@@ -44,7 +39,7 @@ export class MaterialFactory implements IDisposable {
         }
 
         // Creamos el material
-        const mat = new BABYLON.StandardMaterial(name, this.game.GetScene(this));
+        const mat = new BABYLON.StandardMaterial(name, Game.GetInstance().GetScene(this));
         if (cfg.color) mat.diffuseColor = new BABYLON.Color3(...cfg.color);
         if (cfg.ecolor) mat.emissiveColor = new BABYLON.Color3(...cfg.ecolor);
         if (cfg.alpha !== undefined) mat.alpha = cfg.alpha;

@@ -1,17 +1,11 @@
-<div class="flex gap-8 w-full mt-4 px-8 max-w-screen-2xl mx-auto">
-  
-  <!-- Vista Cliente -->
-  <div class="flex flex-col items-center flex-1">
-    <!-- Score Center Cliente -->
-    <div class="justify-self-center flex items-center gap-6 mb-4">
-      <div id="player-cards-client" class="flex items-center gap-6">
-        <!-- Las tarjetas de CLIENTE se insertarán aquí dinámicamente -->
-      </div>
-    </div>
+<!-- Score Center -->
+<div class="justify-self-center flex items-center gap-6">
+	<div id="player-cards" class="justify-self-center flex items-center gap-6">
+		<!-- Las tarjetas se insertarán aquí dinámicamente -->
+	</div>
+</div>
 
-    <!-- Canvas Cliente -->
-    <canvas id="pong-canvas" 
-            class="w-full aspect-[21/9] min-h-[300px] border border-aqua-500">
-    </canvas>
-  </div>
+<!-- Game Canvas -->
+<div class="relative w-full mt-4 px-8 max-w-screen-2xl mx-auto aspect-[21/9] min-h-[300px]">
+<canvas id="pong-canvas" class="w-full aspect-[21/9]"></canvas>
 </div>

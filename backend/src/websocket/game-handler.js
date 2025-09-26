@@ -339,10 +339,8 @@ export function startGameLoop(room, fastify) {
         }
       }
     }
-  }, 16); // ~60 FPS para juego fluido
+  }, 1000); // Cambiar de 3000 a 1000 para detección más precisa
 }
-//}, 1000); // Cambiar de 3000 a 1000 para detección más precisa
-
 
 export function pauseGame(room, reason = 'opponent_disconnected') {
   room.status = ROOM_STATUS.PAUSED;
