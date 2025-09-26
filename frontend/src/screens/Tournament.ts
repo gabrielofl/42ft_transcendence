@@ -4,7 +4,6 @@ import { avatarImgHTML } from './fallback-avatar';
 import { showResultOverlay } from './match-result-view';
 import { initProfileModal, setupProfileLinks } from "./ProfileModal";
 import { API_BASE_URL } from "./config";
-import { MessageBroker, GameEvent } from './Utils/MessageBroker';
 
 const MOCK_USER = 1;
 

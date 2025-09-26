@@ -34,9 +34,6 @@ export async function renderGame(players: PlayerData[]) {
 	const main = document.getElementById('main');
 	if (!main) return;
 	
-	main.innerHTML = "";
-
-	setupGameEvents();
 	// const rendered = replaceTemplatePlaceholders(gameTemplate, { playerName, opponentName, mode });
 	main.innerHTML = gameTemplate; 
 
@@ -62,13 +59,13 @@ function setupGameEvents(playersdata: PlayerData[]): void {
 
 		clientgame = new ClientGame(canvas);
 		clientsocket = new ClientGameSocket(clientgame);
-		clientgame.CreateGame(createPlayers(clientgame, container, clientsocket));
+		clientgame.CreateGame(createPlayers(clientgame, playersdata, container, clientsocket));
 		// setupGameEndedListener(clientgame);
 		// setupPointMadeListener(clientgame);
 	}
 }
 
-function createPlayers(game: AGame, container: HTMLElement, socket?: ClientGameSocket): APlayer[] {
+function createPlayers(game: ClientGame, playersdata: PlayerData[], container: HTMLElement, socket?: ClientGameSocket): APlayer[] {
 		// const player = new LocalPlayer("Jorge", "a", "d", ["z", "x", "c"]);
 		// const enemy = new LocalPlayer("Sutanito", "h", "k", ["b", "n", "m"]);
 		let players: APlayer[] = [];
@@ -78,11 +75,11 @@ function createPlayers(game: AGame, container: HTMLElement, socket?: ClientGameS
 			{
 				case "Local":
 					if (p.leftkey && p.rightkey)
-						player = new LocalPlayer(p.username, p.userid, p.rightkey, p.leftkey, p.powerUpKey);
+						player = new LocalPlayer(game, p.username, p.rightkey, p.leftkey, p.powerUpKey);
 					break;
 
 				case "AI":
-					player = new AIPlayer(p.username, p.userid);
+					player = new ClientSocketPlayer(game, p.username);
 					break;
 			}
 
@@ -91,7 +88,7 @@ function createPlayers(game: AGame, container: HTMLElement, socket?: ClientGameS
 			players.push(player);
 		});
 
-/* 		const enemy = new AIPlayer("Fulanito");
+ 		/* const enemy = new AIPlayer("Fulanito");
 		enemy.Color = new BABYLON.Color3(0, 0, 1);
 		const enemy2 = new AIPlayer("Menganito");
 		enemy2.Color = new BABYLON.Color3(1, 0, 0);
@@ -99,7 +96,7 @@ function createPlayers(game: AGame, container: HTMLElement, socket?: ClientGameS
 		enemy3.Color = new BABYLON.Color3(0, 1, 0);
 		const enemy4 = new AIPlayer("Pegonito");
 		enemy4.Color = new BABYLON.Color3(1, 0, 1);
-
+*/
 		// let players = [enemy, enemy2, enemy3, enemy4];
 		// Insertar tarjetas para cada jugador
 		players.forEach((player, index) => {
