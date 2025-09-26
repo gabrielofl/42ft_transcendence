@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
-import { Game } from "./Game";
-import { IDisposable } from "../Interfaces/IDisposable";
-import { Event } from "../Utils/Event";
+import { IDisposable } from "@shared/interfaces/IDisposable";
+import { Event } from "@shared/utils/Event";
+import { ClientGame } from "./ClientGame";
 
 /**
  * Creates an arrow to point wind direction.
@@ -11,13 +11,14 @@ export class WindCompass implements IDisposable {
     public OnDisposeEvent: Event<void> = new Event();
     private disposed: boolean = false;
     private arrow: BABYLON.TransformNode;
-    public Text: GUI.TextBlock;
+    public Text: GUI.TextBlock | undefined;
+    protected game: ClientGame;
 
-    constructor() {
-        let game = Game.GetInstance();
+    constructor(game: ClientGame) {
+        this.game = game;
         let scene = game.GetScene(this);
 
-        this.Text = this.CreateText(game.GetGui(this));
+        this.Text = this.CreateText(this.game.GetGui(this));
 
         // Flecha como representación del viento
         this.arrow = new BABYLON.TransformNode("arrow", scene);
@@ -33,9 +34,12 @@ export class WindCompass implements IDisposable {
         head.parent = this.arrow;
 
         // Material rojo
-        const mat = game.GetMaterial("Compass");
-        shaft.material = mat;
-        head.material = mat;
+        if (game instanceof ClientGame)
+        {
+            const mat = game.GetMaterial("Compass");
+            shaft.material = mat;
+            head.material = mat;
+        }
 
         let engine = scene.getEngine();
         let canvas = engine.getRenderingCanvas();
@@ -72,7 +76,8 @@ export class WindCompass implements IDisposable {
 
         // Orientar la flecha
         this.arrow.lookAt(this.arrow.position.add(dir));
-        this.Text.text = "Wind: " + (Math.round(10 * wind.length()) * 0.1).toString();
+        if (this.Text)
+            this.Text.text = "Wind: " + (Math.round(10 * wind.length()) * 0.1).toString();
     }
 
     /**

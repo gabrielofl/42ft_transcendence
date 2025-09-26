@@ -1,13 +1,11 @@
 import playerCardTemplate from "./player-card.html?raw";
-import { APlayer } from "../Player/APlayer";
-import { LocalPlayer } from "../Player/LocalPlayer";
-import { GameEvent, MessageBroker } from "../Utils/MessageBroker";
 import { replaceTemplatePlaceholders } from "./GameScreen";
-import { PwrUpEventArgs } from "../Inventory";
-import { Game } from "./Game";
-import { APlayerEffect, AppliedEffectArgs, PlayerEffectFactory } from "../PowerUps/Effects/APlayerEffect";
+import { APlayerEffect } from "@shared/abstract/APlayerEffect";
+import { ClientGameSocket } from "./ClientGameSocket";
+import { APlayer } from "@shared/Player/APlayer";
+import { LocalPlayer } from "./LocalPlayer";
 
-export function createPlayerCard(player: APlayer, colorClass: string): string {
+export function createPlayerCard(player: APlayer, colorClass: string, socket?: ClientGameSocket): string {
     let keysHTML = "";
 
     if (player instanceof LocalPlayer) {
@@ -21,7 +19,7 @@ export function createPlayerCard(player: APlayer, colorClass: string): string {
         <div class="flex gap-2">${keysHTML}</div>   
     ` : "";
 
-	setupEffectsListener(player);
+	setupEffectsListener(player, socket);
 
     let name = player.GetName();
     return replaceTemplatePlaceholders(playerCardTemplate, { name, controls });
@@ -31,12 +29,29 @@ function renderKey(key: string): string {
     return `<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">${key.toUpperCase()}</kbd>`;
 }
 
-function setupEffectsListener(player: APlayer) {
-	MessageBroker.Subscribe<AppliedEffectArgs>(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
-        if (player === args.Target)
-            addEffect(args.Target.GetName(), args.Effect);
-    });
-    MessageBroker.Subscribe<PwrUpEventArgs>(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
+function setupEffectsListener(player: APlayer, socket?: ClientGameSocket) {
+	// TODO Reemplazar por Mensaje
+    if (socket)
+    {
+        socket.UIBroker.Subscribe("InventoryChanged", (msg) => {
+            if (player.GetName() != msg.username)
+                return;
+
+            const slots = document.querySelectorAll<HTMLDivElement>(
+                `#${player.GetName()}-inventory > div[id="${msg.slot}"]`
+            );
+            slots.forEach(slot => {
+                slot.style.backgroundImage = `url(${msg.path})`;
+                slot.style.backgroundSize = "cover";
+                slot.style.backgroundPosition = "center";
+            });
+        });
+    }
+    // game.MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
+    //     if (player === args.Target)
+    //         addEffect(args.Target.GetName(), args.Effect);
+    // });
+    // game.MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
 }
 
 function addEffect(playerName: string, effect: APlayerEffect): void {
@@ -70,9 +85,9 @@ function removeEffect(effectsContainer: HTMLElement, effectIcon: HTMLDivElement)
 	}
 }
 
-function updateInventory(player: APlayer, args: PwrUpEventArgs) {
+/* function updateInventory(player: APlayer, args: PickPowerUpBoxMessage) {
     // Solo actualizamos si el evento es de ESTE jugador
-    if (args.Player !== player)
+    if (args.username !== player.GetName())
         return;
 
     const slotElement = document.querySelector<HTMLDivElement>(
@@ -91,4 +106,4 @@ function updateInventory(player: APlayer, args: PwrUpEventArgs) {
             slotElement.style.backgroundImage = "";
         }
     }
-}
+} */

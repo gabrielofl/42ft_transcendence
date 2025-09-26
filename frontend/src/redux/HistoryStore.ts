@@ -47,7 +47,6 @@ export class HistoryStore<State, Action> {
 
   public Subscribe(listener: Listener) {
     this.listeners.push(listener);
-    listener(); // inicial
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
