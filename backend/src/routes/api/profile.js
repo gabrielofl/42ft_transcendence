@@ -352,11 +352,11 @@ export default async function (fastify, opts) {
 		const id = request.user?.id;  // current user id
 		const { limit, offset } = request.query;
 
-		// Fetch all friend rows involving this user
+		// Fetch all friend rows involving this user Order by status pending first
 		const friends = await fastify.db.all(
 			`SELECT * FROM friends 
 			WHERE player1_id = ? OR player2_id = ? 
-			ORDER BY id DESC LIMIT ? OFFSET ?`,
+			ORDER BY status DESC LIMIT ? OFFSET ?`,
 			[id, id, limit, offset]
 		);
 

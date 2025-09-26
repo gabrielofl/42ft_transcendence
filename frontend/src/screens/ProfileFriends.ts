@@ -30,52 +30,75 @@ export async function setupFriendsTab() {
 async function loadFriends(page: number) {
   try {
 	const data = await getUserFriends(page, perPage);
+	// Render friend cards
+	const friendsContainer = document.querySelector<HTMLDivElement>('#friends-container');
+	if (!friendsContainer) return;
+
+	// Render request friend cards
+	const requestContainer = document.querySelector<HTMLDivElement>('#request-container');
+	if (!requestContainer) return;
+	
+	const acceptedFriends = data.friends.filter(f => f.status === "accepted");
+	const pendingFriends = data.friends.filter(f => f.status === "pending");
 
 	console.debug('loadFriends data:', data); // helpful while debugging
 
 	// Update total friends
 	const totalFriendsEl = document.querySelector<HTMLParagraphElement>('#total-friends');
-	if (totalFriendsEl) totalFriendsEl.textContent = `Friends: ${data.total}`;
+	if (totalFriendsEl) totalFriendsEl.textContent = `Friends: ${acceptedFriends.length}`;
+	
+	// Update total request friends
+	const totalRequestEl = document.querySelector<HTMLParagraphElement>('#total-request');
+	if (totalRequestEl) totalRequestEl.textContent = `Friend requests: ${pendingFriends.length}`;
 
 	// Update page info
 	const pageEl = document.querySelector<HTMLParagraphElement>('#page-info');
 	if (pageEl) pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
-	console.log(`Page: ${data.page} / ${data.totalPages}`);
+	// console.log(`Page: ${data.page} / ${data.totalPages}`);
+	console.log(acceptedFriends.length);
 
-	// Render friend cards
-	const friendsContainer = document.querySelector<HTMLDivElement>('#friends-container');
-	if (!friendsContainer) return;
-
-	if (!data.friends.length) {
+	if (!acceptedFriends.length) {
 	  friendsContainer.innerHTML = `<p class="text-center">No friends found.</p>`;
 	  return;
 	}
 
-	const usersMap = data.users || {};
-	const currentUserId = data.currentUserId;
 
-	friendsContainer.innerHTML = data.friends.map(friend => {
-	// figure out who the friend is (not the current user)
-	const friendId = friend.player1_id === currentUserId
-		? friend.player2_id
-		: friend.player1_id;
+	if (!pendingFriends.length) {
+	  requestContainer.innerHTML = `<p class="text-center">No new friends request.</p>`;
+	  return;
+	}
 
-	const u = usersMap[friendId];
-	console.log("USER ", usersMap[friendId]);
-	console.log("USERNAME ", usersMap[friendId].username);
-	if (!u) return ""; // fallback in case of missing user
+	// // Render accepted
+	// acceptedFriends.forEach(f => {
+	// const user = f.friend;
+	// console.log("Accepted:", user.username);
+	// });
 
-	console.log("USERNAME ", u.username);
+	// // Render pending
+	// pendingFriends.forEach(f => {
+	// const user = f.friend;
+	// console.log("Pending:", user.username);
+	// });
+
+	// const usersMap = data.users || {};
+	// const currentUserId = data.currentUserId;
+
+
+	
+	friendsContainer.innerHTML = acceptedFriends.map(f => {
+	const user = f.friend;
+
+	// console.log("USERNAME ", user.username);
 	// Normalize avatar URLs
-	const friendAvatar = u.avatar
-		? `${API_BASE_URL}/profile/avatar/${u.avatar}`
+	const friendAvatar = user.avatar
+		? `${API_BASE_URL}/profile/avatar/${user.avatar}`
 		: 'default.jpg';
 
 	// Status logic
 	let friendStatusColor = "bg-gray-400";
 	let friendStatusText = "Offline";
 
-	switch (u.status) {
+	switch (user.status) {
 		case 1:
 		friendStatusColor = "bg-[--success-color]";
 		friendStatusText = "Online";
@@ -88,7 +111,7 @@ async function loadFriends(page: number) {
 
 	return `
 		<div class="player-card border-[--primary-color]">
-		<a href="#" class="open-profile" data-user="${u.username}">
+		<a href="#" class="open-profile" data-user="${user.username}">
 			<img id="user-card-avatar" class="w-12 h-12 rounded-full bg-gray-300" src="${friendAvatar}" alt="Avatar image">
 		</a>
 		<div class="ml-3 flex flex-col">
@@ -102,15 +125,65 @@ async function loadFriends(page: number) {
 				</div>
 			</div>
 			<span id="user-card-username" class="font-bold text-white ">
-				<a href="#" class="open-profile" data-user="${u.username}">${u.username}</a>
+				<a href="#" class="open-profile" data-user="${user.username}">${user.username}</a>
 			</span>
 			</div>
-			<div id="user-card-points" class="text-red-500 font-bold text-sm ">${u.score ?? 0} pts</div>
+			<div id="user-card-points" class="text-red-500 font-bold text-sm ">${user.score ?? 0} pts</div>
 		</div>
 		</div>
 	`;
 	}).join('');
 
+
+	
+	requestContainer.innerHTML = pendingFriends.map(f => {
+	const user = f.friend;
+
+	// console.log("USERNAME ", user.username);
+	// Normalize avatar URLs
+	const friendAvatar = user.avatar
+		? `${API_BASE_URL}/profile/avatar/${user.avatar}`
+		: 'default.jpg';
+
+	// Status logic
+	let friendStatusColor = "bg-gray-400";
+	let friendStatusText = "Offline";
+
+	switch (user.status) {
+		case 1:
+		friendStatusColor = "bg-[--success-color]";
+		friendStatusText = "Online";
+		break;
+		case 2:
+		friendStatusColor = "bg-[--warning-color]";
+		friendStatusText = "Inactive";
+		break;
+	}
+
+	return `
+		<div class="player-card border-[--primary-color]">
+		<a href="#" class="open-profile" data-user="${user.username}">
+			<img id="user-card-avatar" class="w-12 h-12 rounded-full bg-gray-300" src="${friendAvatar}" alt="Avatar image">
+		</a>
+		<div class="ml-3 flex flex-col">
+			<div class="flex items-center space-x-2">
+			<div class="relative group flex items-center">
+				<span id="profile-status" class="w-4 h-4 rounded-full ${friendStatusColor} "></span>
+				<div id="status-tootip" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap 
+					rounded-lg bg-gray-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 
+					transition-opacity duration-300 z-10">
+				${friendStatusText}
+				</div>
+			</div>
+			<span id="user-card-username" class="font-bold text-white ">
+				<a href="#" class="open-profile" data-user="${user.username}">${user.username}</a>
+			</span>
+			</div>
+			<div id="user-card-points" class="text-red-500 font-bold text-sm ">${user.score ?? 0} pts</div>
+		</div>
+		</div>
+	`;
+	}).join('');
 
 	// Prev / Next buttons (keep behavior)
 	const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement | null;
