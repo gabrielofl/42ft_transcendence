@@ -29,9 +29,7 @@ export default async function (fastify, opts) {
 			preHandler: authenticate  // Require authentication
 		}, async (request, reply) => {
 
-			console.log('Query params:', request.query);
 			const { username } = request.query;
-  			console.log('Username received:', username);
 			if (!username) {
 				return reply.code(400).send({ error: 'Username is required' });
 			}
