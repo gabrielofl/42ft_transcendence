@@ -37,6 +37,7 @@ async function openUserProfile(username: string | number) {
   const lossesOpp = document.getElementById("losses-opp");
  
   const friendBtn = document.getElementById("friend-action-btn");
+  const rejectBtn = document.getElementById("friend-reject-btn");
   const status = document.getElementById("modal-profile-status");
   const statusTooltip = document.getElementById("status-tooltip");
 
@@ -72,10 +73,6 @@ async function openUserProfile(username: string | number) {
 			statusColor = "bg-[--warning-color]";
 			statusText = "Inactive";
 			break;
-			default:
-			statusColor = "bg-gray-400";
-			statusText = "Offline";
-			break;
 		}
 		statusTooltip.textContent = statusText;
 		// Reset + apply new color
@@ -93,33 +90,50 @@ async function openUserProfile(username: string | number) {
 		 loadUserGameStats(data.id);
 	}
 	
+	try {
+		console.log("USER: ",data.id);
 
+		const isFriend = await fetch(`${API_BASE_URL}/profile/isFriend?userId=${data.id}`, {
+			headers: {
+			},
+			credentials: 'include', 
+		});
+
+    if (!isFriend.ok) throw new Error(`Failed to fetch profile for ${username}`);
+    const friendship = await isFriend.json();
 	// Friendship check: 0 = no; 1 = request sended by me, 2 request sended by user; 3 = friends;
 	// data.isFriend = 2;
-	if (friendBtn)
+	if (friendBtn && rejectBtn)
 	{
+		console.log("Friendship :",friendship.isFriend)
 		let friendBtnStatus;
 		friendBtn.classList.remove("btn-primary", "btn-disabled", "btn-success", "btn-secondary");
-		if (data.isFriend === 1) {
-			friendBtn.textContent = "Request sended";
-			friendBtnStatus = "btn-disabled";
-			}
-		else if (data.isFriend === 2) {
+		rejectBtn.classList.add("hidden");
+		if (!friendship.isFriend && !friendship.currentUser) {
+			friendBtn.textContent = "Add Friend";
+			friendBtnStatus = "btn-primary";
+		}
+		else if (friendship.status == "pending") {
 			friendBtn.textContent = "Accept request";
 			friendBtnStatus = "btn-success";
+			rejectBtn.classList.remove("hidden");
 		} 
-		else if (data.isFriend === 3) {
+		else if (friendship.status == "accepted") {
 			friendBtn.textContent = "Remove Friend";
 			friendBtnStatus = "btn-secondary";
 
 		}
 		else {
-			friendBtn.textContent = "Add Friend";
+			friendBtn.textContent = "Go to my profile";
 			friendBtnStatus = "btn-primary";
 		}
 		friendBtn.classList.add(friendBtnStatus);
 	}
 	
+	} catch (error) {
+    console.error("Profile modal friendship error:", error);
+		
+	}
 
 	 // Friend action
     // friendBtn.onclick = async () => {

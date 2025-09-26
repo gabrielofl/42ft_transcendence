@@ -407,6 +407,42 @@ export default async function (fastify, opts) {
 		});
 
 
+	// Check if username is friend of current user 
+	fastify.get('/isFriend', {
+	preHandler: authenticate,
+	schema: {
+			querystring: {
+			type: 'object',
+			properties: {
+				userId: { type: 'integer'},
+			}
+			}
+		}
+	}, async (request, reply) => {
+	const { userId } = request.query;
+	const tokenUser = request.user?.id;
+
+	if (userId == tokenUser)
+		return { isFriend: false, currentUser: true };
+	// Check if a friendship row exists between tokenUser and targetUser
+	const friendship = await fastify.db.get(
+		`SELECT * FROM friends
+		WHERE (player1_id = ? AND player2_id = ?)
+			OR (player1_id = ? AND player2_id = ?)`,
+		[tokenUser, userId, userId, tokenUser]
+	);
+
+	if (!friendship) {
+		return { isFriend: false, currentUser: false };
+	}
+
+	return {
+		isFriend: true,
+		status: friendship.status,   // "pending" or "accepted"
+		friendshipId: friendship.id
+	};
+	});
+
 
 	}, { prefix: '/profile' });
 }

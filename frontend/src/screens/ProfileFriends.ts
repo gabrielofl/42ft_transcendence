@@ -33,15 +33,12 @@ async function loadFriends(page: number) {
 	// Render friend cards
 	const friendsContainer = document.querySelector<HTMLDivElement>('#friends-container');
 	if (!friendsContainer) return;
-
 	// Render request friend cards
 	const requestContainer = document.querySelector<HTMLDivElement>('#request-container');
 	if (!requestContainer) return;
 	
 	const acceptedFriends = data.friends.filter(f => f.status === "accepted");
 	const pendingFriends = data.friends.filter(f => f.status === "pending");
-
-	console.debug('loadFriends data:', data); // helpful while debugging
 
 	// Update total friends
 	const totalFriendsEl = document.querySelector<HTMLParagraphElement>('#total-friends');
@@ -54,46 +51,23 @@ async function loadFriends(page: number) {
 	// Update page info
 	const pageEl = document.querySelector<HTMLParagraphElement>('#page-info');
 	if (pageEl) pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
-	// console.log(`Page: ${data.page} / ${data.totalPages}`);
-	console.log(acceptedFriends.length);
 
 	if (!acceptedFriends.length) {
 	  friendsContainer.innerHTML = `<p class="text-center">No friends found.</p>`;
 	  return;
 	}
 
-
 	if (!pendingFriends.length) {
 	  requestContainer.innerHTML = `<p class="text-center">No new friends request.</p>`;
 	  return;
 	}
-
-	// // Render accepted
-	// acceptedFriends.forEach(f => {
-	// const user = f.friend;
-	// console.log("Accepted:", user.username);
-	// });
-
-	// // Render pending
-	// pendingFriends.forEach(f => {
-	// const user = f.friend;
-	// console.log("Pending:", user.username);
-	// });
-
-	// const usersMap = data.users || {};
-	// const currentUserId = data.currentUserId;
-
-
 	
 	friendsContainer.innerHTML = acceptedFriends.map(f => {
 	const user = f.friend;
-
-	// console.log("USERNAME ", user.username);
 	// Normalize avatar URLs
 	const friendAvatar = user.avatar
 		? `${API_BASE_URL}/profile/avatar/${user.avatar}`
 		: 'default.jpg';
-
 	// Status logic
 	let friendStatusColor = "bg-gray-400";
 	let friendStatusText = "Offline";
@@ -133,18 +107,13 @@ async function loadFriends(page: number) {
 		</div>
 	`;
 	}).join('');
-
-
 	
 	requestContainer.innerHTML = pendingFriends.map(f => {
 	const user = f.friend;
-
-	// console.log("USERNAME ", user.username);
 	// Normalize avatar URLs
 	const friendAvatar = user.avatar
 		? `${API_BASE_URL}/profile/avatar/${user.avatar}`
 		: 'default.jpg';
-
 	// Status logic
 	let friendStatusColor = "bg-gray-400";
 	let friendStatusText = "Offline";
