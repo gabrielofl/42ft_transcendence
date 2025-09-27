@@ -1,17 +1,13 @@
 import * as BABYLON from "@babylonjs/core";
-import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { PowerUpType } from "@shared/types/messages";
-import { ClientGame } from "./ClientGame";
-import { DisposableMesh } from "@shared/utils/DisposableMesh";
-import { IPowerUpBox } from "@shared/interfaces/IPowerUpBox";
-import { AGame } from "@shared/abstract/AGame";
-import { APlayer } from "@shared/Player/APlayer";
+import { ClientGame } from "../ClientGame";
+import { DisposableMesh } from "../Abstract/DisposableMesh";
 
-export class ClientPowerUpBox extends DisposableMesh implements IPowerUpBox {
+export class ClientPowerUpBox extends DisposableMesh {
     protected observable: BABYLON.Nullable<BABYLON.Observer<BABYLON.Scene>>;
     public X: number;
     public Z: number;
-    public PowerUp: IPowerUp;
+    // public PowerUp: IPowerUp;
     private game: ClientGame;
     public ID: number;
 
@@ -35,25 +31,25 @@ export class ClientPowerUpBox extends DisposableMesh implements IPowerUpBox {
         });
 
         // 👉 Seleccionar power-up
-        if (type) {
-            this.PowerUp = AGame.PowerUpFactory[type](game);
+/*         if (type) {
+            this.PowerUp = ClientGame.PowerUpFactory[type](game);
         } else {
-            const types = Object.keys(AGame.PowerUpFactory) as PowerUpType[];
+            const types = Object.keys(ClientGame.PowerUpFactory) as PowerUpType[];
             const randomType = types[Math.floor(Math.random() * types.length)];
-            this.PowerUp = AGame.PowerUpFactory[randomType](game);
-        }
+            this.PowerUp = ClientGame.PowerUpFactory[randomType](game);
+        } */
         
         // Se añade a la lista de PowerUps.
         game.PowerUps.Add(this);
     }
 
-    public PickUp(player: APlayer) {
+/*     public PickUp(player: APlayer) {
         if (this.disposed)
             return;
 
         player.Inventory.PickUpPwrUp(this.PowerUp);
         this.Dispose();
-    }
+    } */
 
     /**
      * Clear al subscriptions.

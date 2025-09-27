@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
-import { IDisposable } from "@shared/interfaces/IDisposable";
 import { Event } from "@shared/utils/Event";
 import { ClientGame } from "./ClientGame";
-import { DisposableMesh } from "@shared/utils/DisposableMesh";
+import { DisposableMesh } from "./Abstract/DisposableMesh";
+import { IDisposable } from "./Interfaces/IDisposable";
 
 /**
  * Marker used when selecting maps.

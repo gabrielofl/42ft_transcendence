@@ -1,6 +1,7 @@
 import { APlayer } from "../Player/APlayer.js";
 import { ServerGame } from "../Game/ServerGame.js";
 import { ServerBall } from "../Collidable/ServerBall.js";
+import { logToFile } from "../Game/logger.js";
 
 export class PowerUpCreateBall {
     ImgPath; //: string;
@@ -16,6 +17,7 @@ export class PowerUpCreateBall {
      * @returns 
      */
     UsePowerUp(player) {
+        logToFile("PowerUpCreateBall UsePowerUp Start");
         if (this.aplied)
             return;
 
@@ -31,5 +33,6 @@ export class PowerUpCreateBall {
                     impostor.setLinearVelocity(lookAt);
                 }
         }
+        logToFile("PowerUpCreateBall UsePowerUp End");
     }
 }

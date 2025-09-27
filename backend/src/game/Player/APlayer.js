@@ -6,6 +6,7 @@ import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect.js";
 import "../Utils/array.extensions.js";
 import { AGame } from "../abstract/AGame.js";
 import { Event } from "../Utils/Event.js";
+import { Zone } from "../Utils/Zone.js";
 
 export class APlayer {
     OnPaddleCreated = new Event();
@@ -13,7 +14,7 @@ export class APlayer {
     // Propiedades
     name;
     paddle;
-    // ScoreZone: Zone | undefined;
+    ScoreZone; //Zone;
     score = 0;
     Inventory;//Inventory
     Color = new BABYLON.Color3(1, 0, 1);
@@ -37,9 +38,7 @@ export class APlayer {
         this.PaddleLen.Values.Add(new PaddleLenEffect(game, "", 8, -1));
         this.PaddleLen.OnChangeEvent.Subscribe(value => this.paddle = this.CreatePaddle(value > 4 ? value : 4));
         this.PaddleLen.Values.OnAddEvent.Subscribe((effect) => this.PaddleLen.Values);
-        // TODO Corregir zona de puntos
-        // if (game instanceof ServerGame)
-        //    this.ScoreZone = new Zone(game, 40, 5, 2);
+        this.ScoreZone = new Zone(game, 40, 5, 2);
 
         // Tratamiento de efectos.
         this.Effects.OnAddEvent.Subscribe((effect) => {
@@ -93,13 +92,10 @@ export class APlayer {
         this.paddle.ConfigurePaddleBehavior(behavior.position, behavior.lookAt, behavior.maxDistance);
         
         // Configurar la zona de puntaje
-/*         if (this.ScoreZone)
-        {
-            var score = this.ScoreZone.GetMesh();
-            var pad = this.paddle.GetMesh();
-            score.position = pad.position.add(behavior.position.clone().normalize().multiplyByFloats(2, 2, 2));
-            score.lookAt(behavior.lookAt);
-        } */
+        var score = this.ScoreZone.GetMesh();
+        var pad = this.paddle.GetMesh();
+        score.position = pad.position.add(behavior.position.clone().normalize().multiplyByFloats(2, 2, 2));
+        score.lookAt(behavior.lookAt);
     }
 
     GetBehavior()

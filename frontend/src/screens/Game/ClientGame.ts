@@ -1,15 +1,48 @@
 import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
-import { IDisposable } from "@shared/interfaces/IDisposable";
+import * as MAPS from "./Maps";
 import { MaterialFactory } from "./MaterialFactory";
-import { APongTable } from "../../../../shared/abstract/APongTable";
 import { ClientPongTable } from "./ClientPongTable";
-import { AGame } from "@shared/abstract/AGame";
-import { APlayer } from "@shared/Player/APlayer";
 import { WindCompass } from "./WindCompass";
+import { PowerUpMoreLength } from "@shared/PowerUps/PowerUpMoreLength"
+import { PowerUpLessLength } from "./PowerUps/PowerUpLessLength";
+import { PowerUpSpeedUp } from "./PowerUps/PowerUpSpeedUp";
+import { PowerUpSpeedDown } from "./PowerUps/PowerUpSpeedDown";
+import { PowerUpShield } from "./PowerUps/PowerUpShield";
+import { MessageBroker } from "@shared/utils/MessageBroker";
+import { ObservableList } from "@shared/utils/ObservableList";
+import { Event } from "@shared/utils/Event";
+import { MessagePayloads } from "@shared/types/messages";
+import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
+import { ClientBall } from "../Collidable/ClientBall";
+import { APlayer } from "./Player/APlayer";
+import { IDisposable } from "./Interfaces/IDisposable";
+import { APongTable } from "./Abstract/APongTable";
 
-export class ClientGame extends AGame implements IDisposable {
+export class ClientGame implements IDisposable {
+protected readonly WIN_POINTS = 50;
+    public ID: string = "";
+    
+    // --- Utils ---
+    public Paused: boolean = false;
 
+    // --- Disposable ---
+    protected isDisposed: boolean = false;
+    protected dependents: ObservableList<IDisposable> = new ObservableList();
+    public OnDisposeEvent: Event<void> = new Event();
+
+    // --- Estado principal ---
+    protected engine: BABYLON.Engine;
+    protected scene: BABYLON.Scene;
+
+    // ---Instances ---
+    public MessageBroker: MessageBroker<MessagePayloads> = new MessageBroker();
+    public Balls: ObservableList<ClientBall> = new ObservableList();
+    public PowerUps: ObservableList<ClientPowerUpBox> = new ObservableList();
+    public Map: MAPS.MapDefinition = MAPS.MultiplayerMap;
+
+    // --- Utils ---
+    protected players: APlayer[] = [];
     // --- Visual ---
     private gui: GUI.AdvancedDynamicTexture;
     private camera: BABYLON.ArcRotateCamera;
@@ -21,12 +54,25 @@ export class ClientGame extends AGame implements IDisposable {
 
     // ---Instances ---
     public PongTable: APongTable;
+    
+	// 🔑 Factories centralizadas
+/*     public static PowerUpFactory = {
+        MoreLength: (game) => new PowerUpMoreLength(game),
+        LessLength: (game) => new PowerUpLessLength(game),
+        SpeedUp: (game) => new PowerUpSpeedUp(game),
+        SpeedDown: (game) => new PowerUpSpeedDown(game),
+        CreateBall: (game) => new PowerUpCreateBall(),
+        Shield: (game) => new PowerUpShield(game),
+    }; */
 
     constructor(canvas: HTMLCanvasElement) {
-        let engine = new BABYLON.Engine(canvas, true);
-        let scene = new BABYLON.Scene(engine);
-        super(engine, scene);
+        this.engine = new BABYLON.Engine(canvas, true);
+        this.scene = new BABYLON.Scene(this.engine);
         
+        // EVENTS
+        this.scene.actionManager = new BABYLON.ActionManager(this.scene);
+        this.engine.runRenderLoop(() => this.scene.render());
+
         this.gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
         
         this.scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.2, 1);
@@ -128,5 +174,37 @@ export class ClientGame extends AGame implements IDisposable {
     public GetGui(owner: IDisposable): GUI.AdvancedDynamicTexture {
         this.dependents.Add(owner);
         return this.gui;
+    }
+
+    public GetPlayers(): APlayer[] {
+		return [...this.players];
+	}
+
+    /**
+     * Obtain the scene and save a reference to the owner.
+     * @param owner class using this scene.
+     */
+    public GetScene(owner: IDisposable): BABYLON.Scene {
+        this.dependents.Add(owner);
+        return this.scene;
+    }
+
+    /**
+     * Dispose this class and all the dependent elements.
+     */
+    public Dispose(): void {
+        if(this.isDisposed)
+            return;
+
+        this.isDisposed = true;
+        this.dependents.GetAll().forEach(d => d.Dispose());
+        this.MessageBroker.ClearAll();
+    }
+
+    /**
+     * @returns true if disposed.
+     */
+    public IsDisposed(): boolean {
+        return this.isDisposed;
     }
 }

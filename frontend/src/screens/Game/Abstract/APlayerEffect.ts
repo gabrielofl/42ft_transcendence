@@ -1,8 +1,7 @@
-import { ServerGame } from "../../frontend/src/screens/Game/ServerGame";
 import { APlayer } from "../Player/APlayer";
-import { Event } from "../utils/Event";
-import { IEffectCommand } from "../interfaces/IEffectCommand";
-import { AGame } from "src/screens/Game/AGame";
+import { Event } from "@shared/utils/Event";
+import { IEffectCommand } from "../Interfaces/IEffectCommand";
+import { ClientGame } from "../ClientGame";
 
 export abstract class APlayerEffect implements IEffectCommand<APlayer> {
     public OnDisposeEvent: Event<void> = new Event();
@@ -11,9 +10,9 @@ export abstract class APlayerEffect implements IEffectCommand<APlayer> {
     public Origin: APlayer | null = null;
     protected disposed: boolean = false;
     protected duration: number;
-    protected game: AGame;
+    protected game: ClientGame;
 
-    constructor(game: AGame, imgPath: string, duration: number = 10) {
+    constructor(game: ClientGame, imgPath: string, duration: number = 10) {
         this.duration = duration;
         this.ImgPath = imgPath;
         this.game = game;

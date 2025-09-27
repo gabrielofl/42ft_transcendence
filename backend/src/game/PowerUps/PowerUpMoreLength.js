@@ -1,4 +1,5 @@
 import { APlayer } from "../Player/APlayer.js";
+import { logToFile } from "../Game/logger.js";
 
 export class PowerUpMoreLength {
     ImgPath;
@@ -14,10 +15,12 @@ export class PowerUpMoreLength {
      * @param {APlayer} player 
      */
     UsePowerUp(player) {
+        logToFile("PowerUpMoreLength UsePowerUp Start");
         this.game.MessageBroker.Publish("SelfEffect", {
             type: "SelfEffect",
             effect: "MoreLength",
             origin: player.GetName(),
         });
+        logToFile("PowerUpMoreLength UsePowerUp End");
     }
 }

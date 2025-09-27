@@ -1,12 +1,11 @@
 import { APlayerEffect } from "@shared/abstract/APlayerEffect";
-import { ServerGame } from "../../Game/ServerGame";
+import { ClientGame } from "../../ClientGame";
 import { APlayer } from "../../Player/APlayer";
-import { AGame } from "src/screens/Game/AGame";
 
 export class PaddleSpeedEffect extends APlayerEffect {
     private speed: number;
 
-    constructor(game: AGame, imgPath: string, speed: number, durationMs: number = 5000) {
+    constructor(game: ClientGame, imgPath: string, speed: number, durationMs: number = 5000) {
         super(game, imgPath, durationMs);
         this.speed = speed;
         this.IsNegative = speed < 0;
@@ -26,7 +25,7 @@ export class PaddleSpeedEffect extends APlayerEffect {
     }
 
     public Undo(target: APlayer): void {
-        target.GetPaddle().ResetSpeed();
+        // target.GetPaddle().ResetSpeed();
         this.Dispose();
     }
 

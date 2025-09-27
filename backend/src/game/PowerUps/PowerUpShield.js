@@ -1,4 +1,5 @@
 import { APlayer } from "../Player/APlayer.js";
+import { logToFile } from "../Game/logger.js";
 
 export class PowerUpShield {
     ImgPath;
@@ -14,10 +15,12 @@ export class PowerUpShield {
      * @param {APlayer} player 
      */
     UsePowerUp(player) {
+        logToFile("PowerUpShield UsePowerUp Start");
         this.game.MessageBroker.Publish("SelfEffect", {
             type: "SelfEffect",
             effect: "Shield",
             origin: player.GetName(),
         });
+        logToFile("PowerUpShield UsePowerUp End");
     }
 }

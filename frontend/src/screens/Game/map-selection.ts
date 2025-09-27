@@ -1,5 +1,5 @@
 import * as BABYLON from "@babylonjs/core";
-import { MapDefinition, Maps } from "../../../../shared/Maps"; // el objeto que contiene todos los mapas
+import { MapDefinition, Maps } from "./Maps"; // el objeto que contiene todos los mapas
 import { APongTable } from "../../../../shared/abstract/APongTable";
 import view from "./map-selection.html?raw";
 import { ClientGame } from "./ClientGame";

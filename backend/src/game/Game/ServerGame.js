@@ -13,6 +13,8 @@ import { PowerUpSpeedUp } from "../PowerUps/PowerUpSpeedUp.js"
 import { PowerUpSpeedDown } from "../PowerUps/PowerUpSpeedDown.js"
 import { PowerUpCreateBall } from "../PowerUps/PowerUpCreateBall.js"
 import { PowerUpShield } from "../PowerUps/PowerUpShield.js"
+import { Inventory } from "../Inventory.js";
+import { logToFile } from "./logger.js";
 
 // import "@babylonjs/loaders/glTF";
 
@@ -37,6 +39,7 @@ export class ServerGame extends AGame {
     };
 
     constructor() {
+		logToFile("ServerGame Constructor Start");
 		let engine = new BABYLON.NullEngine();
         // Inicializar motor, escena y gui
 		// let engine = new BABYLON.Engine(canvas, true);
@@ -79,13 +82,22 @@ export class ServerGame extends AGame {
 		
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
 		this.PongTable = new ServerPongTable(this);
+		logToFile("ServerGame Constructor End");
     }
 
     BallRemoved() {
+		logToFile("ServerGame BallRemoved Start");
 		if (!this.players.every(p => p.GetScore() < this.WIN_POINTS))
+		{
+			console.log("GameEnded");
 			this.GameEnded();
+		}
 		else if (this.Balls.GetAll().length == 0)
+		{
+			console.log("Start with new Ball");
 			this.Start();
+		}
+		logToFile("ServerGame BallRemoved End");
 	}
 
 	/**
@@ -101,14 +113,14 @@ export class ServerGame extends AGame {
 	 * @param players 
 	 */
 	CreateGame(players) {
+		logToFile("ServerGame CreateGame Start");
 		// TABLE
 		const inputMap = {};
 		this.players = players;
 
 		players.forEach((p, idx) =>{
             p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0), maxDistance: 10});
-            if (p.ScoreZone)
-				p.ScoreZone.OnEnterEvent.Subscribe((iMesh) => this.BallEnterScoreZone(p, iMesh));
+			p.ScoreZone.OnEnterEvent.Subscribe((iMesh) => this.BallEnterScoreZone(p, iMesh));
         });
 
 		// CAMERA
@@ -137,11 +149,45 @@ export class ServerGame extends AGame {
 			this.Wind = this.RandomWind();
 		}, 10000);
 
+		let lastLog = Date.now();
+
 		this.scene.onBeforeRenderObservable.add(() => {
 			this.processPlayerMoves(inputMap);
+
+			// LOGS
+			const now = Date.now();
+			if (now - lastLog >= 1000) {
+				this.logGameState();
+				lastLog = now;
+			}
 		});
 		this.Start();
 		this.dependents.Add(this.PongTable);
+		logToFile("ServerGame CreateGame End");
+	}
+
+	logGameState() {
+		// Ejemplo: número de meshes en la escena
+		const meshCount = this.scene.meshes.length;
+		let data = "";
+		this.players.forEach(p => {
+			data +=
+				`name: ${p.name}\n` +
+				`score: ${p.GetScore()}\n` +
+				`Inventory: ${JSON.stringify(p.Inventory.powerUps)}\n` +
+				`\n`
+		});
+		
+		data += `Balls ${this.Balls.GetAll().length}:\n`;
+		this.Balls.GetAll().forEach(b => {
+			data +=
+				`ID: ${b.ID}\n` +
+				`Pos: ${JSON.stringify(b.mesh.position)}\n` +
+				`\n`
+		});
+		// Ejemplo: estado de los jugadores o bolas
+		// const ballCount = this.Balls ? this.Balls.Items.length : 0;
+		console.log(`[GameState] Meshes: ${meshCount}\nPlayers:\n${data}`);
 	}
 
 	RandomWind(strength) {
@@ -152,6 +198,7 @@ export class ServerGame extends AGame {
 	}
 
 	GameEnded() {
+		logToFile("ServerGame GameEnded Start");
 		if (this.Paused === true)
 			return;
 
@@ -160,12 +207,15 @@ export class ServerGame extends AGame {
 		let results = [];
 		this.players.forEach(p => results.push({username: p.GetName(), score: p.GetScore()}));
 		this.MessageBroker.Publish("GameEnded", {type: "GameEnded", results: results});
+		logToFile("ServerGame GameEnded End");
 	}
 
 	GameRestart() {
+		logToFile("ServerGame GameRestart Start");
 		this.players.forEach(p => p.Reset());
 		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: false});
 		this.Start()
+		logToFile("ServerGame GameRestart End");
 	}
 
 	/**
@@ -174,6 +224,7 @@ export class ServerGame extends AGame {
 	 * @param {ServerBall} ball 
 	 */
 	BallEnterScoreZone(player, ball) {
+		logToFile("ServerGame BallEnterScoreZone Start");
 		this.players.filter(p => p != player).forEach(p => p.IncreaseScore());
 
 		let results = [];
@@ -183,10 +234,12 @@ export class ServerGame extends AGame {
 			results: results,
 		});
 		ball.Dispose();
+		logToFile("ServerGame BallEnterScoreZone End");
 	}
 
 	// Resetear posición y velocidad con física
     Start() {
+		logToFile("ServerGame Start Start");
         let ball = new ServerBall(this);
         const ballMesh = ball.GetMesh();
         ballMesh.physicsImpostor?.setLinearVelocity(BABYLON.Vector3.Zero());
@@ -194,6 +247,7 @@ export class ServerGame extends AGame {
         var x = Math.random() * 30;
         var z = Math.sign(Math.random() - 0.5) * 30;
         ballMesh.physicsImpostor?.setLinearVelocity(new BABYLON.Vector3(x, 0, z));
+		logToFile("ServerGame Start End");
     }
 
 	processPlayerMoves(inputMap) {

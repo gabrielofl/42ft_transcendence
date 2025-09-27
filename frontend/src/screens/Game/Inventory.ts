@@ -1,16 +1,16 @@
-import { IPowerUp } from "@shared/interfaces/IPowerUp";
+import { ClientGame } from "./ClientGame";
+import { IDisposable } from "./Interfaces/IDisposable";
+import { IPowerUp } from "./Interfaces/IPowerUp";
 import { APlayer } from "./Player/APlayer";
-import { IDisposable } from "@shared/interfaces/IDisposable";
 import { Event } from "@shared/utils/Event";
-import { AGame } from "./abstract/AGame";
 
 export class Inventory implements IDisposable {
   public OnDisposeEvent: Event<void> = new Event();
   private powerUps: Map<number, IPowerUp | undefined> = new Map();
   private owner: APlayer;
-  private game: AGame;
+  private game: ClientGame;
 
-  constructor(game: AGame, owner: APlayer) {
+  constructor(game: ClientGame, owner: APlayer) {
     this.owner = owner;
     this.game = game;
     this.powerUps.set(0, undefined);

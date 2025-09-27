@@ -2,7 +2,7 @@ import * as BABYLON from "@babylonjs/core";
 import { APlayer } from "../../Player/APlayer.js";
 import { DisposableMesh } from "../../Utils/DisposableMesh.js";
 import { APlayerEffect } from "../../abstract/APlayerEffect.js";
-import { ClientGame } from "../../../frontend/src/screens/Game/ClientGame.js";
+import { logToFile } from "../../Game/logger.js";
 
 export class PaddleShieldEffect extends APlayerEffect {
     shield;
@@ -17,6 +17,7 @@ export class PaddleShieldEffect extends APlayerEffect {
      * @returns 
      */
     Execute(target) {
+        logToFile("PaddleShieldEffect Execute Start");
         if (this.disposed || target !== this.Origin) 
             return;
 
@@ -31,6 +32,7 @@ export class PaddleShieldEffect extends APlayerEffect {
             origin: target.GetName()
         });
         super.Execute(target);
+        logToFile("PaddleShieldEffect Execute End");
     }
 
     /**

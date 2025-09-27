@@ -2,6 +2,7 @@ import * as BABYLON from "@babylonjs/core";
 import { ServerBall } from "./ServerBall.js";
 import { ServerWall } from "./ServerWall.js";
 import { DisposableImpostor } from "../Utils/DisposableImpostor.js";
+import { logToFile } from "../Game/logger.js";
 
 export class ServerPaddle extends DisposableImpostor {
     static SPEED = 0.5;
@@ -14,6 +15,7 @@ export class ServerPaddle extends DisposableImpostor {
     game;
 
     constructor(game, player, width) {
+        logToFile("ServerPaddle Constructor Start");
         let fMeshBuilder = (scene) => BABYLON.MeshBuilder.CreateBox(player.GetName(), { width: width, height: 3.5, depth: 1 }, scene);
         super(game, fMeshBuilder, 0);
         this.game = game;
@@ -34,6 +36,7 @@ export class ServerPaddle extends DisposableImpostor {
         };
         game.Balls.OnAddEvent.Subscribe((ball) => { callback(ball); });
         game.Balls.GetAll().forEach(ball => { callback(ball); });
+        logToFile("ServerPaddle Constructor End");
     }
 
     /**
@@ -64,7 +67,7 @@ export class ServerPaddle extends DisposableImpostor {
 			username: this.owner.GetName(),
 			x: this.mesh.position.x,
 			z: this.mesh.position.z,
-		})
+		});
     }
 
     BallCollision(ball) {

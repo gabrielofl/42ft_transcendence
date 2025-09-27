@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
-import { IMesh } from "../interfaces/IMesh";
 import { Event } from "@shared/utils/Event";
-import { IDisposable } from "@shared/interfaces/IDisposable";
-import { AGame } from "../abstract/AGame";
+import { ClientGame } from "../ClientGame";
+import { IMesh } from "../Interfaces/IMesh";
+import { IDisposable } from "../Interfaces/IDisposable";
 
 // Clase para facilitar el manejo de una Mesh.
 export class DisposableMesh implements IMesh, IDisposable {
@@ -11,7 +11,7 @@ export class DisposableMesh implements IMesh, IDisposable {
     protected mesh: BABYLON.Mesh;
     protected scene: BABYLON.Scene;
 
-    constructor(game: AGame, fMeshBuilder: (scene: BABYLON.Scene) => BABYLON.Mesh) {
+    constructor(game: ClientGame, fMeshBuilder: (scene: BABYLON.Scene) => BABYLON.Mesh) {
         this.scene = game.GetScene(this);
         this.mesh = fMeshBuilder(this.scene);
     }

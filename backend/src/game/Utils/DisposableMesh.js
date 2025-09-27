@@ -1,5 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import { Event } from "../Utils/Event.js";
+import { logToFile } from "../Game/logger.js";
 import { AGame } from "../abstract/AGame.js";
 
 // Clase para facilitar el manejo de una Mesh.
@@ -23,17 +24,20 @@ export class DisposableMesh { //implements IMesh, IDisposable
     Dispose() {
         if (this.disposed)
             return;
-
+        
+        logToFile("Disposing mesh Start");
         this.disposed = true;
         this.OnDisposeEvent.Invoke();
         this.OnDisposeEvent.Clear();
 
         if (this.mesh)
         {
+            logToFile("Disposing mesh");
             this.scene.removeMesh(this.mesh);
             this.mesh.isEnabled(false);
             this.mesh.dispose();
         }
+        logToFile("Disposing mesh End");
     }
 
     /**
