@@ -16,8 +16,8 @@ export function renderFriendsTab() {
 		container.innerHTML = replaceTemplatePlaceholders(profileMatchHistory, {API_BASE_URL});
 		setupFriendsTab();
 	} catch (err) {
-    console.error("Failed to load account:", err);
-    container.innerHTML = `<p class="text-red-500">Failed to load account tab.</p>`;
+    console.error("Failed to load friends:", err);
+    container.innerHTML = `<p class="text-red-500">Failed to load friends tab.</p>`;
   	}
 }
 
@@ -61,7 +61,7 @@ async function loadFriends(page: number) {
 	  requestContainer.innerHTML = `<p class="text-center">No new friends request.</p>`;
 	  return;
 	}
-	
+	console.log("Accepted ", acceptedFriends);
 	friendsContainer.innerHTML = acceptedFriends.map(f => {
 	const user = f.friend;
 	// Normalize avatar URLs

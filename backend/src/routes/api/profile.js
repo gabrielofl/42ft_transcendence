@@ -352,14 +352,14 @@ export default async function (fastify, opts) {
 		const id = request.user?.id;  // current user id
 		const { limit, offset } = request.query;
 
-		// Fetch all friend rows involving this user Order by status pending first
-		const friends = await fastify.db.all(
-			`SELECT * FROM friends 
-			WHERE player1_id = ? OR player2_id = ? 
-			ORDER BY status DESC LIMIT ? OFFSET ?`,
-			[id, id, limit, offset]
-		);
-
+		  // fetch rows involving this user (pending first)
+			const friends = await fastify.db.all(
+				`SELECT * FROM friends
+				WHERE player1_id = ? OR player2_id = ?
+				ORDER BY (CASE WHEN status = 'pending' THEN 1 ELSE 0 END) DESC, id DESC
+				LIMIT ? OFFSET ?`,
+				[id, id, limit, offset]
+			);
 		const total = await fastify.db.get(
 			'SELECT COUNT(*) as count FROM friends WHERE player1_id = ? OR player2_id = ?',
 			[id, id]
@@ -369,18 +369,23 @@ export default async function (fastify, opts) {
 			return { total: 0, limit, offset, friends: [] };
 		}
 
+		 // compute unique "other" user ids
+		  const friendIds = [...new Set(friends.map(f => (f.player1_id === id ? f.player2_id : f.player1_id)))];
 		// Extract the "other player" ids (friend IDs)
-		const friendIds = friends.map(f => 
-			f.player1_id === id ? f.player2_id : f.player1_id
-		);
+		// const friendIds = friends.map(f => 
+		// 	f.player1_id === id ? f.player2_id : f.player1_id
+		// );
 
 		// Fetch all friend user info
-		const placeholders = friendIds.map(() => '?').join(',');
-		const users = await fastify.db.all(
-			`SELECT id, username, avatar, score, show_scores_publicly, status 
+	  let users = [];
+		if (friendIds.length) {
+			const placeholders = friendIds.map(() => '?').join(',');
+			users = await fastify.db.all(
+			`SELECT id, username, avatar, score, show_scores_publicly, status
 			FROM users WHERE id IN (${placeholders})`,
 			friendIds
-		);
+			);
+		}
 
 		// Attach user info to each friend row
 		const userMap = {};
@@ -390,10 +395,12 @@ export default async function (fastify, opts) {
 
 		const friendList = friends.map(f => {
 			const friendId = f.player1_id === id ? f.player2_id : f.player1_id;
+			const friendrequest = f.requester_id === id;
 			return {
 			id: f.id,           // friendship id
 			status: f.status,   // friendship status
-			friend: userMap[friendId] // the other user’s data
+			friend: userMap[friendId], // the other user’s data
+			isRequester: friendrequest
 			};
 		});
 
@@ -439,9 +446,175 @@ export default async function (fastify, opts) {
 	return {
 		isFriend: true,
 		status: friendship.status,   // "pending" or "accepted"
-		friendshipId: friendship.id
+		friendshipId: friendship.id,
+		isRequester: friendship.requester_id === tokenUser
 	};
 	});
+
+	// Send friend request
+	fastify.post('/friends/request', {
+		preHandler: authenticate,
+		schema: {
+			body: {
+			type: 'object',
+			required: ['userId'],
+			properties: {
+				userId: { type: 'integer' }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { userId } = request.body;
+		const tokenUser = request.user?.id;
+
+		if (userId === tokenUser) {
+			return reply.code(400).send({ error: "You cannot send a request to yourself" });
+		}
+
+		// Check if friendship already exists
+		const existing = await fastify.db.get(
+			`SELECT * FROM friends 
+			WHERE (player1_id = ? AND player2_id = ?)
+				OR (player1_id = ? AND player2_id = ?)`,
+			[tokenUser, userId, userId, tokenUser]
+		);
+
+		if (existing) {
+			return reply.code(400).send({ error: "Friendship already exists" });
+		}
+
+		// Insert new pending friendship (tokenUser sent the request)
+		const result = await fastify.db.run(
+			`INSERT INTO friends (player1_id, player2_id, status, requester_id) 
+			VALUES (?, ?, ?, ?)`,
+			[tokenUser, userId, "pending", tokenUser]
+		);
+
+		return { success: true, friendshipId: result.lastID, status: "pending" };
+		});
+
+
+	// Accept friend request
+	fastify.post('/friends/accept', {
+		preHandler: authenticate,
+		schema: {
+			body: {
+			type: 'object',
+			required: ['friendshipId'],
+			properties: {
+				friendshipId: { type: 'integer' }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const { friendshipId } = request.body;
+		const tokenUser = request.user?.id;
+
+		// Ensure current user is part of this friendship and is the receiver
+		const friendship = await fastify.db.get(
+			`SELECT * FROM friends WHERE id = ?`,
+			[friendshipId]
+		);
+
+		if (!friendship) {
+			return reply.code(404).send({ error: "Friend request not found" });
+		}
+
+		if (friendship.status !== "pending") {
+			return reply.code(400).send({ error: "Request is not pending" });
+		}
+
+		if (friendship.requester_id === tokenUser) {
+			return reply.code(403).send({ error: "You cannot accept your own request" });
+		}
+
+		// Update status to accepted
+		await fastify.db.run(
+			`UPDATE friends SET status = 'accepted' WHERE id = ?`,
+			[friendshipId]
+		);
+
+		return { success: true, friendshipId, status: "accepted" };
+		});
+
+		// Reject fiend request
+		fastify.post('/friends/reject', {
+			preHandler: authenticate,
+			schema: {
+				body: {
+				type: 'object',
+				required: ['friendshipId'],
+				properties: {
+					friendshipId: { type: 'integer' }
+				}
+				}
+			}
+			}, async (request, reply) => {
+			const { friendshipId } = request.body;
+			const tokenUser = request.user?.id;
+
+			const friendship = await fastify.db.get(
+				`SELECT * FROM friends WHERE id = ?`,
+				[friendshipId]
+			);
+
+			if (!friendship) {
+				return reply.code(404).send({ error: "Friend request not found" });
+			}
+
+			if (friendship.player1_id !== tokenUser && friendship.player2_id !== tokenUser) {
+				return reply.code(403).send({ error: "Not authorized" });
+			}
+
+			if (friendship.status !== "pending") {
+				return reply.code(400).send({ error: "Friendship not pending" });
+			}
+
+			await fastify.db.run(`DELETE FROM friends WHERE id = ?`, [friendshipId]);
+
+			return { success: true, status: "rejected" };
+			});
+
+			// Remove friend
+			fastify.post('/friends/remove', {
+				preHandler: authenticate,
+				schema: {
+					body: {
+					type: 'object',
+					required: ['friendshipId'],
+					properties: {
+						friendshipId: { type: 'integer' }
+					}
+					}
+				}
+				}, async (request, reply) => {
+				const { friendshipId } = request.body;
+				const tokenUser = request.user?.id;
+
+				// Make sure this friendship exists
+				const friendship = await fastify.db.get(
+					`SELECT * FROM friends WHERE id = ?`,
+					[friendshipId]
+				);
+
+				if (!friendship) {
+					return reply.code(404).send({ error: "Friendship not found" });
+				}
+
+				// Ensure current user is part of this friendship
+				if (friendship.player1_id !== tokenUser && friendship.player2_id !== tokenUser) {
+					return reply.code(403).send({ error: "Not authorized" });
+				}
+
+				if (friendship.status !== "accepted") {
+					return reply.code(400).send({ error: "Can only remove accepted friends" });
+				}
+
+				await fastify.db.run(`DELETE FROM friends WHERE id = ?`, [friendshipId]);
+
+				return { success: true, status: "removed" };
+				});
+
 
 
 	}, { prefix: '/profile' });
