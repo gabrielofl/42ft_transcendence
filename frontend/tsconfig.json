@@ -17,7 +17,7 @@
       	"@shared/*": ["../shared/*"]
       }
 	},
-	"include": ["src/**/*.ts", "../public", "src/types", "../backend/src/game/Collidable/Obstacle.ts", "../shared/interfaces/IBall.ts", "../shared/interfaces/IPaddle.ts", "../shared/abstract/AGame.ts", "../shared/abstract/APongTable.ts", "../shared/Maps.ts", "src/screens/Game/MaterialFactory.ts", "../shared/interfaces/IMesh.ts", "../shared/utils/array.extensions.ts", "../shared/utils/DependentValue.ts", "../shared/utils/DisposableImpostor.ts", "../shared/utils/DisposableMesh.ts", "../shared/utils/ObservableList.ts", "../shared/utils/Zone.ts", "../shared/Inventory.ts", "../shared/ClientPaddle.ts"],
+	"include": ["src/**/*.ts", "../public", "src/types", "../backend/src/game/Collidable/Obstacle.ts", "../shared/interfaces/IBall.ts", "../shared/abstract/APongTable.ts", "src/screens/Game/Maps.ts", "src/screens/Game/MaterialFactory.ts", "../shared/interfaces/IMesh.ts", "../shared/utils/array.extensions.ts", "../shared/utils/DependentValue.ts", "src/screens/Game/Abstract/DisposableImpostor.ts", "src/screens/Game/Abstract/DisposableMesh.ts", "../shared/utils/ObservableList.ts", "src/screens/Game/Zone.ts", "src/screens/Game/Inventory.ts", "src/screens/Game/ClientPaddle.ts"],
 	"exclude": ["node_modules", "dist"]
   }
   

@@ -1,7 +1,6 @@
-import { ClientPaddle } from "@shared/ClientPaddle";
-import { ClientGame } from "./ClientGame";
-import { APlayer } from "@shared/Player/APlayer";
-import { IPaddle } from "@shared/interfaces/IPaddle";
+import { ClientGame } from "../ClientGame";
+import { ClientPaddle } from "../ClientPaddle";
+import { APlayer } from "./APlayer";
 
 export class LocalPlayer extends APlayer {
 
@@ -60,7 +59,7 @@ export class LocalPlayer extends APlayer {
 		}
 	}
 
-	public InstancePaddle(): IPaddle {
+	public InstancePaddle(): ClientPaddle {
 		return new ClientPaddle(this.game, this, 8);
 	}
 }

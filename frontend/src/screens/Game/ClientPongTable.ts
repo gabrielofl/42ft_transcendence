@@ -2,7 +2,7 @@ import * as BABYLON from "@babylonjs/core";
 import { ClientWall } from "../Collidable/ClientWall";
 import { ClientGame } from "./ClientGame";
 import { SpotMarker } from "./SpotMarker";
-import { APongTable } from "@shared/abstract/APongTable";
+import { APongTable } from "./Abstract/APongTable";
 
 export class ClientPongTable extends APongTable {
     private markers: SpotMarker[] = [];

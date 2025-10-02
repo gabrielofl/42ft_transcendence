@@ -1,6 +1,7 @@
 import { APlayerEffect } from "../../abstract/APlayerEffect.js";
 import { APlayer } from "../../Player/APlayer.js";
 import { AGame } from "../../abstract/AGame.js";
+import { logToFile } from "../../Game/logger.js";
 
 export class PaddleLenEffect extends APlayerEffect {
     Len;
@@ -24,6 +25,7 @@ export class PaddleLenEffect extends APlayerEffect {
      * @returns 
      */
     Execute(target) {
+        logToFile("PaddleLenEffect Execute Start");
         if (this.disposed) 
             return;
         
@@ -34,6 +36,7 @@ export class PaddleLenEffect extends APlayerEffect {
             origin: target.GetName(),
         });
         super.Execute(target);
+        logToFile("PaddleLenEffect Execute End");
     }
 
     /**

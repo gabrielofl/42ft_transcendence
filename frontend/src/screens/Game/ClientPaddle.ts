@@ -1,10 +1,9 @@
 import * as BABYLON from "@babylonjs/core";
-import { DisposableMesh } from "@shared/utils/DisposableMesh";
-import { IPaddle } from "@shared/interfaces/IPaddle";
-import { AGame } from "@shared/abstract/AGame";
-import { APlayer } from "@shared/Player/APlayer";
+import { DisposableMesh } from "./Abstract/DisposableMesh";
+import { ClientGame } from "./ClientGame";
+import { APlayer } from "./Player/APlayer";
 
-export class ClientPaddle extends DisposableMesh implements IPaddle {
+export class ClientPaddle extends DisposableMesh {
     public static SPEED: number = 0.5;
     public Speed: number = ClientPaddle.SPEED;
     protected front: BABYLON.Vector3;
@@ -12,9 +11,9 @@ export class ClientPaddle extends DisposableMesh implements IPaddle {
     protected spawnPosition: BABYLON.Vector3;
     protected defWidth: number;
     protected owner;
-    protected game: AGame;
+    protected game: ClientGame;
 
-    constructor(game: AGame, player: APlayer, width: number) {
+    constructor(game: ClientGame, player: APlayer, width: number) {
         let fMeshBuilder = (scene: BABYLON.Scene) => BABYLON.MeshBuilder.CreateBox("colorwall", { width: width, height: 1, depth: 1}, scene);
         super(game, fMeshBuilder);
         this.game = game;

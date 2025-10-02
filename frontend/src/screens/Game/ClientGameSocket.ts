@@ -1,11 +1,11 @@
 import * as BABYLON from "@babylonjs/core";
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { AllMessages, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PickPowerUpBoxMessage, PlayerEffectMessage, PreMoveMessage, ScoreMessage } from "@shared/types/messages";
-import { IPowerUpBox } from "@shared/interfaces/IPowerUpBox";
+import { IPowerUpBox } from "src/screens/Game/Interfaces/IPowerUpBox";
 import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
-import { APlayer } from "@shared/Player/APlayer";
-import { ClientPowerUpBox } from "./ClientPowerUpBox";
+import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
+import { APlayer } from "./Player/APlayer";
 
 export class ClientGameSocket {
 	private game: ClientGame;
@@ -105,7 +105,7 @@ export class ClientGameSocket {
 
 	}
 	public HandlePointMade(msg: ScoreMessage): void {
-
+		console.log("HandlePointMade");
 	}
 	public HandleBallMove(msg: BallMoveMessage): void {
 		let ball = this.game.Balls.GetAll().find(ball => ball.ID === msg.id);
@@ -148,13 +148,16 @@ export class ClientGameSocket {
 	private HandlePickPowerUpBox(msg: PickPowerUpBoxMessage): void {
 		let players = this.game.GetPlayers();
 		let target: APlayer | undefined = players.find(p => p.GetName() === msg.username);
-		let box: IPowerUpBox | undefined = this.game.PowerUps.GetAll().find(p => p.ID === msg.id);
+		let box: ClientPowerUpBox | undefined = this.game.PowerUps.GetAll().find(p => p.ID === msg.id);
 
 		if (target && box)
 		{
-			ClientGameSocket.socket.send(JSON.stringify(msg));
-            console.log(JSON.stringify(msg));
-			box.PickUp(target);
+			// ClientGameSocket.socket.send(JSON.stringify(msg));
+            // console.log(JSON.stringify(msg));
+			console.log("HandlePickPowerUpBox");
+			box.Dispose();
+			// box.PickUp(target);
+			this.UIBroker.Publish("PickPowerUpBox", msg);
 		}
 	}
 

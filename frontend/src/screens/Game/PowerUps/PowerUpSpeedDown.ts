@@ -1,13 +1,12 @@
-import { IPowerUp } from "@shared/interfaces/IPowerUp";
 import { APlayer } from "../Player/APlayer";
-import { PaddleSpeedEffect } from "./Effects/PaddleSpeedEffect";
-import { AGame } from "../abstract/AGame";
+import { ClientGame } from "../ClientGame";
+import { IPowerUp } from "../Interfaces/IPowerUp";
 
 export class PowerUpSpeedDown implements IPowerUp {
     public ImgPath: string;
-    private game: AGame;
+    private game: ClientGame;
 
-    constructor(game: AGame) {
+    constructor(game: ClientGame) {
         this.game = game;
         this.ImgPath = "textures/PowerUpSpeedDown.jpg";
     }

@@ -2,6 +2,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { ServerGame } from "./ServerGame.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
+import { logToFile } from "./logger.js";
 
 export class ServerGameSocket {
     game;
@@ -69,9 +70,12 @@ export class ServerGameSocket {
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
         this.game.MessageBroker.Subscribe("PickPowerUpBox", enqueueMessage);
-        this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
-        this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
-        this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
+        this.game.MessageBroker.Subscribe("PointMade", enqueueMessage);
+        this.game.MessageBroker.Subscribe("GameEnded", enqueueMessage);
+        this.game.MessageBroker.Subscribe("GamePause", enqueueMessage);
+        // this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
+        // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
+        // this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
     }
 
@@ -93,11 +97,6 @@ export class ServerGameSocket {
 			player.GetPaddle().Move(msg.dir);
 		}
     }
-
-/* 	setSocket(game: ClientGame)
-	{
-        game.MessageBroker.Subscribe("PlayerPreMove", (p) => this.handlePreMoveMessage(p));
-	} */
 
     /**
      * Conecta al WebSocket usando el nuevo sistema

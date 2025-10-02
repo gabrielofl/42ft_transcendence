@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { ClientGame } from "../Game/ClientGame";
 import { ClientBall } from "./ClientBall";
-import { DisposableMesh } from "@shared/utils/DisposableMesh";
+import { DisposableMesh } from "../Game/Abstract/DisposableMesh";
 
 export class ClientWall extends DisposableMesh {
     public static GROUP: number = 2;

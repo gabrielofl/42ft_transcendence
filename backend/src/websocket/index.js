@@ -126,7 +126,7 @@ let socket;
 export default async function registerWebsocket(fastify) {
   try {
         fastify.get('/gamews', { websocket: true }, (connection, req) => {
-    	    patchSocketLogging(fastify, connection);  
+    	    // patchSocketLogging(fastify, connection);  
           console.log("Conectando socket");
 
           if (!socket) {

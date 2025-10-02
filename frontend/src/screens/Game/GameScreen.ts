@@ -5,10 +5,9 @@ import { createPlayerCard } from "./player-card";
 import { ClientGameSocket } from "./ClientGameSocket";
 import { ScoreMessage } from "@shared/types/messages";
 import { ClientGame } from "./ClientGame";
-import { APlayer } from "@shared/Player/APlayer";
-import { AGame } from "@shared/abstract/AGame";
-import { LocalPlayer } from "./LocalPlayer";
-import { ClientSocketPlayer } from "./ClientSocketPlayer";
+import { LocalPlayer } from "./Player/LocalPlayer";
+import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
+import { APlayer } from "./Player/APlayer";
 const API_BASE_URL = 'https://localhost:443';
 
 export type PlayerType = "Local" | "AI" | "Remote";
@@ -65,7 +64,7 @@ function setupGameEvents(playersdata: PlayerData[]): void {
 	}
 }
 
-function createPlayers(game: ClientGame, playersdata: PlayerData[], container: HTMLElement, socket?: ClientGameSocket): APlayer[] {
+function createPlayers(game: ClientGame, playersdata: PlayerData[], container: HTMLElement, socket: ClientGameSocket): APlayer[] {
 		// const player = new LocalPlayer("Jorge", "a", "d", ["z", "x", "c"]);
 		// const enemy = new LocalPlayer("Sutanito", "h", "k", ["b", "n", "m"]);
 		let players: APlayer[] = [];
@@ -101,14 +100,14 @@ function createPlayers(game: ClientGame, playersdata: PlayerData[], container: H
 		// Insertar tarjetas para cada jugador
 		players.forEach((player, index) => {
 			const color = index % 2 === 0 ? "text-blue-200" : "text-purple-200";
-			container.insertAdjacentHTML("beforeend", createPlayerCard(player, color));
+			container.insertAdjacentHTML("beforeend", createPlayerCard(player, color, socket));
 		});
 
 	return players;
 }
 
 // Subscripción al evento GameEnded.
-function setupGameEndedListener(game: AGame): void {
+function setupGameEndedListener(game: ClientGame): void {
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
         const winner = msg.results.sort((a, b) => a.score - b.score)[0];
 		const container = document.querySelector(".relative.w-full") as HTMLDivElement;
@@ -139,7 +138,7 @@ function setupGameEndedListener(game: AGame): void {
 }
 
 // Subscripción al evento PointMade
-function setupPointMadeListener(game: AGame) {
+function setupPointMadeListener(game: ClientGame) {
 	game.MessageBroker.Subscribe("PointMade", (msg: ScoreMessage) => {
 		// Buscar el elemento del marcador correspondiente al jugador
 		msg.results.forEach(result => 

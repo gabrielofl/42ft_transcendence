@@ -1,9 +1,9 @@
 import * as BABYLON from "@babylonjs/core";
 import { Vector3, Nullable } from "@babylonjs/core";
 import { ClientGame } from "../Game/ClientGame";
-import { DisposableMesh } from "@shared/utils/DisposableMesh";
-import { IBall } from "@shared/interfaces/IBall";
-import { APlayer } from "@shared/Player/APlayer";
+import { APlayer } from "../Game/Player/APlayer";
+import { DisposableMesh } from "../Game/Abstract/DisposableMesh";
+import { IBall } from "../Game/Interfaces/IBall";
 
 export class ClientBall extends DisposableMesh implements IBall {
 	public ID: number;

@@ -1,15 +1,13 @@
 import * as BABYLON from "@babylonjs/core";
-import { ServerGame } from "../../Game/ServerGame";
+import { DisposableMesh } from "../../Abstract/DisposableMesh";
+import { ClientGame } from "../../ClientGame";
+import { APlayerEffect } from "../../Abstract/APlayerEffect";
 import { APlayer } from "../../Player/APlayer";
-import { DisposableMesh } from "../../utils/DisposableMesh";
-import { APlayerEffect } from "@shared/abstract/APlayerEffect";
-import { AGame } from "../../abstract/AGame";
-import { ClientGame } from "../../../frontend/src/screens/Game/ClientGame";
 
 export class PaddleShieldEffect extends APlayerEffect {
     private shield: DisposableMesh | undefined;
     
-    constructor(game: AGame, imgPath: string, durationMs: number = 5000) {
+    constructor(game: ClientGame, imgPath: string, durationMs: number = 5000) {
         super(game, imgPath, durationMs);
     }
 

@@ -1,6 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { DisposableImpostor } from "../Utils/DisposableImpostor.js";
 import { ServerWall } from "./ServerWall.js";
+import { logToFile } from "../Game/logger.js";
 
 export class ServerBall extends DisposableImpostor {
 	static GROUP = 1;
@@ -10,8 +11,10 @@ export class ServerBall extends DisposableImpostor {
 	observer;
 	game;
 	ID;
+	lastLog = Date.now();
 
 	constructor(game) {
+		logToFile("ServerBall Constructor Start");
 		// let mesh = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: 1 }, scene);
 		let fMeshBuilder = (scene) => BABYLON.MeshBuilder.CreateBox("ball", { size: 1.5 }, scene);
 		super(game, fMeshBuilder, 1);
@@ -22,6 +25,7 @@ export class ServerBall extends DisposableImpostor {
 
 		if (this.mesh.physicsImpostor != undefined)
 		{
+			logToFile("Impostor created");
 			this.mesh.physicsImpostor.physicsBody.collisionFilterGroup = ServerBall.GROUP;
 			this.mesh.physicsImpostor.physicsBody.collisionFilterMask = ServerWall.GROUP;
 		}
@@ -43,6 +47,7 @@ export class ServerBall extends DisposableImpostor {
 		this.OnDisposeEvent.Subscribe(() => game.Balls.Remove(this));
 
         this.game.MessageBroker.Subscribe("GamePause", this.GamePaused.bind(this));
+		logToFile("ServerBall Constructor End");
 	}
 
 	GamePaused(msg)
@@ -60,10 +65,24 @@ export class ServerBall extends DisposableImpostor {
 		}
 	}
 
+	Dispose() {
+		this.scene.onBeforeRenderObservable.remove(this.observer);
+		super.Dispose();
+	}
+	
 	// Se asegura de que la velocidad de la bola se mantenga en un rango.
 	MaintainBallSpeed() {
+		/** LOG **/
+		const now = Date.now();
+		let log = now - this.lastLog >= 5000;
+		if (log) {
+			logToFile(`MaintainBallSpeed ${this.ID} Start`);
+			this.lastLog = now;
+		}
+
 		if (this.game.Paused)
 			return;
+		if (log) logToFile("Game not paused");
 
 		let p = this.mesh.position;
 		this.mesh.position = new BABYLON.Vector3(p?.x, 0.5, p?.z);
@@ -73,11 +92,14 @@ export class ServerBall extends DisposableImpostor {
         if (!impostor) 
 			return;
 
+		if (log) logToFile("Have impostor");
 		impostor.setAngularVelocity(new BABYLON.Vector3(0, 0, 0));
         let v = impostor.getLinearVelocity();
         if (!v) 
 			return;
 
+		if (log) logToFile("Have speed");
+		if (log) logToFile(JSON.stringify(v));
 		v = v.add(this.game.Wind);
 
 		impostor.setLinearVelocity(new BABYLON.Vector3(v?.x, 0, v?.z));
@@ -98,5 +120,7 @@ export class ServerBall extends DisposableImpostor {
 			vx: v.x,
 			vz: v.z,
 		});
+
+		if (log) logToFile("MaintainBallSpeed End");
     }
 }

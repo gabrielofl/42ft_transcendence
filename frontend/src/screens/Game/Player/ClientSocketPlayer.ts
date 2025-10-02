@@ -1,7 +1,6 @@
-import { APlayer } from "@shared/Player/APlayer";
-import { ClientGame } from "./ClientGame";
-import { IPaddle } from "@shared/interfaces/IPaddle";
-import { ClientPaddle } from "@shared/ClientPaddle";
+import { ClientGame } from "../ClientGame";
+import { ClientPaddle } from "../ClientPaddle";
+import { APlayer } from "./APlayer";
 
 export class ClientSocketPlayer extends APlayer {
     protected game: ClientGame;
@@ -13,7 +12,7 @@ export class ClientSocketPlayer extends APlayer {
     
     public ProcessPlayerAction(inputMap: Record<string, boolean>): void {}
 
-    public InstancePaddle(): IPaddle {
+    public InstancePaddle(): ClientPaddle {
         return new ClientPaddle(this.game, this, 8);
     }
 }

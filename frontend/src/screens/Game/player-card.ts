@@ -1,11 +1,13 @@
 import playerCardTemplate from "./player-card.html?raw";
 import { replaceTemplatePlaceholders } from "./GameScreen";
-import { APlayerEffect } from "@shared/abstract/APlayerEffect";
 import { ClientGameSocket } from "./ClientGameSocket";
-import { APlayer } from "@shared/Player/APlayer";
-import { LocalPlayer } from "./LocalPlayer";
+import { LocalPlayer } from "./Player/LocalPlayer";
+import { APlayer } from "./Player/APlayer";
+import { APlayerEffect } from "./Abstract/APlayerEffect";
+import { PickPowerUpBoxMessage } from "@shared/types/messages";
+import { MSFT_sRGBFactors } from "@babylonjs/loaders/glTF/2.0";
 
-export function createPlayerCard(player: APlayer, colorClass: string, socket?: ClientGameSocket): string {
+export function createPlayerCard(player: APlayer, colorClass: string, socket: ClientGameSocket): string {
     let keysHTML = "";
 
     if (player instanceof LocalPlayer) {
@@ -29,9 +31,9 @@ function renderKey(key: string): string {
     return `<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">${key.toUpperCase()}</kbd>`;
 }
 
-function setupEffectsListener(player: APlayer, socket?: ClientGameSocket) {
+function setupEffectsListener(player: APlayer, socket: ClientGameSocket) {
 	// TODO Reemplazar por Mensaje
-    if (socket)
+/*     if (socket)
     {
         socket.UIBroker.Subscribe("InventoryChanged", (msg) => {
             if (player.GetName() != msg.username)
@@ -46,7 +48,9 @@ function setupEffectsListener(player: APlayer, socket?: ClientGameSocket) {
                 slot.style.backgroundPosition = "center";
             });
         });
-    }
+    } */
+    socket.UIBroker.Subscribe("PickPowerUpBox", (msg) => pickUpItem(msg));
+
     // game.MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
     //     if (player === args.Target)
     //         addEffect(args.Target.GetName(), args.Effect);
@@ -85,25 +89,22 @@ function removeEffect(effectsContainer: HTMLElement, effectIcon: HTMLDivElement)
 	}
 }
 
-/* function updateInventory(player: APlayer, args: PickPowerUpBoxMessage) {
+function pickUpItem(msg: PickPowerUpBoxMessage) {
     // Solo actualizamos si el evento es de ESTE jugador
-    if (args.username !== player.GetName())
-        return;
+/*     if (args.username !== player.GetName())
+        return; */
 
     const slotElement = document.querySelector<HTMLDivElement>(
-        `#${player.GetName()}-inventory > div[id="${args.Slot}"]`
+        `#${msg.username}-inventory > div[id="${0}"]`
     );
 
     if (slotElement) {
-        if (args.Action == "Pick")
-        {
-            slotElement.style.backgroundImage = `url(${args.PowerUp?.ImgPath})`;
-            slotElement.style.backgroundSize = "cover";
-            slotElement.style.backgroundPosition = "center";
-        }
-        else
-        {
-            slotElement.style.backgroundImage = "";
-        }
+        slotElement.style.backgroundImage = `url(${"textures/PwrUpLessLength.jpg"})`;
+        slotElement.style.backgroundSize = "cover";
+        slotElement.style.backgroundPosition = "center";
     }
-} */
+    /*         else
+            {
+                slotElement.style.backgroundImage = "";
+            } */
+}

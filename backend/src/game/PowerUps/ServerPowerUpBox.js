@@ -1,8 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { ServerBall } from "../Collidable/ServerBall.js";
-import { AGame } from "../abstract/AGame.js";
 import { Zone } from "../Utils/Zone.js"
-import { ServerGame } from "../Game/ServerGame.js";
+import { logToFile } from "../Game/logger.js";
 
 export class ServerPowerUpBox extends Zone {
     observable;
@@ -12,6 +11,7 @@ export class ServerPowerUpBox extends Zone {
     ID;
 
     constructor(game, x, z, type) {
+        logToFile("ServerPowerUpBox Constructor Start");
         super(game, 1.5, 1.5, 1.5);
 
         this.X = x;
@@ -57,6 +57,7 @@ export class ServerPowerUpBox extends Zone {
             z: z,
             powerUpType: type,
         });
+        logToFile("ServerPowerUpBox Constructor End");
     }
 
     /**
@@ -66,6 +67,7 @@ export class ServerPowerUpBox extends Zone {
      */
     PickUp(player)
     {
+        logToFile("ServerPowerUpBox PickUp Start");
         if (this.disposed)
             return;
 
@@ -76,6 +78,7 @@ export class ServerPowerUpBox extends Zone {
             id: this.ID
         });
         this.Dispose();
+        logToFile("ServerPowerUpBox PickUp End");
     }
 
     /**

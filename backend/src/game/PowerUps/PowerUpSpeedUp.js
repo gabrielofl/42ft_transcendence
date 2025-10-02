@@ -1,5 +1,5 @@
 import { APlayer } from "../Player/APlayer.js";
-import { AGame } from "../abstract/AGame.js";
+import { logToFile } from "../Game/logger.js";
 
 export class PowerUpSpeedUp {
     ImgPath;
@@ -15,10 +15,12 @@ export class PowerUpSpeedUp {
      * @param {APlayer} player 
      */
     UsePowerUp(player) {
+        logToFile("PowerUpSpeedUp UsePowerUp Start");
         this.game.MessageBroker.Publish("SelfEffect", {
             type: "SelfEffect",
             effect: "SpeedUp",
             origin: player.GetName(),
         });
+        logToFile("PowerUpSpeedUp UsePowerUp End");
     }
 }

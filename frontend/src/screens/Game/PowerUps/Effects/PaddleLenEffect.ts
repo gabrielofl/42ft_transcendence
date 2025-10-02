@@ -1,12 +1,11 @@
-import { APlayerEffect } from "@shared/abstract/APlayerEffect";
-import { ServerGame } from "../../Game/ServerGame";
+import { APlayerEffect } from "../../Abstract/APlayerEffect";
+import { ClientGame } from "../../ClientGame";
 import { APlayer } from "../../Player/APlayer";
-import { AGame } from "src/screens/Game/AGame";
 
 export class PaddleLenEffect extends APlayerEffect {
     public Len: number;
 
-    constructor(game: AGame, imgPath: string, len: number = 4, durationMs: number = 5000) {
+    constructor(game: ClientGame, imgPath: string, len: number = 4, durationMs: number = 5000) {
         super(game, imgPath, durationMs);
         this.Len = len;
         this.IsNegative = len < 0;

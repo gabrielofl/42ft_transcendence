@@ -1,5 +1,6 @@
 import { APlayerEffect } from "../../abstract/APlayerEffect.js";
 import { APlayer } from "../../Player/APlayer.js";
+import { logToFile } from "../../Game/logger.js";
 
 export class PaddleSpeedEffect extends APlayerEffect {
     speed;
@@ -16,6 +17,7 @@ export class PaddleSpeedEffect extends APlayerEffect {
      * @returns 
      */
     Execute(target) {
+        logToFile("PaddleSpeedEffect Execute Start");
         if (this.disposed) 
             return;
 
@@ -26,6 +28,7 @@ export class PaddleSpeedEffect extends APlayerEffect {
             origin: target.GetName()
         });
         super.Execute(target);
+        logToFile("PaddleSpeedEffect Execute End");
     }
 
     /**
