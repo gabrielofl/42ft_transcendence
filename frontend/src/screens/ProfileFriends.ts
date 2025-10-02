@@ -4,8 +4,13 @@ import { initProfileModal, setupProfileLinks } from "./ProfileModal";
 import { API_BASE_URL } from "./config";
 
 // Keep track of current page and perPage
-let currentPage = 1;
-const perPage = 5;
+// let currentPage = 1;
+// const perPage = 5;
+let friendsPerPage = 10;
+let friendsCurrentPage = 1;
+
+let requestsPerPage = 10;
+let requestsCurrentPage = 1;
 import { UsersMap, getUserFromMap } from "./ProfileHistory";
 
 
@@ -30,6 +35,7 @@ export async function setupFriendsTab() {
 async function loadFriends(page: number) {
   try {
 	const data = await getUserFriends(page, perPage);
+	const requestData = await getUserFriendsRequests(page, perPage);
 	// Render friend cards
 	const friendsContainer = document.querySelector<HTMLDivElement>('#friends-container');
 	if (!friendsContainer) return;
@@ -37,8 +43,8 @@ async function loadFriends(page: number) {
 	const requestContainer = document.querySelector<HTMLDivElement>('#request-container');
 	if (!requestContainer) return;
 	
-	const acceptedFriends = data.friends.filter(f => f.status === "accepted");
-	const pendingFriends = data.friends.filter(f => f.status === "pending");
+	const acceptedFriends = data.friends;
+	const pendingFriends = requestData.friends;
 
 	// Update total friends
 	const totalFriendsEl = document.querySelector<HTMLParagraphElement>('#total-friends');
@@ -199,6 +205,16 @@ async function loadFriends(page: number) {
 async function getUserFriends(page = 1, perPage = 5) {
   const offset = (page - 1) * perPage;
   const res = await fetch(`${API_BASE_URL}/profile/friends?limit=${perPage}&offset=${offset}`, {
+	credentials: 'include',
+	headers: {
+	  
+	}
+  });
+
+//Helper for fetch friend requests with pagination
+async function getUserFriendsRequests(page = 1, perPage = 5) {
+  const offset = (page - 1) * perPage;
+  const res = await fetch(`${API_BASE_URL}/profile/friends/requests?limit=${perPage}&offset=${offset}`, {
 	credentials: 'include',
 	headers: {
 	  

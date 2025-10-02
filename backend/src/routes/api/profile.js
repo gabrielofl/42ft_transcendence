@@ -11,6 +11,8 @@ export default async function (fastify, opts) {
 	// Add /profile prefix to all routes in this file
 	fastify.register(async function (fastify, opts) {
 		
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Upload avatar endpoint - POST /api/profile/avatar
 		fastify.post('/avatar', {
 			preHandler: authenticate,  // Require authentication
@@ -83,6 +85,9 @@ export default async function (fastify, opts) {
 			}
 		});
 
+
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Get avatar by filename - GET /api/profile/avatar/:filename
 		fastify.get('/avatar/:filename', async (request, reply) => {
 			try {
@@ -117,6 +122,9 @@ export default async function (fastify, opts) {
 			}
 		});
 
+
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Select all games(matches) from user id with pagination
 		// Select user data for each player involved on matches and return a map with key=userId
 		fastify.get('/games/:id', {
@@ -181,6 +189,8 @@ export default async function (fastify, opts) {
 		};
 		});
 
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Stats endpoint for user match/games
 		//returns top victim, strongest opponent, and users info.
 		fastify.get('/games/stats/:id', {
@@ -269,6 +279,9 @@ export default async function (fastify, opts) {
 		};
 		});
 
+		
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Delete account endpoint - POST /api/profile/delete
 		//takes id from session to avoid user delete another user
 		fastify.post('/delete', {
@@ -286,9 +299,6 @@ export default async function (fastify, opts) {
 		const { password } = request.body;
 
 		const tokenUser = request.user?.id;
-		// console.log("Decoded user:", request.user);
-		// console.log("User ID:", request.user?.id);
-		// console.log("Username:", request.user?.username);
 
 		// Fetch user from DB
 		const user = await fastify.db.get(
@@ -336,9 +346,13 @@ export default async function (fastify, opts) {
 		});
 
 
+
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Get all friends from current user with pagination
+		// === Get accepted friends (status = "accepted") ===
 		fastify.get('/friends', {
-		preHandler: authenticate, // Require to read id from request
+		preHandler: authenticate,
 		schema: {
 			querystring: {
 			type: 'object',
@@ -349,19 +363,21 @@ export default async function (fastify, opts) {
 			}
 		}
 		}, async (request, reply) => {
-		const id = request.user?.id;  // current user id
+		const id = request.user?.id;
 		const { limit, offset } = request.query;
 
-		  // fetch rows involving this user (pending first)
-			const friends = await fastify.db.all(
-				`SELECT * FROM friends
-				WHERE player1_id = ? OR player2_id = ?
-				ORDER BY (CASE WHEN status = 'pending' THEN 1 ELSE 0 END) DESC, id DESC
-				LIMIT ? OFFSET ?`,
-				[id, id, limit, offset]
-			);
+		const friends = await fastify.db.all(
+			`SELECT * FROM friends
+			WHERE (player1_id = ? OR player2_id = ?) AND status = 'accepted'
+			ORDER BY id DESC
+			LIMIT ? OFFSET ?`,
+			[id, id, limit, offset]
+		);
+
 		const total = await fastify.db.get(
-			'SELECT COUNT(*) as count FROM friends WHERE player1_id = ? OR player2_id = ?',
+			`SELECT COUNT(*) as count 
+			FROM friends 
+			WHERE (player1_id = ? OR player2_id = ?) AND status = 'accepted'`,
 			[id, id]
 		);
 
@@ -369,15 +385,9 @@ export default async function (fastify, opts) {
 			return { total: 0, limit, offset, friends: [] };
 		}
 
-		 // compute unique "other" user ids
-		  const friendIds = [...new Set(friends.map(f => (f.player1_id === id ? f.player2_id : f.player1_id)))];
-		// Extract the "other player" ids (friend IDs)
-		// const friendIds = friends.map(f => 
-		// 	f.player1_id === id ? f.player2_id : f.player1_id
-		// );
+		const friendIds = [...new Set(friends.map(f => f.player1_id === id ? f.player2_id : f.player1_id))];
 
-		// Fetch all friend user info
-	  let users = [];
+		let users = [];
 		if (friendIds.length) {
 			const placeholders = friendIds.map(() => '?').join(',');
 			users = await fastify.db.all(
@@ -387,7 +397,6 @@ export default async function (fastify, opts) {
 			);
 		}
 
-		// Attach user info to each friend row
 		const userMap = {};
 		for (const u of users) {
 			userMap[u.id] = u;
@@ -395,12 +404,11 @@ export default async function (fastify, opts) {
 
 		const friendList = friends.map(f => {
 			const friendId = f.player1_id === id ? f.player2_id : f.player1_id;
-			const friendrequest = f.requester_id === id;
 			return {
-			id: f.id,           // friendship id
-			status: f.status,   // friendship status
-			friend: userMap[friendId], // the other user’s data
-			isRequester: friendrequest
+			id: f.id,
+			status: f.status,
+			friend: userMap[friendId],
+			isRequester: f.requester_id === id
 			};
 		});
 
@@ -409,11 +417,88 @@ export default async function (fastify, opts) {
 			limit,
 			offset,
 			friends: friendList,
-			currentUserId: request.user?.id
+			currentUserId: id
 		};
 		});
 
 
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
+		// === Get pending friend requests (status = "pending") ===
+		fastify.get('/friends/requests', {
+		preHandler: authenticate,
+		schema: {
+			querystring: {
+			type: 'object',
+			properties: {
+				limit: { type: 'integer', minimum: 1, default: 10 },
+				offset: { type: 'integer', minimum: 0, default: 0 }
+			}
+			}
+		}
+		}, async (request, reply) => {
+		const id = request.user?.id;
+		const { limit, offset } = request.query;
+
+		const friends = await fastify.db.all(
+			`SELECT * FROM friends
+			WHERE (player1_id = ? OR player2_id = ?) AND status = 'pending'
+			ORDER BY id DESC
+			LIMIT ? OFFSET ?`,
+			[id, id, limit, offset]
+		);
+
+		const total = await fastify.db.get(
+			`SELECT COUNT(*) as count 
+			FROM friends 
+			WHERE (player1_id = ? OR player2_id = ?) AND status = 'pending'`,
+			[id, id]
+		);
+
+		if (!friends.length) {
+			return { total: 0, limit, offset, friends: [] };
+		}
+
+		const friendIds = [...new Set(friends.map(f => f.player1_id === id ? f.player2_id : f.player1_id))];
+
+		let users = [];
+		if (friendIds.length) {
+			const placeholders = friendIds.map(() => '?').join(',');
+			users = await fastify.db.all(
+			`SELECT id, username, avatar, score, show_scores_publicly, status
+			FROM users WHERE id IN (${placeholders})`,
+			friendIds
+			);
+		}
+
+		const userMap = {};
+		for (const u of users) {
+			userMap[u.id] = u;
+		}
+
+		const friendList = friends.map(f => {
+			const friendId = f.player1_id === id ? f.player2_id : f.player1_id;
+			return {
+			id: f.id,
+			status: f.status,
+			friend: userMap[friendId],
+			isRequester: f.requester_id === id
+			};
+		});
+
+		return {
+			total: total.count,
+			limit,
+			offset,
+			friends: friendList,
+			currentUserId: id
+		};
+		});
+
+
+
+
+	// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>	
 	// Check if username is friend of current user 
 	fastify.get('/isFriend', {
 	preHandler: authenticate,
@@ -451,6 +536,8 @@ export default async function (fastify, opts) {
 	};
 	});
 
+
+	// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>	
 	// Send friend request
 	fastify.post('/friends/request', {
 		preHandler: authenticate,
@@ -494,6 +581,8 @@ export default async function (fastify, opts) {
 		});
 
 
+
+	// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>	
 	// Accept friend request
 	fastify.post('/friends/accept', {
 		preHandler: authenticate,
@@ -536,7 +625,9 @@ export default async function (fastify, opts) {
 
 		return { success: true, friendshipId, status: "accepted" };
 		});
-
+	
+	
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>	
 		// Reject fiend request
 		fastify.post('/friends/reject', {
 			preHandler: authenticate,
@@ -574,7 +665,10 @@ export default async function (fastify, opts) {
 
 			return { success: true, status: "rejected" };
 			});
-
+	
+	
+	
+			// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>	
 			// Remove friend
 			fastify.post('/friends/remove', {
 				preHandler: authenticate,
