@@ -1,7 +1,7 @@
 import { renderFooter } from "./components/Footer.js";
 import { renderAuthContainer } from "./screens/AuthContainer.js";
 import { renderHome } from "./screens/Home.js";
-import { renderTournament } from "./screens/Tournament.js";
+// import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
 import { PlayerData, renderGame } from "./screens/Game/GameScreen.js";
@@ -83,7 +83,7 @@ function renderScreen(screen: Screen) {
       renderGame(players);
       break;
     case "tournament":
-      renderTournament();
+      // renderTournament();
       break;
     case "profile":
       renderProfile();

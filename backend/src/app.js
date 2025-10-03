@@ -17,6 +17,7 @@ import fastifyMultipart from '@fastify/multipart';  // File uploads
 import fastifyFormbody from '@fastify/formbody';    // Form parsing
 import { resetGame, movePlayer, gameTick, getState } from './game.js';
 import registerWebsocket from './websocket/index.js';
+// import registerWebsocketEndPoint from './websocket/game-websocket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -85,6 +86,7 @@ await app.register(fastifyCors, app.config.cors);
 	// WebSocket support for real-time
 	await app.register(fastifyWebsocket);
 	await registerWebsocket(app);
+	// await registerWebsocketEndPoint(app);
 	
 	// File upload support
 	await app.register(fastifyMultipart);
