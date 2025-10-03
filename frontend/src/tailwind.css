@@ -793,6 +793,6 @@ body{
 
 /* user card template */
   .player-card {
-    @apply relative flex items-center w-72 h-20 px-3 border-2 rounded-md neon-border bg-purple-900;
+    @apply relative flex items-center  w-full h-20 px-3 border-2 rounded-md neon-border bg-purple-900;
   }
 

@@ -88,6 +88,7 @@ export default async function (fastify, opts) {
 
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
+		// Only accepts file with name avatar_*
 		// Get avatar by filename - GET /api/profile/avatar/:filename
 		fastify.get('/avatar/:filename', async (request, reply) => {
 			try {
@@ -412,12 +413,19 @@ export default async function (fastify, opts) {
 			};
 		});
 
+		const onlineFriends = friendList.filter(f => f.friend?.status === 1);
+		const onlineCount = onlineFriends.length;
+
+
 		return {
 			total: total.count,
 			limit,
 			offset,
+			page: Math.floor(offset / limit) + 1,
+  			totalPages: Math.ceil(total.count / limit),
 			friends: friendList,
-			currentUserId: id
+			currentUserId: id,
+			onlineCount 
 		};
 		});
 
@@ -490,6 +498,8 @@ export default async function (fastify, opts) {
 			total: total.count,
 			limit,
 			offset,
+			page: Math.floor(offset / limit) + 1,
+  			totalPages: Math.ceil(total.count / limit),
 			friends: friendList,
 			currentUserId: id
 		};
