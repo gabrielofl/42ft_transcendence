@@ -9,6 +9,7 @@ import { renderHeader } from "./components/Header.js";
 import { AppStore } from "./redux/AppStore.js";
 import { Screen } from "./redux/reducers/navigationReducer.js";
 import { ClientGameSocket } from "./screens/Game/ClientGameSocket.js";
+import { renderMapSelection } from "./screens/Game/map-selection.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -87,24 +88,10 @@ function renderScreen(screen: Screen) {
       renderHome();
       break;
     case "game":
-      console.log("Lanzando juego");
-      let players: PlayerData[] = [];
-
-      players.push({
-        type: "AI",
-        username: "David",
-        userid: -1
-      });
-
-      players.push({
-        type: "Local",
-        username: "Gabriel",
-        leftkey: "a",
-        rightkey: "d",
-        userid: 5,
-      });
-
-      renderGame(players);
+      renderGame();
+      break;
+    case "create":
+      renderMapSelection();
       break;
     case "tournament":
       // renderTournament();

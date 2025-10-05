@@ -6,6 +6,7 @@ import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
 import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
 import { APlayer } from "./Player/APlayer";
+import { SelectedMap } from "./map-selection";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -82,7 +83,7 @@ export class ClientGameSocket {
 	 */
 	public CreateGame(): void {
 		console.log("CreateGame");
-		this.game = new ClientGame(ClientGameSocket.Canvas);
+		this.game = new ClientGame(ClientGameSocket.Canvas, SelectedMap);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg) );
 		this.Send({ type: "GameStart" });
 	}

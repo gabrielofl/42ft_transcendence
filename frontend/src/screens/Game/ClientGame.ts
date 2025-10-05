@@ -38,7 +38,7 @@ protected readonly WIN_POINTS = 50;
     public MessageBroker: MessageBroker<MessagePayloads> = new MessageBroker();
     public Balls: ObservableList<ClientBall> = new ObservableList();
     public PowerUps: ObservableList<ClientPowerUpBox> = new ObservableList();
-    public Map: MAPS.MapDefinition = MAPS.MultiplayerMap;
+    public Map: MAPS.MapDefinition;
 
     // --- Utils ---
     protected players: APlayer[] = [];
@@ -64,9 +64,10 @@ protected readonly WIN_POINTS = 50;
         Shield: (game) => new PowerUpShield(game),
     }; */
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement, map: MAPS.MapDefinition = MAPS.MultiplayerMap, preview: boolean = false) {
         this.engine = new BABYLON.Engine(canvas, true);
         this.scene = new BABYLON.Scene(this.engine);
+        this.Map = map;
         
         // EVENTS
         this.scene.actionManager = new BABYLON.ActionManager(this.scene);
@@ -95,7 +96,7 @@ protected readonly WIN_POINTS = 50;
         this.materialFact = new MaterialFactory(this);
         
         // BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
-        this.PongTable = new ClientPongTable(this);
+        this.PongTable = new ClientPongTable(this, preview);
 
 		let inputMap: Record<string, boolean> = {};
 		this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
@@ -130,7 +131,7 @@ protected readonly WIN_POINTS = 50;
         this.players = players;
 
         players.forEach((p, idx) =>{
-            p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0), maxDistance: 10});
+            p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0)});
         });
 
         // CAMERA

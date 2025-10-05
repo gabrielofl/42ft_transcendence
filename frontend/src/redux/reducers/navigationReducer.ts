@@ -2,6 +2,7 @@ export type Screen =
   | "login"
   | "home"
   | "game"
+  | "create"
   | "tournament"
   | "profile"
   | "leaderboard"

@@ -1,11 +1,42 @@
 <!-- map-selection.html -->
-<div style="display: flex; height: 100%;">
-  <div style="width: 30%; border-right: 1px solid #ccc; padding: 10px;">
-    <h3>Selecciona un mapa</h3>
-    <ul id="map-list" style="list-style: none; padding: 0;"></ul>
-    <button id="select-map" disabled>Usar este mapa</button>
+<div class="flex flex-col md:flex-row gap-8 w-full mt-4 px-8 max-w-screen-2xl mx-auto font-press">
+  <!-- Columna de Configuración -->
+  <div class="w-full md:w-1/3 bg-[#1a1d26] rounded-xl p-6 shadow-lg flex flex-col gap-6">
+    <div>
+      <h3 class="text-xl text-[--primary-color] mb-4">1. Selecciona un Mapa</h3>
+      <ul id="map-list" class="list-none p-0 space-y-2">
+        <!-- Los mapas se cargarán aquí dinámicamente -->
+      </ul>
+    </div>
+
+    <hr class="border-gray-600">
+
+    <div>
+      <h3 class="text-xl text-[--primary-color] mb-4">2. Configura Power-Ups</h3>
+      
+      <!-- Slider para cantidad de Power-Ups -->
+      <div class="mb-6">
+        <label for="powerup-amount" class="block text-sm text-white mb-2">Cantidad de Power-Ups: <span id="powerup-amount-value" class="font-bold text-yellow-400">5</span></label>
+        <input id="powerup-amount" type="range" min="0" max="10" value="5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+      </div>
+
+      <!-- Checkboxes para tipos de Power-Up -->
+      <div>
+        <label class="block text-sm text-white mb-2">Tipos de Power-Up habilitados:</label>
+        <div id="powerup-types" class="grid grid-cols-2 gap-2 text-sm">
+          <!-- Los checkboxes se insertarán aquí dinámicamente -->
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-auto pt-6 flex flex-col gap-4">
+      <button id="save-config-btn" class="btn-secondary w-full">Guardar Configuración</button>
+      <button id="create-game-btn" class="btn-primary w-full" disabled>Crear Partida</button>
+    </div>
   </div>
-  <div style="flex: 1; display: flex; flex-direction: column;">
-    <canvas id="map-canvas" style="flex: 1;"></canvas>
+
+  <!-- Columna de Vista Previa del Mapa -->
+  <div class="w-full md:w-2/3 flex flex-col">
+    <canvas id="map-canvas" class="w-full aspect-[21/9] min-h-[300px] border border-aqua-500 rounded-lg"></canvas>
   </div>
 </div>
