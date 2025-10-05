@@ -1,6 +1,6 @@
 export type MessageTypes =
 "CreatePowerUp" |
-"PickPowerUpBox"|
+"AddPlayer" |
 "SelfEffect"|
 "MassEffect"|
 "AppliedEffect"|
@@ -8,6 +8,8 @@ export type MessageTypes =
 "GamePause"|
 "GameEnded"|
 "GameRestart"|
+"GameDispose"|
+"GameStart"|
 "PointMade"|
 "BallMove"|
 "PlayerPreMove"|
@@ -23,7 +25,7 @@ export interface Message {
 // Esto permite que cada evento tenga su tipo específico.
 export type MessagePayloads = {
     ["CreatePowerUp"]: CreatePowerUpMessage;
-    ["PickPowerUpBox"]: PickPowerUpBoxMessage;
+    ["AddPlayer"]: AddPlayerMessage;
     ["SelfEffect"]: PlayerEffectMessage;
     ["MassEffect"]: PlayerEffectMessage;
     ["AppliedEffect"]: PlayerEffectMessage;
@@ -31,6 +33,8 @@ export type MessagePayloads = {
     ["GamePause"]: GamePauseMessage;
     ["GameEnded"]: ScoreMessage;
     ["GameRestart"]: Message;
+    ["GameDispose"]: Message;
+    ["GameStart"]: Message;
     ["PointMade"]: ScoreMessage;
     ["BallMove"]: BallMoveMessage;
     ["PlayerPreMove"]: PreMoveMessage;
@@ -41,13 +45,25 @@ export type MessagePayloads = {
 
 export type PowerUpType = "MoreLength" | "LessLength" | "CreateBall" | "Shield" | "SpeedDown" | "SpeedUp";
 export type EffectType = "MoreLength" | "LessLength" | "Shield" | "SpeedDown" | "SpeedUp";
+export type PlayerType = "Local" | "AI" | "Remote";
+
+export interface Vector3Data {
+    x: number;
+    y: number;
+    z: number;
+}
 
 export interface PlayerData {
-    // playertype: PlayerType;
     id: string;
     color: string;
     name: string;
-    keys: string[];
+}
+
+export interface AddPlayerMessage extends Message {
+    type: "AddPlayer";
+    playerData: PlayerData;
+    position: Vector3Data;
+    lookAt: Vector3Data;
 }
 
 export interface PlayerResult {
@@ -61,6 +77,7 @@ export interface PreMoveMessage extends Message {
 }
 
 export interface InventoryChangeMessage extends Message {
+    id: number,
     slot: number;
     username: string;
     path: string;
@@ -110,21 +127,7 @@ export interface CreatePowerUpMessage extends Message {
     powerUpType: PowerUpType;
 }
 
-export interface PickPowerUpBoxMessage extends Message {
-    username: string;
-    id: number;
-}
-
 export interface PlayerEffectMessage extends Message {
     origin: string
     effect: EffectType
 }
-
-export type AllMessages = CreatePowerUpMessage
-| PickPowerUpBoxMessage
-| PlayerEffectMessage
-| GamePauseMessage
-| ScoreMessage
-| BallMoveMessage
-| PreMoveMessage
-| PaddlePositionMessage;

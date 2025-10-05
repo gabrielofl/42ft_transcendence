@@ -3,7 +3,7 @@ import gameTemplate from "./game.html?raw";
 import gameEndedTemplate from "./game-ended.html?raw";
 import { createPlayerCard } from "./player-card";
 import { ClientGameSocket } from "./ClientGameSocket";
-import { ScoreMessage } from "@shared/types/messages";
+import { AddPlayerMessage, ScoreMessage } from "@shared/types/messages";
 import { ClientGame } from "./ClientGame";
 import { LocalPlayer } from "./Player/LocalPlayer";
 import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
@@ -22,88 +22,77 @@ export type PlayerData =
 	powerUpKey?: [string, string, string]
 }
 
-let clientgame: ClientGame;
-let clientsocket: ClientGameSocket;
-
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
 }
 
-export async function renderGame(players: PlayerData[]) {
+export async function renderGame() {
 	const main = document.getElementById('main');
 	if (!main) return;
 	
 	// const rendered = replaceTemplatePlaceholders(gameTemplate, { playerName, opponentName, mode });
 	main.innerHTML = gameTemplate; 
 
-	setupGameEvents(players);
+	setupGameEvents();
 	//setupGameEndedListener();
 	//setupPointMadeListener();
 }
 
-function setupGameEvents(playersdata: PlayerData[]): void { 
+function setupGameEvents(): void { 
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
+		console.log("Iniciando Pong local");
+		const startGameBtn = document.getElementById('start-game-btn');
+		const startGameOverlay = document.getElementById('start-game-overlay');
+
+		if (startGameBtn && startGameOverlay) {
+			startGameBtn.addEventListener('click', () => {
+				ClientGameSocket.Canvas = canvas;
+				ClientGameSocket.GetInstance().CreateGame();
+				startGameOverlay.style.display = 'none'; // Ocultar el overlay
+			}, { once: true }); // El listener se ejecuta solo una vez
+		}
+
 		const container = document.getElementById("player-cards-client");
 		if (!container)
 			return;
 
-		console.log("Iniciando Pong local");
 		container.innerHTML = "";
-		if (clientgame)
-			clientgame.Dispose();
-
-		if (clientsocket)
-			clientsocket.Dispose();
-
-		clientgame = new ClientGame(canvas);
-		clientsocket = new ClientGameSocket(clientgame);
-		clientgame.CreateGame(createPlayers(clientgame, playersdata, container, clientsocket));
+		ClientGameSocket.GetInstance().UIBroker.Subscribe("AddPlayer", (msg) => addPlayer(msg));
 		// setupGameEndedListener(clientgame);
 		// setupPointMadeListener(clientgame);
 	}
 }
 
-function createPlayers(game: ClientGame, playersdata: PlayerData[], container: HTMLElement, socket: ClientGameSocket): APlayer[] {
-		// const player = new LocalPlayer("Jorge", "a", "d", ["z", "x", "c"]);
-		// const enemy = new LocalPlayer("Sutanito", "h", "k", ["b", "n", "m"]);
-		let players: APlayer[] = [];
-		playersdata.forEach(p => {
-			let player: APlayer | undefined;
-			switch (p.type)
-			{
-				case "Local":
-					if (p.leftkey && p.rightkey)
-						player = new LocalPlayer(game, p.username, p.rightkey, p.leftkey, p.powerUpKey);
-					break;
+function addPlayer(msg: AddPlayerMessage): void {
+	const container = document.getElementById("player-cards-client");
+	if (!container)
+		return;
 
-				case "AI":
-					player = new ClientSocketPlayer(game, p.username);
-					break;
-			}
+	let clientgame: ClientGame | undefined= ClientGameSocket.GetInstance().GetGame();
+	if (!clientgame)
+		return;
+	
+	const isLocal = msg.playerData.name === "Gabriel"; // Asumiendo que "Gabriel" es el jugador local
+	let player: APlayer;
+	if (isLocal) {
+		player = new LocalPlayer(clientgame, msg.playerData.name, "d", "a");
+	} else {
+		player = new ClientSocketPlayer(clientgame, msg.playerData.name);
+	}
+	clientgame.AddPlayer(player);
 
-			if (!player)
-				throw new Error("Invalid Player data");
-			players.push(player);
+	// Asignar color desde el mensaje del backend
+	player.Color = BABYLON.Color3.FromHexString(msg.playerData.color);
+	// Configurar la pala del jugador con la posición y rotación del backend
+	player.ConfigurePaddleBehavior(
+		{ 
+			position: new BABYLON.Vector3(msg.position.x, msg.position.y, msg.position.z),
+			lookAt: new BABYLON.Vector3(msg.lookAt.x, msg.lookAt.y, msg.lookAt.z)
 		});
 
- 		/* const enemy = new AIPlayer("Fulanito");
-		enemy.Color = new BABYLON.Color3(0, 0, 1);
-		const enemy2 = new AIPlayer("Menganito");
-		enemy2.Color = new BABYLON.Color3(1, 0, 0);
-		const enemy3 = new AIPlayer("Sutanito");
-		enemy3.Color = new BABYLON.Color3(0, 1, 0);
-		const enemy4 = new AIPlayer("Pegonito");
-		enemy4.Color = new BABYLON.Color3(1, 0, 1);
-*/
-		// let players = [enemy, enemy2, enemy3, enemy4];
-		// Insertar tarjetas para cada jugador
-		players.forEach((player, index) => {
-			const color = index % 2 === 0 ? "text-blue-200" : "text-purple-200";
-			container.insertAdjacentHTML("beforeend", createPlayerCard(player, color, socket));
-		});
-
-	return players;
+	// Añadir la tarjeta del jugador a la UI
+	container.insertAdjacentHTML("beforeend", createPlayerCard(msg));
 }
 
 // Subscripción al evento GameEnded.

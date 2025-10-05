@@ -8,6 +8,7 @@ import { PlayerData, renderGame } from "./screens/Game/GameScreen.js";
 import { renderHeader } from "./components/Header.js";
 import { AppStore } from "./redux/AppStore.js";
 import { Screen } from "./redux/reducers/navigationReducer.js";
+import { ClientGameSocket } from "./screens/Game/ClientGameSocket.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -21,6 +22,18 @@ export function initNavigation() {
   // Renderizar en base al estado del store
   AppStore.NavigoStore.Subscribe(() => {
     const screen = AppStore.NavigoStore.GetState();
+
+    let socket: ClientGameSocket = ClientGameSocket.GetInstance();
+  
+    if (socket) {
+      if (AppStore.NavigoStore.GetState() === "game")
+        {
+          console.log("Cerrando juego");
+          socket.DisposeGame();
+        }
+    }
+
+    console.log(`Navegando a ${screen}`);
     renderScreen(screen);
   });
 
@@ -30,8 +43,19 @@ export function initNavigation() {
 
   // Escuchar back/forward del navegador
   window.addEventListener("popstate", (event) => {
-    const screen = (event.state?.screen as Screen) || initialScreen;
-    AppStore.NavigoStore.Dispatch({ type: "NAVIGATE", payload: screen });
+    // const screen = (event.state?.screen as Screen) || initialScreen;
+    AppStore.NavigoStore.GoBack();
+    // AppStore.NavigoStore.Dispatch({ type: "NAVIGATE", payload: screen });
+  });
+
+  window.addEventListener("hashchange", () => {
+    if (AppStore.NavigoStore.GetState() === "login")
+      return;
+
+    const newScreen = window.location.hash.replace("#", "") as Screen;
+    if (newScreen) {
+      AppStore.NavigoStore.Dispatch({ type: "NAVIGATE", payload: newScreen });
+    }
   });
 }
 

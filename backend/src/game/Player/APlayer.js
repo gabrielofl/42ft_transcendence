@@ -183,4 +183,16 @@ export class APlayer {
         this.score = 0;
         this.Inventory.Clear();
     }
+
+    /**
+     * Convierte la información del jugador a un objeto de datos transferible (DTO).
+     * @returns {import('../../../shared/types/messages.js').PlayerData}
+     */
+    ToPlayerData() {
+        return {
+            id: this.name,
+            name: this.name,
+            color: this.Color?.toHexString(),
+        };
+    }
 }

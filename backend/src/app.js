@@ -30,6 +30,7 @@ const httpsOptions = {
 
 // Main function that builds the app
 export async function buildApp(opts = {}) {
+	console.log("buildApp");
 	// Create Fastify instance (or use provided one)
 	// const app = opts.fastify || (await import('fastify')).default({
 	// 	logger: opts.logger ?? true,     // Enable logging
