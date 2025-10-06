@@ -167,6 +167,7 @@ export class ServerGame extends AGame {
 	}
 
 	logGameState() {
+		return;
 		// Ejemplo: número de meshes en la escena
 		const meshCount = this.scene.meshes.length;
 		let data = "";

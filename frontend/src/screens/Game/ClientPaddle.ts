@@ -7,7 +7,6 @@ export class ClientPaddle extends DisposableMesh {
     public static SPEED: number = 0.5;
     public Speed: number = ClientPaddle.SPEED;
     protected front: BABYLON.Vector3;
-    protected maxDistance: number = 20;
     protected spawnPosition: BABYLON.Vector3;
     protected defWidth: number;
     protected owner;
@@ -35,11 +34,10 @@ export class ClientPaddle extends DisposableMesh {
      * @param lookAt Point to orientate the paddle.
      * @param maxDistance Max displacement distance (without paddle width).
      */
-    public ConfigurePaddleBehavior(position: BABYLON.Vector3, lookAt: BABYLON.Vector3, maxDistance: number): void {
+    public ConfigurePaddleBehavior(position: BABYLON.Vector3, lookAt: BABYLON.Vector3): void {
         this.mesh.position = this.spawnPosition = position;
         this.mesh.lookAt(lookAt);
         this.front = lookAt.subtract(position).normalize();
-        this.maxDistance = maxDistance;
     }
 
     /**

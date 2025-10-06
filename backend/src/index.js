@@ -34,9 +34,20 @@ const start = async () => {
 		});
 
 		// Start listening for requests
-		await app.listen({
-			port: config.server.port,  // 443
-			host: config.server.host,  // 0.0.0.0
+		app.listen({
+			port: config.server.port, // 443
+			host: config.server.host, // 0.0.0.0
+		}).catch((err) => {
+			// If the port is already in use, another instance is already running.
+			// This is common with nodemon restarting quickly.
+			if (err.code === 'EADDRINUSE') {
+				app.log.warn(`Port ${config.server.port} is already in use. Another instance may be running. Shutting down this one.`);
+				process.exit(0); // Exit gracefully
+			} else {
+				// For other errors, treat them as fatal.
+				app.log.error(err);
+				process.exit(1);
+			}
 		});
 
 		// Log success
@@ -53,5 +64,7 @@ const start = async () => {
 process.on('SIGINT', () => process.exit(0));   // Ctrl+C
 process.on('SIGTERM', () => process.exit(0));  // Docker stop
 
-// Start the server!
-start();
+// Self-invoking async function to start the server
+(async () => {
+	start();
+})();

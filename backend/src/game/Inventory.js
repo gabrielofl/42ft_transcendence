@@ -65,7 +65,12 @@ export class Inventory {
     {
       value.UsePowerUp(this.owner);
       this.powerUps.set(index, undefined);
-      // this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: index, Action: "Use" });
+      this.game.MessageBroker.Publish("InventoryChanged", {
+        type: "InventoryChanged",
+        username: this.owner.GetName(),
+        slot: index,
+        path: "", // Un path vacío indica que el slot se ha vaciado
+      });
     }
   }
 
@@ -84,7 +89,12 @@ export class Inventory {
   Clear() {
     for (const [slot, value] of this.powerUps)
     {
-      // this.game.MessageBroker.Publish(GameEvent.InventoryChange, { Player: this.owner, PowerUp: value, Slot: slot, Action: "Clear" });
+      this.game.MessageBroker.Publish("InventoryChanged", {
+        type: "InventoryChanged",
+        username: this.owner.GetName(),
+        slot: slot,
+        path: "",
+      });
       this.powerUps.set(slot, undefined);
     }
   }

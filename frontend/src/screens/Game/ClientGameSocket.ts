@@ -1,6 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import { MessageBroker } from "@shared/utils/MessageBroker";
-import { AllMessages, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PickPowerUpBoxMessage, PlayerEffectMessage, PreMoveMessage, ScoreMessage } from "@shared/types/messages";
+import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PreMoveMessage, ScoreMessage } from "@shared/types/messages";
 import { IPowerUpBox } from "src/screens/Game/Interfaces/IPowerUpBox";
 import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
@@ -8,34 +8,48 @@ import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
 import { APlayer } from "./Player/APlayer";
 
 export class ClientGameSocket {
-	private game: ClientGame;
+	private static Instance: ClientGameSocket;
+	private game: ClientGame | undefined;
 	private handlers: Partial<{[K in MessageTypes]: (payload: MessagePayloads[K]) => void }>;
 	public UIBroker: MessageBroker<MessagePayloads> = new MessageBroker();
-	private static socket: WebSocket;
+	private static socket: WebSocket | undefined;
 	private disposed: boolean = false;
+	public static Canvas: HTMLCanvasElement;
 
-	constructor(game: ClientGame) {
+	private constructor() {
 		console.log("ClientGameSocket");
-		this.game = game;
-		if (!ClientGameSocket.socket)
-			ClientGameSocket.socket = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
+		
 		//try { if (ClientGameSocket.socket && ClientGameSocket.socket.readyState <= 1) ClientGameSocket.socket.close(1000, 're-render'); } catch {}
 		//socket = new WebSocket(`${API_BASE_URL.replace('https', 'wss')}/game-ws`);
-		ClientGameSocket.socket.addEventListener('message', (e) => this.RecieveSocketMessage(e));
-		ClientGameSocket.socket.addEventListener('error', (e) => console.log('[ws] error', e));
-		ClientGameSocket.socket.addEventListener('close', (e) => console.log('[ws] close', e.code, e.reason));
+		const connect = () => {
+			const roomCode = "ABC123";
+			const username = "Gabriel";
+
+			const ws = new WebSocket(`wss://localhost:443/gamews?room=${roomCode}&user=${username}`);
+			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
+			
+			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));
+			ws.addEventListener('error', (e) => console.log('[ws] error', e));
+			ws.addEventListener('close', (e) => {
+				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
+				// Intenta reconectar después de un breve retraso para no sobrecargar el servidor.
+				setTimeout(connect, 1000);
+			});
+			ClientGameSocket.socket = ws;
+		};
+
+		connect();
 
 		// this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.connection.send(msg));
 		// socket.msgs.Subscribe("BallMove", (msg) => this.RecieveSocketMessage(msg));
 		// socket.msgs.Subscribe("BallRemove", (msg) => this.RecieveSocketMessage(msg));
 		// socket.msgs.Subscribe("PaddlePosition", (msg) => this.RecieveSocketMessage(msg));
 		// socket.msgs.Subscribe("CreatePowerUp", (msg) => this.RecieveSocketMessage(msg));
-		// socket.msgs.Subscribe("PickPowerUpBox", (msg) => this.RecieveSocketMessage(msg));
 		// socket.msgs.Subscribe("InventoryChanged", (msg) => this.RecieveSocketMessage(msg));
 
 		this.handlers = {
+			"AddPlayer": (m: MessagePayloads["AddPlayer"]) => this.HandleAddPlayer(m),
 			"CreatePowerUp": (m: MessagePayloads["CreatePowerUp"]) => this.HandleCreatePowerUp(m),
-			"PickPowerUpBox": (m: MessagePayloads["PickPowerUpBox"]) => this.HandlePickPowerUpBox(m),
 			"SelfEffect": (m: MessagePayloads["SelfEffect"]) => this.HandleSelfEffect(m),
 			"MassEffect": (m: MessagePayloads["MassEffect"]) => this.HandleMassEffect(m),
 			"AppliedEffect": (m: MessagePayloads["AppliedEffect"]) => this.HandleAppliedEffect(m),
@@ -47,20 +61,67 @@ export class ClientGameSocket {
 			"BallMove": (m: MessagePayloads["BallMove"]) => this.HandleBallMove(m),
 			"BallRemove": (m: MessagePayloads["BallRemove"]) => this.HandleBallRemove(m),
 			"PaddlePosition": (m: MessagePayloads["PaddlePosition"]) => this.HandlePaddlePosition(m),
-			"InventoryChanged": (m: MessagePayloads["InventoryChanged"]) => this.UIBroker.Publish("InventoryChanged", m),
+			"InventoryChanged": (m: MessagePayloads["InventoryChanged"]) => this.HandleInventoryChanged(m), 
 		};
-		
-		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg) );
 	}
 
-	private Send(msg: any): void {
+	/**
+	 * Obtiene la instancia única (Singleton) del ClientGameSocket.
+	 * @returns {ClientGameSocket} La instancia del socket del juego.
+	 */
+	public static GetInstance(): ClientGameSocket {
+		if (!ClientGameSocket.Instance)
+			ClientGameSocket.Instance = new ClientGameSocket();
+
+		return ClientGameSocket.Instance;
+	}
+
+	/**
+	 * Crea una nueva instancia del juego en el cliente, se suscribe a los eventos
+	 * necesarios y notifica al servidor que el juego ha comenzado.
+	 */
+	public CreateGame(): void {
+		console.log("CreateGame");
+		this.game = new ClientGame(ClientGameSocket.Canvas);
+		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg) );
+		this.Send({ type: "GameStart" });
+	}
+
+	public GetGame(): ClientGame {
+		return this.game!;
+	}
+
+	/**
+	 * Libera los recursos del juego en el cliente y envía un mensaje al servidor
+	 * para notificar que el jugador ha abandonado la partida.
+	 */
+	public DisposeGame(): void {
+		this.game?.Dispose();
+        this.Send({ type: "GameDispose" });
+	}
+
+	/**
+	 * Envía un mensaje al servidor a través del WebSocket.
+	 * @param {Message} msg El mensaje a enviar, que debe cumplir con la interfaz `Message`.
+	 */
+	public Send(msg: Message): void {
 		if (this.disposed)
 			return;
 		
-		ClientGameSocket.socket.send(JSON.stringify(msg))
+		console.log("Sending message:", msg);
+		if (ClientGameSocket.socket?.readyState === WebSocket.OPEN) {
+			ClientGameSocket.socket.send(JSON.stringify(msg));
+		} else {
+			console.warn("Socket no está abierto. Mensaje no enviado:", msg);
+		}
 	}
 	
-	public RecieveSocketMessage(payload: any) {
+	/**
+	 * Recibe y procesa los mensajes que llegan desde el servidor WebSocket.
+	 * Parsea el mensaje y lo delega al manejador correspondiente según su tipo.
+	 * @param {MessageEvent} payload El evento de mensaje del WebSocket.
+	 */
+	public RecieveSocketMessage(payload: MessageEvent): void {
 		if (this.disposed)
 			return;
 
@@ -83,37 +144,77 @@ export class ClientGameSocket {
 		}
 	}
 
+	/**
+	 * Maneja la adición de un nuevo jugador a la partida y lo reenvía a la UI.
+	 * @param {AddPlayerMessage} msg - El mensaje con los datos del jugador a añadir.
+	 */
+	private HandleAddPlayer(msg: AddPlayerMessage): void {
+		console.log("Received AddPlayer message from server:", msg);
+		this.UIBroker.Publish("AddPlayer", msg);
+	}
+
+	/**
+	 * Maneja el mensaje de efecto sobre el propio jugador.
+	 * @param {PlayerEffectMessage} msg - El mensaje con los datos del efecto.
+	 */
 	public HandleSelfEffect(msg: PlayerEffectMessage): void {
 
 	}
+	/**
+	 * Maneja el mensaje de efecto masivo sobre todos los jugadores.
+	 * @param {PlayerEffectMessage} msg - El mensaje con los datos del efecto.
+	 */
 	public HandleMassEffect(msg: PlayerEffectMessage): void {
 
 	}
+	/**
+	 * Maneja el mensaje de que un efecto ha sido aplicado.
+	 * @param {PlayerEffectMessage} msg - El mensaje con los datos del efecto.
+	 */
 	public HandleAppliedEffect(msg: PlayerEffectMessage): void {
 
 	}
+	/**
+	 * Maneja el mensaje de que un efecto ha terminado.
+	 * @param {PlayerEffectMessage} msg - El mensaje con los datos del efecto.
+	 */
 	public HandleEndedEffect(msg: PlayerEffectMessage): void {
 
 	}
+	/**
+	 * Maneja el mensaje de pausa/reanudación del juego.
+	 * @param {GamePauseMessage} msg - El mensaje que indica si el juego se pausa o reanuda.
+	 */
 	public HandleGamePause(msg: GamePauseMessage): void {
 
 	}
+	/**
+	 * Maneja el mensaje de fin de juego.
+	 * @param {ScoreMessage} msg - El mensaje con los resultados finales.
+	 */
 	public HandleGameEnded(msg: ScoreMessage): void {
 
 	}
+	/** Maneja el mensaje para reiniciar el juego. */
 	public HandleGameRestart(): void {
 
 	}
 	public HandlePointMade(msg: ScoreMessage): void {
 		console.log("HandlePointMade");
+		this.UIBroker.Publish("PointMade", msg);
 	}
 	public HandleBallMove(msg: BallMoveMessage): void {
-		let ball = this.game.Balls.GetAll().find(ball => ball.ID === msg.id);
+	/**
+	 * Maneja la actualización de la posición de una bola.
+	 * Si la bola ya existe, actualiza su posición. Si no, la crea.
+	 * @param {BallMoveMessage} msg - El mensaje con el ID y la nueva posición de la bola.
+	 */
+		let ball = this.game?.Balls.GetAll().find(ball => ball.ID === msg.id);
 		if(ball instanceof ClientBall)
 		{
 			ball.GetMesh().position = new BABYLON.Vector3(msg.x, 0.5, msg.z);
 		}
-		else
+		else if (this.game)
 		{
 			let ball = new ClientBall(this.game);
 			this.game.Balls.Add(ball);
@@ -122,30 +223,51 @@ export class ClientGameSocket {
 		}
 	}
 
+	/**
+	 * Maneja la eliminación de una bola del juego.
+	 * @param {BallRemoveMessage} msg - El mensaje con el ID de la bola a eliminar.
+	 */
 	public HandleBallRemove(msg: BallRemoveMessage): void {
-		let ball = this.game.Balls.GetAll().find(ball => ball.ID === msg.id);
+		let ball = this.game?.Balls.GetAll().find(ball => ball.ID === msg.id);
 		if (ball instanceof ClientBall)
 		{
 			ball.Dispose();
 		}
 	}
 
+	/**
+	 * Maneja la actualización de la posición de la pala de un jugador.
+	 * @param {PaddlePositionMessage} msg - El mensaje con el nombre de usuario y la nueva posición.
+	 */
 	HandlePaddlePosition(msg: PaddlePositionMessage): void {
-		let player = this.game.GetPlayers().find(p => p.GetName() === msg.username);
+		let player = this.game?.GetPlayers().find(p => p.GetName() === msg.username);
 		if (player)
 		{
-			ClientGameSocket.socket.send(JSON.stringify(msg));
+			ClientGameSocket.socket?.send(JSON.stringify(msg));
 			console.log(JSON.stringify(msg));
 			player.GetPaddle().GetMesh().position = new BABYLON.Vector3(msg.x, 0.5, msg.z);
 		}
 	}
 
+	/**
+	 * Maneja la creación de un nuevo Power-Up en el mapa.
+	 * @param {CreatePowerUpMessage} msg - El mensaje con los datos del Power-Up.
+	 */
 	private HandleCreatePowerUp(msg: CreatePowerUpMessage): void {
 		console.log("HandleCreatePowerUp");
-		new ClientPowerUpBox(this.game, msg.id, msg.x, msg.z, msg.powerUpType);
+		if (this.game)
+			new ClientPowerUpBox(this.game, msg.id, msg.x, msg.z, msg.powerUpType);
 	}
 
-	private HandlePickPowerUpBox(msg: PickPowerUpBoxMessage): void {
+	/**
+	 * Maneja un cambio en el inventario de un jugador.
+	 * @param {InventoryChangeMessage} msg - El mensaje con los detalles del cambio.
+	 */
+	private HandleInventoryChanged(msg: InventoryChangeMessage): void {
+		console.log("HandleInventoryChanged");
+		if (!this.game)
+			return;
+
 		let players = this.game.GetPlayers();
 		let target: APlayer | undefined = players.find(p => p.GetName() === msg.username);
 		let box: ClientPowerUpBox | undefined = this.game.PowerUps.GetAll().find(p => p.ID === msg.id);
@@ -153,14 +275,17 @@ export class ClientGameSocket {
 		if (target && box)
 		{
 			// ClientGameSocket.socket.send(JSON.stringify(msg));
-            // console.log(JSON.stringify(msg));
-			console.log("HandlePickPowerUpBox");
+			// console.log(JSON.stringify(msg));
+			console.log("InventoryChanged");
 			box.Dispose();
 			// box.PickUp(target);
-			this.UIBroker.Publish("PickPowerUpBox", msg);
 		}
+		this.UIBroker.Publish("InventoryChanged", msg);
 	}
 
+	/**
+	 * Libera los recursos del socket y marca la instancia como dispuesta.
+	 */
 	public Dispose(): void {
 		if (this.disposed)
 			return;

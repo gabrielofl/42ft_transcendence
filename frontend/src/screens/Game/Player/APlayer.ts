@@ -20,7 +20,7 @@ export abstract class APlayer {
     protected score: number = 0;
     public Inventory: Inventory;
     public Color: BABYLON.Color3 = new BABYLON.Color3(1, 0, 1);
-    private behavior?: { position: BABYLON.Vector3, lookAt: BABYLON.Vector3, maxDistance: number };
+    private behavior?: { position: BABYLON.Vector3, lookAt: BABYLON.Vector3 };
     public Effects: ObservableList<APlayerEffect> = new ObservableList();
     public Shields: ObservableList<PaddleShieldEffect> = new ObservableList();;
     public PaddleLen: DependentValue<PaddleLenEffect, number>;
@@ -74,9 +74,9 @@ export abstract class APlayer {
     public abstract ProcessPlayerAction(inputMap: Record<string, boolean>): void;
     
     // Reubica la paleta y limita sus movimientos.
-    public ConfigurePaddleBehavior(behavior: { position: BABYLON.Vector3, lookAt: BABYLON.Vector3, maxDistance: number }): void {
+    public ConfigurePaddleBehavior(behavior: { position: BABYLON.Vector3, lookAt: BABYLON.Vector3 }): void {
         this.behavior = behavior;
-        this.paddle.ConfigurePaddleBehavior(behavior.position, behavior.lookAt, behavior.maxDistance);
+        this.paddle.ConfigurePaddleBehavior(behavior.position, behavior.lookAt);
     }
 
     public GetBehavior()

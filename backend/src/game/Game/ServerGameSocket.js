@@ -4,19 +4,93 @@ import { ServerGame } from "./ServerGame.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
 import { logToFile } from "./logger.js";
 
+/**
+ * Gestiona la lógica de una sala de juego en el servidor, incluyendo las conexiones
+ * de los jugadores y la comunicación a través de WebSockets.
+ */
 export class ServerGameSocket {
+    /** @type {ServerGame | null} */
     game;
+    /** @type {string} */
     roomId = null;
+    /** @type {number} */
     lastMoveSentAt = 0;
+    /** @type {number} */
     MOVE_INTERVAL_MS = 33;
-    connection;
+    /** @type {Object<string, (message: any, user: string) => void>} */
 	handlers;
+    /** @type {Map<string, import('ws')>} */
+    people;
 
-    constructor(connection) {
+    /**
+     * Crea una instancia de ServerGameSocket para una sala específica.
+     * @param {string} roomId El identificador único de la sala.
+     */
+    constructor(roomId) {
+        this.roomId = roomId;
+        this.people = new Map();
+        this.handlers = {
+			"PlayerPreMove": (m, u) => this.HandlePreMoveMessage(m, u),
+            "GameDispose": (m, u) => this.HandleGameDispose(m, u),
+            "GameStart": (m, u) => this.HandleGameStarted(m, u),
+		};
+    }
+
+    /**
+     * Agrega un jugador y su conexión WebSocket a la sala.
+     * @param {string} user El identificador del usuario.
+     * @param {import('ws')} connection La conexión WebSocket del usuario.
+     */
+    AddPeople(user, connection) {
+        this.people.set(user, connection);
+
+        // Asigna los manejadores de eventos para esta conexión específica.
+        connection.on('message', (msg) => this.RecieveSocketMessage(msg, user));
+        connection.on('close', () => {
+            console.log(`Sala ${this.roomId} cerrada para ${user}`);
+            this.people.delete(user);
+        });
+        connection.on('error', (msg) => { console.log(msg); });
+    }
+
+    /**
+     * Libera todos los recursos de la sala, incluyendo el juego y las conexiones.
+     */
+    Dispose() {
+        console.log(`🧹 Cerrando sala ${this.roomId} y todas sus conexiones...`);
+        this.game?.Dispose();
+        this.game = null;
+
+        for (const [user, conn] of this.people.entries()) {
+            try {
+                conn.socket.close();
+            } catch (e) {
+                console.warn(`Error cerrando socket de ${user}:`, e);
+            }
+        }
+
+        this.people.clear();
+    }
+
+    /**
+     * Maneja el mensaje para desechar el juego actual.
+     * @param {any} msg El mensaje recibido.
+     */
+    HandleGameDispose(msg) {
+        console.log("HandleGameDispose");
+        this.game?.Dispose();
+    }
+
+    /**
+     * Maneja el mensaje de inicio de juego, creando una nueva instancia de ServerGame.
+     * @param {any} msg El mensaje recibido.
+     */
+    HandleGameStarted(msg) {
+        console.log(`🚀 ¡Partida iniciada!`);
         this.game = new ServerGame();
         this.setupGameEventListeners();
 
-        /***** Eliminar *****/
+        /***** MOVER *****/
         let players = [
             new AIPlayer(this.game, "A"),
             new AIPlayer(this.game, "B"),
@@ -24,28 +98,48 @@ export class ServerGameSocket {
             new AIPlayer(this.game, "D"),
         ];
 
+        // Asignar colores a los jugadores para diferenciarlos en el frontend
+        players[0].Color = new BABYLON.Color3(0.8, 0.2, 0.2); // Rojo
+        players[1].Color = new BABYLON.Color3(0.2, 0.8, 0.2); // Verde
+        players[2].Color = new BABYLON.Color3(0.2, 0.2, 0.8); // Azul
+        players[3].Color = new BABYLON.Color3(0.8, 0.8, 0.2); // Amarillo
+
         this.game.CreateGame(players);
-        /***** Eliminar *****/
 
-        this.connection = connection;
-        connection.on('message', (msg) => this.RecieveSocketMessage(msg));
+        // Enviar un mensaje 'AddPlayer' por cada jugador a todos los clientes
+        players.forEach(player => {
+            const behavior = player.GetBehavior();
+            if (!behavior) {
+                console.warn(`El jugador ${player.GetName()} no tiene 'behavior' configurado. No se puede enviar AddPlayer.`);
+                return;
+            }
 
-        connection.on('close', (msg) => {
-            console.log(msg);
-            console.log("se ha cerrado el Socket");
+            this.Broadcast({
+                type: "AddPlayer",
+                playerData: player.ToPlayerData(),
+                position: { x: behavior.position.x, y: behavior.position.y, z: behavior.position.z },
+                lookAt: { x: behavior.lookAt.x, y: behavior.lookAt.y, z: behavior.lookAt.z }
+            });
         });
-        
-        connection.on('error', (msg) => { console.log(msg); });
-        // Conectar al WebSocket para modo multijugador
-        /* if (players.length === 2) {
-            // Simular userId para testing - en producción esto vendría del sistema de auth
-            const mockUserId = 1;
-            this.connectWebSocket(mockUserId);
-        } */
+        /***** MOVER *****/
+    }
 
-        this.handlers = {
-			"PlayerPreMove": (m) => this.HandlePreMoveMessage(m),
-		};
+    /**
+     * Envía un mensaje a todos los jugadores en la sala, con la opción de excluir a uno.
+     * @param {any} msg El mensaje a enviar.
+     * @param {string | null} [exceptUser=null] El usuario a excluir del broadcast.
+     */
+    Broadcast(msg, exceptUser = null) {
+        const data = JSON.stringify(msg);
+        for (const [user, conn] of this.people.entries()) {
+            if (user === exceptUser) 
+                continue;
+            try {
+                conn.send(data);
+            } catch (e) {
+                console.warn(`No se pudo enviar a ${user}:`, e);
+            }
+        }
     }
 
     /**
@@ -59,7 +153,8 @@ export class ServerGameSocket {
         setInterval(() => {
             if (queue.length > 0) {
                 const msg = queue.shift(); // saca el primer mensaje
-                this.connection.send(JSON.stringify(msg));
+                // this.connection.send(JSON.stringify(msg));
+                this.Broadcast(msg);
             }
         }, sendInterval);
 
@@ -69,7 +164,6 @@ export class ServerGameSocket {
         // Suscribirse a eventos del juego
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
-        this.game.MessageBroker.Subscribe("PickPowerUpBox", enqueueMessage);
         this.game.MessageBroker.Subscribe("PointMade", enqueueMessage);
         this.game.MessageBroker.Subscribe("GameEnded", enqueueMessage);
         this.game.MessageBroker.Subscribe("GamePause", enqueueMessage);
@@ -79,17 +173,31 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
     }
 
-    RecieveSocketMessage(payload) {
-        const msg = payload;
-
-        const handler = this.handlers[msg.type];
-        if (handler) {
-            handler(msg); // TS asegura narrow, pero aquí necesitamos el cast
-        } else {
-            console.warn("Mensaje desconocido:", msg);
+    /**
+     * Recibe y procesa un mensaje de un cliente WebSocket.
+     * @param {Buffer} msg El mensaje binario recibido.
+     * @param {string} user El usuario que envió el mensaje.
+     */
+    RecieveSocketMessage(msg, user) {
+        try {
+            console.log("Handling message from WebSocket");
+            const message = JSON.parse(msg.toString());
+            console.log(message);
+            const handler = this.handlers[message.type];
+            if (handler) {
+                handler(message, user);
+            } else {
+                console.warn("Mensaje desconocido:", message);
+            }
+        } catch (error) {
+            console.error("Error al parsear mensaje de WebSocket:", error);
         }
     }
 
+    /**
+     * Maneja el mensaje de pre-movimiento de un jugador.
+     * @param {any} msg El mensaje con la información del movimiento.
+     */
 	HandlePreMoveMessage(msg) {
 		let player = this.game.GetPlayers().find(p => p.GetName() === msg.id);
 		if (player)
@@ -132,14 +240,6 @@ export class ServerGameSocket {
     handleCountdown(payload) {
         console.log(`⏰ Iniciando en ${payload.seconds} segundos...`);
         // Aquí puedes mostrar UI de cuenta regresiva si quieres
-    }
-
-    /**
-     * Handler para inicio del juego
-     */
-    handleGameStarted(payload) {
-        console.log(`🚀 ¡Partida iniciada!`);
-        // Aquí puedes activar animaciones o UI del juego
     }
 
     /**

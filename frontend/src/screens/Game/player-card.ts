@@ -4,58 +4,19 @@ import { ClientGameSocket } from "./ClientGameSocket";
 import { LocalPlayer } from "./Player/LocalPlayer";
 import { APlayer } from "./Player/APlayer";
 import { APlayerEffect } from "./Abstract/APlayerEffect";
-import { PickPowerUpBoxMessage } from "@shared/types/messages";
+import { AddPlayerMessage, InventoryChangeMessage, ScoreMessage } from "@shared/types/messages";
 import { MSFT_sRGBFactors } from "@babylonjs/loaders/glTF/2.0";
 
-export function createPlayerCard(player: APlayer, colorClass: string, socket: ClientGameSocket): string {
-    let keysHTML = "";
-
-    if (player instanceof LocalPlayer) {
-        const [leftKey, rightKey] = player.getControlKeys();
-        keysHTML += renderKey(leftKey);
-        keysHTML += renderKey(rightKey);
-    }
-
-    let controls = player instanceof LocalPlayer ? `
-        <div class="font-semibold ${colorClass} text-xs">Controls:</div>
-        <div class="flex gap-2">${keysHTML}</div>   
-    ` : "";
-
-	setupEffectsListener(player, socket);
-
-    let name = player.GetName();
-    return replaceTemplatePlaceholders(playerCardTemplate, { name, controls });
-}
-
-function renderKey(key: string): string {
-    return `<kbd class="px-2 py-0.5 bg-gray-800 rounded border border-gray-500">${key.toUpperCase()}</kbd>`;
-}
-
-function setupEffectsListener(player: APlayer, socket: ClientGameSocket) {
-	// TODO Reemplazar por Mensaje
-/*     if (socket)
-    {
-        socket.UIBroker.Subscribe("InventoryChanged", (msg) => {
-            if (player.GetName() != msg.username)
-                return;
-
-            const slots = document.querySelectorAll<HTMLDivElement>(
-                `#${player.GetName()}-inventory > div[id="${msg.slot}"]`
-            );
-            slots.forEach(slot => {
-                slot.style.backgroundImage = `url(${msg.path})`;
-                slot.style.backgroundSize = "cover";
-                slot.style.backgroundPosition = "center";
-            });
-        });
-    } */
-    socket.UIBroker.Subscribe("PickPowerUpBox", (msg) => pickUpItem(msg));
-
+export function createPlayerCard(msg: AddPlayerMessage): string {
+    ClientGameSocket.GetInstance().UIBroker.Subscribe("InventoryChanged", (msg) => updateInventorySlot(msg));
+    ClientGameSocket.GetInstance().UIBroker.Subscribe("PointMade", (msg) => updateScore(msg));
     // game.MessageBroker.Subscribe(GameEvent.AppliedEffect, (args: AppliedEffectArgs) => {
     //     if (player === args.Target)
     //         addEffect(args.Target.GetName(), args.Effect);
     // });
-    // game.MessageBroker.Subscribe(GameEvent.InventoryChange, (args: PwrUpEventArgs) => updateInventory(player, args));
+
+    let name = msg.playerData.name;
+    return replaceTemplatePlaceholders(playerCardTemplate, { name });
 }
 
 function addEffect(playerName: string, effect: APlayerEffect): void {
@@ -89,22 +50,37 @@ function removeEffect(effectsContainer: HTMLElement, effectIcon: HTMLDivElement)
 	}
 }
 
-function pickUpItem(msg: PickPowerUpBoxMessage) {
-    // Solo actualizamos si el evento es de ESTE jugador
-/*     if (args.username !== player.GetName())
-        return; */
-
+/**
+ * Actualiza un slot del inventario en la UI, mostrando o limpiando la imagen del power-up.
+ * @param msg El mensaje con los datos del cambio de inventario.
+ */
+function updateInventorySlot(msg: InventoryChangeMessage) {
     const slotElement = document.querySelector<HTMLDivElement>(
-        `#${msg.username}-inventory > div[id="${0}"]`
+        `#${msg.username}-inventory > div[id="${msg.slot}"]`
     );
 
     if (slotElement) {
-        slotElement.style.backgroundImage = `url(${"textures/PwrUpLessLength.jpg"})`;
-        slotElement.style.backgroundSize = "cover";
-        slotElement.style.backgroundPosition = "center";
+        if (msg.path) {
+            // Si hay una ruta, muestra la imagen.
+            slotElement.style.backgroundImage = `url(${msg.path})`;
+            slotElement.style.backgroundSize = "cover";
+            slotElement.style.backgroundPosition = "center";
+        } else {
+            // Si la ruta está vacía, limpia el slot.
+            slotElement.style.backgroundImage = "";
+        }
     }
-    /*         else
-            {
-                slotElement.style.backgroundImage = "";
-            } */
+}
+
+/**
+ * Actualiza el marcador de puntuación en las tarjetas de los jugadores.
+ * @param {ScoreMessage} msg El mensaje del servidor que contiene los resultados de la puntuación.
+ */
+function updateScore(msg: ScoreMessage): void {
+    msg.results.forEach(playerResult => {
+        const scoreElement = document.getElementById(`${playerResult.username}-score`);
+        if (scoreElement) {
+            scoreElement.textContent = playerResult.score.toString();
+        }
+    });
 }

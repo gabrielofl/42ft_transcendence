@@ -4,7 +4,6 @@ import * as MAPS from "./Maps";
 import { MaterialFactory } from "./MaterialFactory";
 import { ClientPongTable } from "./ClientPongTable";
 import { WindCompass } from "./WindCompass";
-import { PowerUpMoreLength } from "@shared/PowerUps/PowerUpMoreLength"
 import { PowerUpLessLength } from "./PowerUps/PowerUpLessLength";
 import { PowerUpSpeedUp } from "./PowerUps/PowerUpSpeedUp";
 import { PowerUpSpeedDown } from "./PowerUps/PowerUpSpeedDown";
@@ -179,6 +178,10 @@ protected readonly WIN_POINTS = 50;
     public GetPlayers(): APlayer[] {
 		return [...this.players];
 	}
+
+    public AddPlayer(player: APlayer) {
+        this.players.push(player);
+    }
 
     /**
      * Obtain the scene and save a reference to the owner.

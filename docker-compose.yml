@@ -34,7 +34,7 @@ services:
         - ./backend/.env
       networks:
         - ft_transcendence
-      command: node --inspect=0.0.0.0:9229 src/index.js
+      # command: node --inspect=0.0.0.0:9229 src/index.js
 
 networks:
   ft_transcendence:
