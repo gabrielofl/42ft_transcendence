@@ -118,7 +118,7 @@ async function databasePlugin(fastify, opts) {
 			id            INTEGER  PRIMARY KEY AUTOINCREMENT,
 			player1_id    INTEGER,								-- References users.id
 			player2_id    INTEGER,								-- References users.id
-			status        TEXT     DEFAULT 'pending',			-- pending/active/finished
+			status        TEXT     DEFAULT 'pending',			-- pending/accepted/
 			FOREIGN KEY (
 				player1_id
 			)
