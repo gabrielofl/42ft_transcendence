@@ -484,7 +484,8 @@ export default async function (fastify, opts) {
 			userMap[u.id] = u;
 		}
 
-		const friendList = friends.map(f => {
+		/** @type {import('../../../../shared/types/messages.js').FriendRequest[]} **/
+		const friendList = friends.map((f) => {
 			const friendId = f.player1_id === id ? f.player2_id : f.player1_id;
 			return {
 			id: f.id,
