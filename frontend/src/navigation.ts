@@ -10,6 +10,7 @@ import { AppStore } from "./redux/AppStore.js";
 import { Screen } from "./redux/reducers/navigationReducer.js";
 import { ClientGameSocket } from "./screens/Game/ClientGameSocket.js";
 import { renderMapSelection } from "./screens/Game/map-selection.js";
+import { renderWaitingRoom } from "./screens/waiting_room.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -92,6 +93,9 @@ function renderScreen(screen: Screen) {
       break;
     case "create":
       renderMapSelection();
+      break;
+    case "waiting":
+      renderWaitingRoom();
       break;
     case "tournament":
       // renderTournament();

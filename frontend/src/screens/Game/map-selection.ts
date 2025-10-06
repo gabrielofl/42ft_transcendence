@@ -3,6 +3,7 @@ import { MapDefinition, Maps } from "./Maps"; // el objeto que contiene todos lo
 import view from "./map-selection.html?raw";
 import { ClientGame } from "./ClientGame";
 import { PowerUpType } from '@shared/types/messages';
+import { navigateTo } from "../../navigation";
 
 let game: ClientGame;
 const ALL_POWERUPS: PowerUpType[] = ["MoreLength", "LessLength", "CreateBall", "Shield", "SpeedDown", "SpeedUp"];
@@ -86,8 +87,8 @@ function setupMapSelectionControls(): void {
 
     // Lógica para el botón de crear partida (ejemplo)
     createGameBtn?.addEventListener('click', () => {
-        // Aquí leerías la configuración y navegarías a la pantalla de juego
-        // navigateTo('game');
+        console.log("CreateGameBtn Clicked");
+        navigateTo('waiting');
     });
 }
 
