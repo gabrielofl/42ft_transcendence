@@ -11,7 +11,7 @@ interface Window {
 // Global Google Sign-In callback
 window.handleCredentialResponse = async (response: any) => {
 	try {
-		console.log('Google credential received:', response);
+		// console.log('Google credential received:', response);
 		
 		const result = await apiService.googleLogin(response.credential);
 		

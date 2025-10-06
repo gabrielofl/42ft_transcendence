@@ -463,6 +463,34 @@ body{
 
 
 
+.btn-error {
+  background: var(--error-color);
+  color: var(--text-light);
+  border: 2px solid var(--secondary-color);
+  border-radius: 8px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  line-height: 100%;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: 0 0 8px var(--primary-color);
+  transition: transform 0.1s ease;
+}
+
+.btn-error:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 12px var(--error-color), 0 0 20px var(--secondary-color);
+}
+
+.btn-error:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 6px var(--error-color);
+}
+
+
+
 .btn-tertiary {
   background: var(--bg-color);
   color: white;
@@ -765,6 +793,6 @@ body{
 
 /* user card template */
   .player-card {
-    @apply relative flex items-center w-72 h-20 px-3 border-2 rounded-md neon-border bg-purple-900;
+    @apply relative flex items-center  w-full h-20 px-3 border-2 rounded-md neon-border bg-purple-900;
   }
 

@@ -8,7 +8,7 @@ let currentPage = 1;
 const perPage = 5;
 
 // Ask Jorge if already exist
-type UsersMap = Record<string, {
+export type UsersMap = Record<string, {
   id: number;
   username: string;
   avatar?: string;
@@ -24,11 +24,24 @@ async function getCurrentUser() {
   const res = await fetch(`${API_BASE_URL}/users/me`, {
     credentials: 'include',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
+      
     }
   });
   if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
   return res.json();
+}
+
+
+export function getUserFromMap(usersMap: UsersMap, id: number) {
+  // JSON object keys become strings, so try both forms
+  return usersMap[id] ?? usersMap[String(id)] ?? {
+    id,
+    username: 'Unknown',
+    avatar: 'default.jpg',
+    score: 0,
+    status: 0,
+  	show_scores_publicly: 1
+  };
 }
 
 
@@ -61,15 +74,15 @@ async function loadMatches(userId: number, page: number) {
   try {
     const data = await getUserMatches(userId, page, perPage);
 
-    console.debug('loadMatches data:', data); // helpful while debugging
+    // console.debug('loadMatches data:', data); // helpful while debugging
+	// Update total friends
+	const totalMatchesEl = document.querySelector<HTMLParagraphElement>('#total-matches');
+	if (totalMatchesEl) totalMatchesEl.textContent = `Number of matches played: ${data.total}`;
 
-    // Update total matches
-    const totalMatchesEl = document.querySelector<HTMLParagraphElement>('#profile-content p.txt-subheading');
-    if (totalMatchesEl) totalMatchesEl.textContent = `Number of matches played: ${data.total}`;
-
-    // Update page info
-    const pageEl = document.querySelector<HTMLParagraphElement>('#profile-content p.page-info');
-    if (pageEl) pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
+	// Update page info
+	const pageEl = document.querySelector<HTMLParagraphElement>('#page-info');
+	if (pageEl) pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
+	console.log(`Page: ${data.page} / ${data.totalPages}`);
 
     // Render match rows
     const matchesContainer = document.querySelector<HTMLDivElement>('#matches-container');
@@ -111,10 +124,6 @@ async function loadMatches(userId: number, page: number) {
 			p1StatusColor = "bg-[--warning-color]";
 			p1StatusText = "Inactive";
 			break;
-			default:
-			p1StatusColor = "bg-gray-400";
-			p1StatusText = "Offline";
-			break;
 		}
 
 		switch (player2.status) {
@@ -125,10 +134,6 @@ async function loadMatches(userId: number, page: number) {
 			case 2:
 			p2StatusColor = "bg-[--warning-color]";
 			p2StatusText = "Inactive";
-			break;
-			default:
-			p2StatusColor = "bg-gray-400";
-			p2StatusText = "Offline";
 			break;
 		}
 
@@ -258,18 +263,6 @@ async function loadMatches(userId: number, page: number) {
 }
 
 
-function getUserFromMap(usersMap: UsersMap, id: number) {
-  // JSON object keys become strings, so try both forms
-  return usersMap[id] ?? usersMap[String(id)] ?? {
-    id,
-    username: 'Unknown',
-    avatar: 'default.jpg',
-    score: 0,
-    status: 0,
-  	show_scores_publicly: 1
-  };
-}
-
 
 //Helper for fetch matches with pagination
 async function getUserMatches(userId: number, page = 1, perPage = 5) {
@@ -277,7 +270,7 @@ async function getUserMatches(userId: number, page = 1, perPage = 5) {
   const res = await fetch(`${API_BASE_URL}/profile/games/${userId}?limit=${perPage}&offset=${offset}`, {
     credentials: 'include',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
+      
     }
   });
 
