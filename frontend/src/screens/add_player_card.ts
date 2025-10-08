@@ -1,4 +1,5 @@
 import template from "./add_player_card.html?raw";
+import { localPlayersUserName } from "./waiting_room";
 
 /**
  * Crea y configura una tarjeta para añadir jugadores.
@@ -24,6 +25,9 @@ export function createAddPlayerCard(): { cardElement: HTMLDivElement, cleanup: (
         event.preventDefault();
         console.log("Adding AI Player...");
         menu?.classList.add('hidden');
+        // TODO: Usar un ID real para el jugador IA
+        // localPlayersUserName.push([Math.random(), "Jorge"]);
+        // console.log(localPlayersUserName);
         // Aquí iría la lógica para añadir un jugador IA
     };
 

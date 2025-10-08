@@ -23,10 +23,10 @@ export class ClientGameSocket {
 		//try { if (ClientGameSocket.socket && ClientGameSocket.socket.readyState <= 1) ClientGameSocket.socket.close(1000, 're-render'); } catch {}
 		//socket = new WebSocket(`${API_BASE_URL.replace('https', 'wss')}/game-ws`);
 		const connect = () => {
-			const roomCode = "ABC123";
-			const username = "Gabriel";
+			const gameCode = "ABC123";
+			const userID = 42;
 
-			const ws = new WebSocket(`wss://localhost:443/gamews?room=${roomCode}&user=${username}`);
+			const ws = new WebSocket(`wss://localhost:443/gamews?room=${gameCode}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
 			
 			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));

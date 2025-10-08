@@ -83,6 +83,10 @@ export interface UserData {
     updated_at: string;
 }
 
+export interface AllReadyMessage extends Message {
+    playerData: PlayerData[];
+}
+
 export interface AddPlayerMessage extends Message {
     type: "AddPlayer";
     playerData: PlayerData;
