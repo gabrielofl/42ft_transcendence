@@ -4,6 +4,32 @@ export default async function (fastify, opts) {
 	// Add /users prefix to all routes in this file
 	fastify.register(async function (fastify, opts) {
 		
+		fastify.get('/session', async (request, reply) => {
+    try {
+      const token = request.cookies.accessToken;
+      if (!token) return { isLoggedIn: false, userId: 0 };
+
+      // Verify without preHandler; do not refresh here.
+      const decoded = fastify.jwt.verify(token); // may throw if expired/invalid
+
+      // Get fresh username/email to avoid stale token data
+      const user = await fastify.db.get(
+        'SELECT id, username, email FROM users WHERE id = ?',
+        [decoded.id]
+      );
+      if (!user) return { isLoggedIn: false, userId: 0 };
+
+      return {
+        isLoggedIn: true,
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+      };
+    } catch (err) {
+      // Expired/invalid token → not logged in
+      return { isLoggedIn: false, userId: 0 };
+    }
+  });
 		// Get current user profile - GET /api/users/me
 		fastify.get('/me', {
 			preHandler: authenticate  // Require authentication
