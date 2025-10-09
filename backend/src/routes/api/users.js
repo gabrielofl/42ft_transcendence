@@ -346,5 +346,42 @@ export default async function (fastify, opts) {
 			}
 		});
 
+		// Get leaderboard - GET /api/users/leaderboard
+		fastify.get('/leaderboard', {
+			schema: {
+				querystring: {
+					type: 'object',
+					properties: {
+						limit: { type: 'integer', minimum: 1 }
+					}
+				}
+			}
+		}, async (request, reply) => {
+			const { limit } = request.query;
+			
+			try {
+				// Get top users sorted by score (descending)
+				// If limit is not provided, return all users
+				let query = `SELECT id, username, avatar, score, status 
+					FROM users 
+					ORDER BY score DESC`;
+				
+				let params = [];
+				
+				if (limit && limit > 0) {
+					query += ` LIMIT ?`;
+					params.push(limit);
+				}
+				
+				const users = await fastify.db.all(query, params);
+				
+				return users;
+				
+			} catch (error) {
+				console.error('Leaderboard fetch error:', error);
+				return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
+			}
+		});
+
 	}, { prefix: '/users' });
 }

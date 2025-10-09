@@ -59,7 +59,7 @@ export function initNavigation() {
   });
 }
 
-function renderScreen(screen: Screen) {
+async function renderScreen(screen: Screen) {
   const app = document.getElementById("app")!;
   const header = document.getElementById("header")!;
   const footer = document.getElementById("footer")!;
@@ -113,7 +113,7 @@ function renderScreen(screen: Screen) {
       renderProfile();
       break;
     case "leaderboard":
-      renderLeaderboard();
+      await renderLeaderboard();
       break;
     default:
       app.innerHTML = `<p class="text-red-500">Unknown screen: ${screen}</p>`;

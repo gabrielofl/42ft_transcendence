@@ -260,6 +260,18 @@ export class ApiService {
     }
   }
 
+  // Leaderboard methods
+  async getLeaderboard(limit?: number): Promise<any[]> {
+    try {
+      const url = limit ? `/users/leaderboard?limit=${limit}` : '/users/leaderboard';
+      const response = await this.makeRequest(url);
+      return await response.json();
+    } catch (error) {
+      console.error('Get leaderboard error:', error);
+      throw error;
+    }
+  }
+
   // Utility methods
   isAuthenticated(): boolean {
     // Check if we have the CSRF token cookie (accessToken is HTTP-only and can't be read by JS)

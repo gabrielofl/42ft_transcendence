@@ -1,5 +1,5 @@
 import { replaceTemplatePlaceholders } from "./utils";
-import userCardTemplate from "./user_card.html?raw";
+//import userCardTemplate from "./user_card.html?raw";
 import { API_BASE_URL } from "./config";
 import { UserData } from "@shared/types/messages";
 
