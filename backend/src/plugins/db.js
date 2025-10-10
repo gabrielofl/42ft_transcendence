@@ -130,6 +130,51 @@ async function databasePlugin(fastify, opts) {
 
 		);
 
+		CREATE TABLE IF NOT EXISTS rooms (
+			id               INTEGER PRIMARY KEY AUTOINCREMENT,
+			code             TEXT UNIQUE NOT NULL,
+			host_id          INTEGER NOT NULL,
+			map_key          TEXT NOT NULL,
+			powerup_amount   INTEGER NOT NULL,
+			enabled_powerups TEXT NOT NULL,         -- JSON string (array)
+			max_players      INTEGER,
+			status           TEXT DEFAULT 'waiting',-- waiting | active | closed
+			created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+
+		CREATE TABLE IF NOT EXISTS room_players (
+			id         INTEGER PRIMARY KEY AUTOINCREMENT,
+			room_id    INTEGER NOT NULL,
+			user_id    INTEGER NOT NULL,
+			username   TEXT NOT NULL,
+			is_host    INTEGER DEFAULT 0,  -- 1/0
+			ready      INTEGER DEFAULT 0,  -- 1/0
+			joined_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(room_id, user_id),
+			FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_room_players_room ON room_players(room_id);
+
+		-- user_settings table to hold arbitrary per-user JSON blobs
+		CREATE TABLE IF NOT EXISTS user_settings (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL UNIQUE,
+		room_config TEXT,                -- JSON string: { mapKey, powerUpAmount, enabledPowerUps }
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		-- trigger to keep updated_at fresh
+		CREATE TRIGGER IF NOT EXISTS trg_user_settings_updated
+		AFTER UPDATE ON user_settings
+		FOR EACH ROW
+		BEGIN
+		UPDATE user_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+		END;
+
 
 	`);
 

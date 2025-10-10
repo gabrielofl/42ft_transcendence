@@ -1,0 +1,37 @@
+<!-- join-game.html -->
+<div class="flex flex-col items-center p-4 text-white">
+  <h1 class="font-press text-3xl mb-4">Join Game</h1>
+
+  <!-- Manual code entry -->
+  <div class="w-full max-w-xl bg-gray-900 rounded-xl p-4 shadow mb-6">
+    <label class="block text-sm mb-2">Enter Room Code</label>
+    <div class="flex gap-2">
+      <input id="room-code-input" class="flex-1 bg-gray-800 rounded px-3 py-2 outline-none"
+             placeholder="ABC123" maxlength="12" />
+      <button id="join-by-code-btn"
+              class="bg-green-800 hover:bg-green-700 px-4 py-2 rounded-lg font-press">
+        Join
+      </button>
+    </div>
+  </div>
+
+  <!-- Rooms header + actions -->
+  <div class="w-full max-w-5xl flex items-center justify-between mb-2">
+    <div class="text-lg opacity-80">Open Rooms</div>
+    <div class="flex items-center gap-2">
+      <input id="rooms-search" class="bg-gray-800 rounded px-3 py-1 outline-none"
+             placeholder="Search host or code…" />
+      <button id="refresh-rooms"
+              class="bg-blue-800 hover:bg-blue-700 px-3 py-1 rounded-lg font-press">Refresh</button>
+    </div>
+  </div>
+
+  <!-- Rooms list -->
+  <div id="rooms-list"
+       class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Cards injected here -->
+  </div>
+
+  <!-- Empty state -->
+  <div id="rooms-empty" class="mt-8 opacity-60 hidden">No rooms available right now.</div>
+</div>
