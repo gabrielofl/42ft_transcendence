@@ -199,7 +199,7 @@ async function openUserProfile(username: string | number) {
 				const data = await res.json();
 				if (!res.ok) throw new Error(data.error || "Action failed");
 				alert(`Success: ${action}`);
-				window.location.reload(); // 👈 refresh the whole page
+				window.location.reload(); // refresh the whole page
 				} catch (err) {
 				console.error("Friend action error:", err);
 				alert(err instanceof Error ? err.message : "Something went wrong");
@@ -220,7 +220,8 @@ async function openUserProfile(username: string | number) {
 		const action = btn.dataset.action;
 		const userId = btn.dataset.userId;
 		const friendshipId = btn.dataset.friendshipId;
-
+		let message;
+		
 		try {
 		let res;
 
@@ -232,6 +233,7 @@ async function openUserProfile(username: string | number) {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ userId }),
 			});
+			message
 			break;
 
 			case "accept":

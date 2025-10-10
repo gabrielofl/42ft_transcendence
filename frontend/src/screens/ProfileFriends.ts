@@ -240,21 +240,3 @@ function setupPagination(btnPrev: HTMLButtonElement | null, btnNext: HTMLButtonE
     btnNext.onclick = () => { if (!isDisabled) onChange(page + 1); };
   }
 }
-
-
-//   if (!res.ok) throw new Error(`Failed to fetch friends: ${res.status}`);
-//   const data = await res.json();
-
-//   // debug: inspect server response when troubleshooting
-//   console.debug('getUserFriends response:', data);
-
-//   return {
-// 	friends: data.friends || [],
-// 	users: (data.users as UsersMap) || {},
-// 	total: typeof data.total === 'number' ? data.total : 0,
-// 	currentUserId: data.currentUserId,
-// 	page,
-// 	perPage,
-// 	totalPages: Math.max(1, Math.ceil((data.total ?? 0) / perPage))
-//   };
-// }

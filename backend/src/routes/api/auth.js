@@ -371,6 +371,44 @@ export default async function (fastify, opts) {
 							[googleId, user.id]
 						);
 					}
+
+					// Check if 2FA is enabled
+					if (user.two_factor_enabled) {
+						if (!twoFactorCode) {
+							return reply.code(202).send({ 
+								success: true,
+								requires2FA: true,
+								message: 'Two-factor authentication required'
+							});
+						}
+
+						// Verify 2FA code
+						const verified = speakeasy.totp.verify({
+							secret: user.two_factor_secret,
+							encoding: 'base32',
+							token: twoFactorCode,
+							window: 2 // Allow some time drift
+						});
+
+						// If TOTP fails, check backup codes
+						if (!verified) {
+							const backupCode = await fastify.db.get(
+								'SELECT * FROM two_factor_backup_codes WHERE user_id = ? AND code = ? AND used_at IS NULL',
+								[user.id, twoFactorCode.toUpperCase()]
+							);
+
+							if (!backupCode) {
+								return reply.code(401).send({ error: 'Invalid two-factor code' });
+							}
+
+							// Mark backup code as used
+							await fastify.db.run(
+								'UPDATE two_factor_backup_codes SET used_at = datetime("now") WHERE id = ?',
+								[backupCode.id]
+							);
+						}
+					}
+					
 				} else {
 
 					// Create new user (password is NULL for Google users)
