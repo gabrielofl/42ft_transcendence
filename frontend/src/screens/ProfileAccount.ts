@@ -568,7 +568,7 @@ Do NOT share these codes with anyone.`;
 		}
 	});
 
-	document.getElementById('disable-2fa-btn')?.addEventListener('click', async () => {
+document.getElementById('disable-2fa-btn')?.addEventListener('click', async () => {
 	const modal = document.getElementById('password-modal');
 	const input = document.getElementById('password-input') as HTMLInputElement | null;;
 	const confirmBtn = document.getElementById('confirm-password-btn') as HTMLButtonElement | null;
