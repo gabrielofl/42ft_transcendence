@@ -12,15 +12,29 @@ interface Window {
 window.handleCredentialResponse = async (response: any) => {
 	try {
 		// console.log('Google credential received:', response);
-		
+		if (!response.credential)
+			return;
 		const result = await apiService.googleLogin(response.credential);
 		
-		if (result.success) {
-			console.log('Google login successful:', result.user);
-			navigateTo('home');
-		} else {
-			alert(result.error || 'Google authentication failed');
+	// ✅ Detect 2FA requirement
+		if (result.status === 202 && result.requires2FA) {
+		console.log('2FA required for user:', result.user?.username);
+		isGoogleLogin = true;
+		loginCredentials = { username: result.user?.username, password: response.credential };
+		show2FA(false);
+		return;
 		}
+
+		// ✅ Normal login success
+		if (result.success) {
+		console.log('Google login successful:', result.user);
+		navigateTo('home');
+		return;
+		}
+
+		// ✅ Any other error
+		alert(result.error || 'Google authentication failed');
+			alert(result.error || 'Google authentication failed');
 	} catch (error) {
 		console.error('Google authentication error:', error);
 		alert('Google authentication failed. Please try again.');
@@ -28,6 +42,7 @@ window.handleCredentialResponse = async (response: any) => {
 };
 
 let isLogin = true;
+let isGoogleLogin = false;
 let loginCredentials: { username: string; password: string } | null = null;
 
 export function renderAuthContainer(): void {
@@ -682,6 +697,7 @@ function show2FA(isRegistering: boolean, qrCodeData?: string): void {
 			authContainer.classList.remove('hidden');
 			return;
 		}
+		
 
 		try {
 			// Send login request again with 2FA code
@@ -690,6 +706,20 @@ function show2FA(isRegistering: boolean, qrCodeData?: string): void {
 				password: loginCredentials.password,
 				twoFactorCode: code
 			};
+
+			if (isGoogleLogin)
+			{
+					const response = await apiService.googleLogin(loginData.password, loginData.twoFactorCode);
+					
+					if (response.success) {
+						loginCredentials = null; // Clear stored credentials
+						navigateTo('home');
+						return;
+					} else {
+						alert(response.error || '2FA verification failed');
+						return;
+					}
+			}
 
 			const response = await apiService.login(loginData);
 			

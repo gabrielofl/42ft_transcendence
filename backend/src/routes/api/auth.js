@@ -333,13 +333,16 @@ export default async function (fastify, opts) {
 					type: 'object',
 					required: ['credential'],
 					properties: {
-						credential: { type: 'string' } // Google ID token
-					}
+					credential: { type: 'string' }, // Google ID token
+					twoFactorCode: { type: 'string' } // Optional 2FA code
+					},
+					additionalProperties: false
 				}
 			}
+
 		}, async (request, reply) => {
 			try {
-				const { credential } = request.body;
+				const { credential, twoFactorCode } = request.body;
 
 				// Initialize Google OAuth2 client with your client ID
 				const client = new OAuth2Client('723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com');
@@ -374,8 +377,19 @@ export default async function (fastify, opts) {
 
 					// Check if 2FA is enabled
 					if (user.two_factor_enabled) {
+						console.log ("2FA enabled.");
 						if (!twoFactorCode) {
 							return reply.code(202).send({ 
+								user: {
+									id: user.id,
+									username: user.username,
+									email: user.email,
+									google_id: user.google_id,
+									avatar: user.avatar,
+									wins: user.wins,
+									losses: user.losses,
+									twoFactorEnabled: !!user.two_factor_enabled
+								},
 								success: true,
 								requires2FA: true,
 								message: 'Two-factor authentication required'
@@ -623,10 +637,14 @@ export default async function (fastify, opts) {
 				[request.user.id]
 			);
 
-			// Verify password
-			if (!await bcrypt.compare(password, user.password)) {
-				return reply.code(401).send({ error: 'Invalid password' });
+			if(!user.googleId)
+			{
+				// Verify password
+				if (!await bcrypt.compare(password, user.password)) {
+					return reply.code(401).send({ error: 'Invalid password' });
+				}
 			}
+			
 
 			// Verify 2FA code if 2FA is enabled
 			if (user.two_factor_enabled && twoFactorCode) {
