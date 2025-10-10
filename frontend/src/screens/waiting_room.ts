@@ -1,163 +1,341 @@
-// waiting-room.ts
 import view from "./waiting_room.html?raw";
-import userCard from "./user-card.html?raw";
 import { ClientWaitRoomSocket } from "./Game/ClientWaitRoomSocket";
 import { ClientGameSocket } from "./Game/ClientGameSocket";
-import { SelectedMap } from "./Game/map-selection";
 import { createAddPlayerCard } from "./add_player_card";
+import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
-import { WaitPayloads, PlayerLite, RoomStatePayload } from "../../../shared/types/messages";
+import { PlayerLite, RoomStatePayload, UserData } from "../../../shared/types/messages";
+import { API_BASE_URL } from "./config";
 
-let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite|null)=>void }[] = [];
-let currentPlayers: PlayerLite[] = [];
+let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
+let serverPlayers: PlayerLite[] = [];
 let roomCode = "";
 let userId = 0;
 let username = "";
+let totalSlots = 0;
 
+export let localPlayersUserName: [number, string][] = [];
+
+// ---------- utilities ----------
 async function fetchJSON(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
   if (!res.ok) return null;
   try { return await res.json(); } catch { return null; }
 }
 
-export let localPlayersUserName: [number, string][] = []; // consumed by your game screen after AllReady
+function selectButtonByText(txt: string): HTMLButtonElement | null {
+  const all = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
+  const want = txt.trim().toUpperCase();
+  return all.find(b => (b.textContent || "").trim().toUpperCase() === want) || null;
+}
 
+function setReadyCounter(ready: number, total: number) {
+  const el = document.getElementById("ready-counter");
+  if (el) el.textContent = `${ready} / ${total} players Ready`;
+}
+
+function setRoomCodeText(code: string) {
+  const el = document.getElementById("room-code");
+  if (el) el.textContent = prettyRoom(code);
+}
+
+function prettyRoom(code: string) {
+  return (code || "").toUpperCase().replace(/(.{3})/g, "$1 ").trim();
+}
+
+function getInviteRoomFromURL(): string | null {
+  try {
+    const u = new URL(location.href);
+    const r = (u.searchParams.get("room") || "").toUpperCase().trim();
+    return r || null;
+  } catch { return null; }
+}
+
+function replaceURLRoom(code: string) {
+  const url = new URL(location.href);
+  if (code) url.searchParams.set("room", code);
+  else url.searchParams.delete("room");
+  window.history.replaceState(null, "", url.toString());
+}
+
+// Await the first RoomState from the socket (so we never render "empty")
+function waitForFirstRoomState(timeoutMs = 8000): Promise<RoomStatePayload | null> {
+  return new Promise(resolve => {
+    const wait = ClientWaitRoomSocket.GetInstance();
+    let settled = false;
+
+    const done = (val: RoomStatePayload | null) => {
+      if (settled) return;
+      settled = true;
+      try { wait.UIBroker.Unsubscribe?.("RoomState", handler as any); } catch {}
+      resolve(val);
+    };
+
+    const timer = setTimeout(() => done(null), timeoutMs);
+    const handler = (state: RoomStatePayload) => { clearTimeout(timer); done(state); };
+
+    wait.UIBroker.Subscribe("RoomState", handler as any);
+
+    // If WS closes before a state arrives, bail
+    try {
+      const ws = (wait as any).ws as WebSocket | undefined;
+      if (ws) {
+        const onClose = () => { ws.removeEventListener("close", onClose as any); clearTimeout(timer); done(null); };
+        ws.addEventListener("close", onClose as any, { once: true });
+      }
+    } catch {}
+  });
+}
+
+// ---------- main render ----------
 export async function renderWaitingRoom(): Promise<void> {
   const main = document.getElementById("main");
   if (!main) return;
 
   main.innerHTML = view;
 
-	const me = await fetchJSON('/api/session', { credentials: 'include' });
+  // loading banner inside cards container; hide until first RoomState
+  const cardsContainer = document.getElementById("player-cards-container") as HTMLDivElement | null;
+  if (cardsContainer) {
+    cardsContainer.style.position = "relative";
+    cardsContainer.style.visibility = "hidden";
+    const loading = document.createElement("div");
+    loading.id = "wait-loading-banner";
+    loading.textContent = "Loading room…";
+    loading.setAttribute("style", `
+      position: absolute; inset: 0; display: grid; place-items: center;
+      font-weight: 600; opacity: 0.9;
+    `);
+    cardsContainer.appendChild(loading);
+  }
+
+  // 1) Session
+  const me = await fetchJSON(`${API_BASE_URL}/users/session`, { credentials: "include" });
   if (!me?.isLoggedIn) {
-    alert('Please sign in to join a room.');
-    navigateTo('create'); // back to map selection
+    alert("Please sign in to join a room.");
+    navigateTo("create");
     return;
   }
   userId = me.userId;
   username = me.username ?? me.email ?? `Player${userId}`;
 
-  // roomCode from create step
-  roomCode = sessionStorage.getItem("roomCode") || new URL(location.href).searchParams.get("room") || "ABC123";
-
-  // 1) Build empty slots
-  const container = document.getElementById("player-cards-container");
-  cards = [];
-  for (let i = 0; i < SelectedMap.spots.length; i++) {
-    const card = createAddPlayerCard(); // assume returns DOM + cleanup; extend to accept fill function
-    // small enhancer: add fill function to replace placeholder with userCard
-    (card as any).fill = (p: PlayerLite | null) => {
-      const el = card.cardElement;
-      if (!p) {
-        el.innerHTML = `<div class="text-gray-400 italic">Empty slot</div>`;
-        return;
-      }
-      el.innerHTML = userCard
-        .replaceAll("{{username}}", p.username)
-        .replaceAll("{{readyClass}}", p.ready ? "text-green-400" : "text-yellow-300")
-        .replaceAll("{{roleBadge}}", p.isHost ? "HOST" : "");
-    };
-    cards.push(card as any);
-    container?.appendChild(card.cardElement);
+  // 2) Resolve room target: URL invite > backend "mine"
+  const inviteRoom = getInviteRoomFromURL();
+  if (inviteRoom) {
+    roomCode = inviteRoom;
+  } else {
+    const mine = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
+    if (mine?.roomCode) {
+      roomCode = String(mine.roomCode).toUpperCase();
+      // sync URL for share
+      replaceURLRoom(roomCode);
+    } else {
+      alert("No room to join. Create a game first.");
+      navigateTo("create");
+      return;
+    }
   }
+  setRoomCodeText(roomCode);
 
-  // 2) Wire controls
-  const readyBtn = document.querySelector<HTMLButtonElement>("button.btn-primary.bg-yellow-400");
-  const backBtn  = document.querySelectorAll<HTMLButtonElement>("button.btn-primary.bg-pink-500")[0];
-  const shareBtn = document.querySelectorAll<HTMLButtonElement>("button.btn-primary.bg-pink-500")[1];
-  const roomBox  = document.querySelector<HTMLSpanElement>("span.block.text-yellow-300");
-
-  // If room code comes via URL/state, set it
-  roomCode = roomCode || (sessionStorage.getItem("roomCode") ?? "ABC123");
-  if (roomBox) roomBox.textContent = prettyRoom(roomCode);
+  // 3) Top controls
+  const readyBtn = selectButtonByText("READY");
+  const editBtn  = selectButtonByText("EDIT SETTINGS");
+  const shareBtn = selectButtonByText("SHARE");
+  const roomBox  = document.querySelector<HTMLSpanElement>("div [class*='tracking-widest'], span.block");
+  if (roomCode && roomBox) roomBox.textContent = prettyRoom(roomCode);
 
   readyBtn?.addEventListener("click", () => ClientWaitRoomSocket.GetInstance().ToggleReady());
-  backBtn?.addEventListener("click", () => {
-    ClientWaitRoomSocket.GetInstance().Leave();
-    navigateTo("create"); // or your main menu
-  });
+
+  // no local/session storage; creation screen will read from /rooms/mine or /users/room-config
+  editBtn?.addEventListener("click", () => { navigateTo("create"); });
+
   shareBtn?.addEventListener("click", async () => {
+    if (!roomCode) { alert("Room code not assigned yet."); return; }
     const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(roomCode)}`;
     try { await navigator.clipboard.writeText(url); } catch {}
     alert("Room link copied!");
   });
 
-  // 3) Subscribe to wait-socket events
-	const wait = ClientWaitRoomSocket.GetInstance();
+  // 4) SUBSCRIBE BEFORE CONNECT to avoid missing the initial RoomState
+  const wait = ClientWaitRoomSocket.GetInstance();
 
-  wait.UIBroker.Subscribe("RoomState", (state) => applyRoomState(state));
-  wait.UIBroker.Subscribe("AddPlayer", (p) => {
-    upsertPlayer(p);
-    renderPlayers();
-  });
-  wait.UIBroker.Subscribe("RemovePlayer", ({ userId }) => {
-    currentPlayers = currentPlayers.filter(p => p.userId !== userId);
-    renderPlayers();
-  });
-  wait.UIBroker.Subscribe("PlayerReady", ({ userId }) => {
-    setReady(userId, true); renderPlayers();
-  });
-  wait.UIBroker.Subscribe("PlayerUnready", ({ userId }) => {
-    setReady(userId, false); renderPlayers();
-  });
-  wait.UIBroker.Subscribe("SetHost", ({ userId }) => {
-    currentPlayers = currentPlayers.map(p => ({ ...p, isHost: p.userId === userId }));
-    renderPlayers();
-  });
-  wait.UIBroker.Subscribe("SetRoomCode", ({ roomCode: rc }) => {
-    roomCode = rc; if (roomBox) roomBox.textContent = prettyRoom(rc);
-  });
-  wait.UIBroker.Subscribe("Error", ({ message }) => alert(message));
+  const onServerRoomCode = ({ roomCode: rc }: { roomCode: string }) => {
+    if (!rc) return;
+    roomCode = rc.toUpperCase();
+    replaceURLRoom(roomCode);
+    setRoomCodeText(roomCode);
+    if (roomBox) roomBox.textContent = prettyRoom(roomCode);
+  };
+  wait.UIBroker.Subscribe("RoomCreated", onServerRoomCode);
+  wait.UIBroker.Subscribe("SetRoomCode", onServerRoomCode);
 
-  // Transition to game
-  wait.UIBroker.Subscribe("AllReady", ({ players }) => {
-    // Provide the (id, username) mapping your game screen expects:
-    localPlayersUserName = players.map(p => [p.userId, p.username]) as [number, string][];
-    navigateTo("game");
-    // boot the gameplay socket + canvas
-    ClientGameSocket.Canvas = document.getElementById("pong-canvas") as HTMLCanvasElement;
-    ClientGameSocket.GetInstance().CreateGame();
+  wait.UIBroker.Subscribe("RoomState", (state) => {
+    applyRoomState(state);
   });
 
-  // 4) Connect & join the room
-  wait.ConnectAndJoin(roomCode, userId, username);
+	wait.UIBroker.Subscribe("AddPlayer", (p) => {
+		upsertServerPlayer(p); renderPlayers();
+	});
+	wait.UIBroker.Subscribe("RemovePlayer", ({ userId: uid }) => {
+		serverPlayers = serverPlayers.filter(p => p.userId !== uid); renderPlayers();
+	});
+  wait.UIBroker.Subscribe("PlayerReady", ({ userId: uid }) => { setServerReady(uid, true); renderPlayers(); });
+  wait.UIBroker.Subscribe("PlayerUnready", ({ userId: uid }) => { setServerReady(uid, false); renderPlayers(); });
+  wait.UIBroker.Subscribe("SetHost", ({ userId: newHost }) => { serverPlayers = serverPlayers.map(p => ({ ...p, isHost: p.userId === newHost })); renderPlayers(); });
+  wait.UIBroker.Subscribe("Error", ({ message }) => { alert(message); });
+  wait.UIBroker.Subscribe("AllReady", (msg: any) => { allReady(msg as AllReadyMessage); });
+
+  // 5) Connect (after subscriptions are ready)
+  const isConnected =
+    typeof (wait as any).IsConnected === "function"
+      ? (wait as any).IsConnected()
+      : (wait as any)._connected;
+  const currentRoom =
+    typeof (wait as any).CurrentRoomCode === "function"
+      ? (wait as any).CurrentRoomCode()
+      : (wait as any)._roomCode;
+
+  if (isConnected && currentRoom && roomCode && currentRoom !== roomCode) {
+    try { wait.Leave?.(); } catch {}
+  }
+
+  const shouldConnect = !isConnected || (currentRoom && roomCode && currentRoom !== roomCode);
+  if (shouldConnect) {
+    wait.ConnectAndJoin(roomCode, userId, username);
+  } else {
+  }
+
+  // Block UI until first RoomState
+  const first = await waitForFirstRoomState(8000);
+  if (!first) {
+    alert("Could not fetch room state. Please try again.");
+    navigateTo("create");
+    return;
+  }
+
+  // reveal UI now (applyRoomState also reveals UI)
+  if (cardsContainer) cardsContainer.style.visibility = "visible";
+  const loadingNode = document.getElementById("wait-loading-banner");
+  if (loadingNode) loadingNode.remove();
 }
 
-// ---------- helpers ----------
-function prettyRoom(code: string) {
-  return code.toUpperCase().replace(/(.{3})/g, "$1 ").trim();
-}
+// ---------- UI construction (cards driven by serverPlayers only) ----------
+function buildSlots(n: number) {
+  const container = document.getElementById("player-cards-container");
+  if (!container) { return; }
 
-function upsertPlayer(p: PlayerLite) {
-  const i = currentPlayers.findIndex(x => x.userId === p.userId);
-  if (i >= 0) currentPlayers[i] = { ...currentPlayers[i], ...p };
-  else currentPlayers.push(p);
-}
+  for (const c of cards) c.cleanup?.();
+  cards = [];
+  container.innerHTML = "";
 
-function setReady(uid: number, ready: boolean) {
-  const i = currentPlayers.findIndex(x => x.userId === uid);
-  if (i >= 0) currentPlayers[i] = { ...currentPlayers[i], ready };
-}
+  for (let i = 0; i < n; i++) {
+    const card = createAddPlayerCard({
+      onAddLocal: () => {
+        const api = ClientWaitRoomSocket.GetInstance() as any;
+        if (typeof api.AddLocalGuest === "function") api.AddLocalGuest();
+        else if (typeof api.InviteLocalGuest === "function") api.InviteLocalGuest();
+        else console.warn("AddLocalGuest/InviteLocalGuest not implemented on ClientWaitRoomSocket.");
+      },
+      onAddAI: () => { ClientWaitRoomSocket.GetInstance().InviteAI?.(); },
+    });
 
-function applyRoomState(state: RoomStatePayload) {
-  currentPlayers = [...state.players];
-  const roomBox = document.querySelector<HTMLSpanElement>("span.block.text-yellow-300");
-  if (roomBox) roomBox.textContent = prettyRoom(state.roomCode);
-  renderPlayers();
+    (card as any).fill = (p: PlayerLite | null) => {
+      const el = card.cardElement;
+      if (!p) {
+        el.dataset.empty = "true";
+        const menu = el.querySelector<HTMLDivElement>("#add-player-menu");
+        if (menu && !menu.classList.contains("hidden")) menu.classList.add("hidden");
+      } else {
+        el.dataset.empty = "false";
+        el.innerHTML = createUserCard(playerLiteToUserData(p));
+        el.dataset.userid = String(p.userId);
+      }
+    };
+
+    cards.push(card as any);
+    container.appendChild(card.cardElement);
+  }
 }
 
 function renderPlayers() {
-  // fill the N cards with players or empty
-  for (let i = 0; i < cards.length; i++) {
-    const player = currentPlayers[i] ?? null;
-    (cards[i] as any).fill?.(player);
+  if (totalSlots <= 0) { return; }
+
+  const ordered = [...serverPlayers].sort((a, b) =>
+    (Number(b.isHost) - Number(a.isHost)) ||
+    (Number(b.ready) - Number(a.ready)) ||
+    (a.username || "").localeCompare(b.username || "") ||
+    (a.userId - b.userId)
+  );
+
+  for (let i = 0; i < totalSlots; i++) {
+    const target = ordered[i] ?? null;
+    (cards[i] as any)?.fill?.(target);
   }
 
-  // "2 / 2 players Ready" label
-  const status = document.querySelector<HTMLParagraphElement>("p.text-xs.text-[--secondary-color]");
-  if (status) {
-    const readyCount = currentPlayers.filter(p => p.ready).length;
-    const total = currentPlayers.length;
-    status.textContent = `${readyCount} / ${SelectedMap.spots.length} players Ready`;
+  const readyCount = serverPlayers.filter(p => p.ready).length;
+  setReadyCounter(readyCount, totalSlots);
+}
+
+// ---------- server state integration ----------
+function upsertServerPlayer(p: PlayerLite) {
+  const i = serverPlayers.findIndex(x => x.userId === p.userId);
+  if (i >= 0) serverPlayers[i] = { ...serverPlayers[i], ...p };
+  else serverPlayers.push(p);
+}
+
+function setServerReady(uid: number, ready: boolean) {
+  const i = serverPlayers.findIndex(x => x.userId === uid);
+  if (i >= 0) serverPlayers[i] = { ...serverPlayers[i], ready };
+}
+
+function applyRoomState(state: RoomStatePayload) {
+  roomCode = state.roomCode.toUpperCase();
+  replaceURLRoom(roomCode);
+  setRoomCodeText(roomCode);
+
+  const slotsFromServer =
+    typeof state.maxPlayers === "number" && state.maxPlayers > 0
+      ? state.maxPlayers
+      : (state.players?.length || totalSlots);
+
+  if (slotsFromServer !== totalSlots) {
+    totalSlots = slotsFromServer;
+    buildSlots(totalSlots);
   }
+
+  serverPlayers = [...state.players]; // backend truth (includes virtuals)
+  renderPlayers();
+
+  const container = document.getElementById("player-cards-container") as HTMLDivElement | null;
+  if (container) container.style.visibility = "visible";
+  const loadingNode = document.getElementById("wait-loading-banner");
+  if (loadingNode) loadingNode.remove();
+
+}
+
+// ---------- transforms & payload ----------
+function playerLiteToUserData(p: PlayerLite): UserData {
+  return { id: p.userId, username: p.username, avatar: undefined, status: 1, score: 0 } as unknown as UserData;
+}
+
+function buildPlayersPayload(): [number, string][] {
+  const ordered = [...serverPlayers].sort((a, b) =>
+    (Number(b.isHost) - Number(a.isHost)) ||
+    (Number(b.ready) - Number(a.ready)) ||
+    (a.username || "").localeCompare(b.username || "") ||
+    (a.userId - b.userId)
+  );
+  return ordered.slice(0, totalSlots).map(p => [p.userId, p.username] as [number, string]);
+}
+
+type AllReadyMessage = { type: 'AllReady'; nArray?: [number, string][]; };
+
+function allReady(msg: AllReadyMessage) {
+  const list = Array.isArray(msg?.nArray) && msg.nArray.length ? msg.nArray : buildPlayersPayload();
+  localPlayersUserName = list;
+
+  try { ClientWaitRoomSocket.GetInstance().Dispose(); } catch {}
+  navigateTo('game');
+  ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
+  ClientGameSocket.GetInstance().CreateGame();
 }

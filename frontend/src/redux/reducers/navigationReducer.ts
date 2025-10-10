@@ -3,6 +3,7 @@ export type Screen =
   | "home"
   | "game"
   | "waiting"
+  | "join"
   | "create"
   | "tournament"
   | "profile"

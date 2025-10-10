@@ -1,8 +1,86 @@
 import { authenticate } from '../../middleware/auth.js';
 
+const DEFAULT_CFG = {
+  mapKey: 'MultiplayerMap',
+  powerUpAmount: 5,
+  enabledPowerUps: ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"],
+};
+
+  function requireUserFromCookie(req) {
+    const token = req.cookies?.accessToken;
+    if (!token) throw fastify.httpErrors.unauthorized('Unauthorized');
+    return fastify.jwt.verify(token); // { id, username }
+  }
+
+
 export default async function (fastify, opts) {
 	// Add /users prefix to all routes in this file
 	fastify.register(async function (fastify, opts) {
+
+  // GET /room-config  (autoloaded under /api/users → /api/users/room-config)
+  fastify.get('/room-config', async (req, reply) => {
+    try {
+      const user = requireUserFromCookie(req);
+      const row = await fastify.db.get(
+        `SELECT room_config FROM user_settings WHERE user_id = ?`,
+        [user.id]
+      );
+      if (!row?.room_config) return DEFAULT_CFG;
+
+      try {
+        const parsed = JSON.parse(row.room_config);
+        return {
+          mapKey: typeof parsed.mapKey === 'string' && parsed.mapKey ? parsed.mapKey : DEFAULT_CFG.mapKey,
+          powerUpAmount: Number.isFinite(parsed.powerUpAmount) ? parsed.powerUpAmount : DEFAULT_CFG.powerUpAmount,
+          enabledPowerUps: Array.isArray(parsed.enabledPowerUps) && parsed.enabledPowerUps.length
+            ? parsed.enabledPowerUps
+            : DEFAULT_CFG.enabledPowerUps
+        };
+      } catch {
+        return DEFAULT_CFG;
+      }
+    } catch (e) {
+      log('warn', 'GET /room-config failed', { err: e?.message });
+      return reply.code(e?.statusCode || 401).send({ error: e?.message || 'Unauthorized' });
+    }
+  });
+
+  // POST /room-config  (autoloaded under /api/users → /api/users/room-config)
+  fastify.post('/room-config', async (req, reply) => {
+    try {
+      const user = requireUserFromCookie(req);
+      const body = (req.body || {});
+
+      const toSave = {
+        mapKey: (typeof body.mapKey === 'string' && body.mapKey) ? body.mapKey : DEFAULT_CFG.mapKey,
+        powerUpAmount: Number.isFinite(body.powerUpAmount) ? body.powerUpAmount : DEFAULT_CFG.powerUpAmount,
+        enabledPowerUps: Array.isArray(body.enabledPowerUps) ? body.enabledPowerUps : DEFAULT_CFG.enabledPowerUps
+      };
+
+      const existing = await fastify.db.get(
+        `SELECT id FROM user_settings WHERE user_id = ?`,
+        [user.id]
+      );
+
+      if (existing) {
+        await fastify.db.run(
+          `UPDATE user_settings SET room_config = ? WHERE user_id = ?`,
+          [JSON.stringify(toSave), user.id]
+        );
+      } else {
+        await fastify.db.run(
+          `INSERT INTO user_settings (user_id, room_config) VALUES (?, ?)`,
+          [user.id, JSON.stringify(toSave)]
+        );
+      }
+
+      return { ok: true };
+    } catch (e) {
+      log('error', 'POST /room-config failed', { err: e?.message });
+      return reply.code(e?.statusCode || 400).send({ error: e?.message || 'Bad Request' });
+    }
+  });
+
 		
 		fastify.get('/session', async (request, reply) => {
     try {

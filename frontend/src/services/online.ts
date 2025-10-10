@@ -38,7 +38,7 @@ class OnlinePlayers {
   async init() {
     // 1) initial pull
     try {
-      const res = await fetch(`${API_BASE_URL}/presence/online`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE_URL}/online-websocket/players`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         this.users.clear();
@@ -53,7 +53,7 @@ class OnlinePlayers {
 
   private connect() {
     try { this.ws?.close(); } catch {}
-    const url = this.wsURL('/presence');
+    const url = this.wsURL('/online-websocket');
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {

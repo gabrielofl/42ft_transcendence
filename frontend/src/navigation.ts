@@ -11,6 +11,7 @@ import { Screen } from "./redux/reducers/navigationReducer.js";
 import { ClientGameSocket } from "./screens/Game/ClientGameSocket.js";
 import { renderMapSelection } from "./screens/Game/map-selection.js";
 import { renderWaitingRoom } from "./screens/waiting_room.js";
+import { renderJoinGame } from "./screens/join-game.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -95,7 +96,10 @@ function renderScreen(screen: Screen) {
       renderMapSelection();
       break;
     case "waiting":
-      renderWaitingRoom();
+    renderWaitingRoom();
+	  break;
+	case "join":
+      renderJoinGame();
       break;
     case "tournament":
       // renderTournament();

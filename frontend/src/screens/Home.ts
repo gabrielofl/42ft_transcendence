@@ -63,7 +63,7 @@ export function setupHome() {
 
 	joinBtn?.addEventListener('click', async () => {
 		// Lógica para juego remoto
-		navigateTo('game');
+		navigateTo('join');
 	});
 
 	tournamentBtn?.addEventListener('click', async () => {
