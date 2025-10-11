@@ -377,7 +377,6 @@ export default async function (fastify, opts) {
 
 					// Check if 2FA is enabled
 					if (user.two_factor_enabled) {
-						console.log ("2FA enabled.");
 						if (!twoFactorCode) {
 							return reply.code(202).send({ 
 								user: {
@@ -639,8 +638,6 @@ export default async function (fastify, opts) {
 
 			if(!user.google_id)
 			{
-				console.log("\nNot Google ID\n");
-				console.log("\nGoogle ID", user.google_id);
 				// Verify password
 				if (!await bcrypt.compare(password, user.password)) {
 					return reply.code(401).send({ error: 'Invalid password' });
