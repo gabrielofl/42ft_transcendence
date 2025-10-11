@@ -59,6 +59,30 @@ export interface PlayerData {
     name: string;
 }
 
+export interface UserData {
+    id: number;
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+    email: string;
+    google_id: string | null;
+    last_login: string | null;
+    avatar: string;
+    status: number;
+    wins: number;
+    losses: number;
+    score: number;
+    max_score: number;
+    matches: number;
+    two_factor_enabled?: number; // 0 or 1
+    allow_data_collection: number;
+    allow_data_processing: number;
+    allow_ai_training: number;
+    show_scores_publicly: number;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface AddPlayerMessage extends Message {
     type: "AddPlayer";
     playerData: PlayerData;
@@ -130,4 +154,11 @@ export interface CreatePowerUpMessage extends Message {
 export interface PlayerEffectMessage extends Message {
     origin: string
     effect: EffectType
+}
+
+export interface FriendRequest {
+	id: number;
+	status: number;
+	friend: UserData;
+	isRequester: boolean;
 }

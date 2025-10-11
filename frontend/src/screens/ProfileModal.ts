@@ -40,6 +40,8 @@ async function openUserProfile(username: string | number) {
  
   const friendActionBtn = document.getElementById("friend-action-btn");
   const rejectBtn = document.getElementById("friend-reject-btn");
+  const friendActionBtn = document.getElementById("friend-action-btn");
+  const rejectBtn = document.getElementById("friend-reject-btn");
   const status = document.getElementById("modal-profile-status");
   const statusTooltip = document.getElementById("status-tooltip");
 

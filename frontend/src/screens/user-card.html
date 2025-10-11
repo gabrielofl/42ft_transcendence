@@ -1,0 +1,19 @@
+<div class="w-full player-card border-[${borderColor}]">
+    <a href="#" class="open-profile" data-user="${username}">
+        <img class="w-12 h-12 rounded-full bg-gray-300 object-cover" src="${avatarUrl}" alt="Avatar de ${username}">
+    </a>
+    <div class="ml-3 flex flex-col">
+        <div class="flex items-center space-x-2">
+            <div class="relative group flex items-center">
+                <span class="w-4 h-4 rounded-full ${statusColor}"></span>
+                <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap 
+                    rounded-lg bg-gray-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 
+                    transition-opacity duration-300 z-10">
+                    ${statusText}
+                </div>
+            </div>
+            <span class="font-bold text-white"><a href="#" class="open-profile" data-user="${username}">${username}</a></span>
+        </div>
+        <div class="text-red-500 font-bold text-sm ">${score} pts</div>
+    </div>
+</div>

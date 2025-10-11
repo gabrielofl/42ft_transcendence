@@ -13,6 +13,8 @@ export default async function (fastify, opts) {
 		
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Upload avatar endpoint - POST /api/profile/avatar
 		fastify.post('/avatar', {
 			preHandler: authenticate,  // Require authentication
@@ -89,6 +91,10 @@ export default async function (fastify, opts) {
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Only accepts file with name avatar_*
+
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
+		// Only accepts file with name avatar_*
 		// Get avatar by filename - GET /api/profile/avatar/:filename
 		fastify.get('/avatar/:filename', async (request, reply) => {
 			try {
@@ -123,6 +129,9 @@ export default async function (fastify, opts) {
 			}
 		});
 
+
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
@@ -190,6 +199,8 @@ export default async function (fastify, opts) {
 		};
 		});
 
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Stats endpoint for user match/games
@@ -280,6 +291,9 @@ export default async function (fastify, opts) {
 		};
 		});
 
+		
+
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>

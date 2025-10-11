@@ -20,10 +20,13 @@ export function renderFriendsTab() {
 	} catch (err) {
     console.error("Failed to load friends:", err);
     container.innerHTML = `<p class="text-red-500">Failed to load friends tab.</p>`;
+    console.error("Failed to load friends:", err);
+    container.innerHTML = `<p class="text-red-500">Failed to load friends tab.</p>`;
   	}
 }
 
 export async function setupFriendsTab() {
+	await loadFriends(friendsCurrentPage, requestsCurrentPage); 
 	await loadFriends(friendsCurrentPage, requestsCurrentPage); 
 	initProfileModal(); 
     setupProfileLinks(); 
