@@ -608,12 +608,10 @@ document.getElementById('disable-2fa-btn')?.addEventListener('click', async () =
 	if (!password) return; // Cancel or empty
 
 	try {
-		const token = localStorage.getItem('token');
 		const response = await fetch(`${API_BASE_URL}/auth/2fa/disable`, {
 		method: 'POST',
 		headers: { 
 			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${token}`
 		},
 		credentials: 'include',
 		body: JSON.stringify({ password })

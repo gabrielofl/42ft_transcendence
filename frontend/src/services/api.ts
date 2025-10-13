@@ -128,24 +128,17 @@ export class ApiService {
     }
   }
 
-  async googleLogin(credential: string, twoFactorCode: string): Promise<LoginResponse> {
+  async googleLogin(credential: string): Promise<LoginResponse> {
     try {
       const response = await this.makeRequest('/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ credential, twoFactorCode })
+        body: JSON.stringify({ credential})
       });
 
       const result = await response.json();
     // ✅ Attach HTTP status so caller can decide what to do
       result.status = response.status;
 
-      	// console.log('Inside login successful:', result.id);
-		// console.log('InsideResponse 2FA:', result.requires2FA);
-		   console.log('Google login response:', {
-      status: response.status,
-      result
-    });
-		
       return result;
     } catch (error) {
       console.error('Google login error:', error);
@@ -185,6 +178,7 @@ export class ApiService {
     try {
       const response = await this.makeRequest('/auth/2fa/verify', {
         method: 'POST',
+		credentials: 'include',
         body: JSON.stringify(data)
       });
 

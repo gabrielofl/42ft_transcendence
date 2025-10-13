@@ -68,42 +68,7 @@ export default async function (fastify, opts) {
 				});
 			}
 
-			// Check if 2FA is enabled
-			if (user.two_factor_enabled) {
-				if (!twoFactorCode) {
-					return reply.code(202).send({ 
-						success: true,
-						requires2FA: true,
-						message: 'Two-factor authentication required'
-					});
-				}
 
-				// Verify 2FA code
-				const verified = speakeasy.totp.verify({
-					secret: user.two_factor_secret,
-					encoding: 'base32',
-					token: twoFactorCode,
-					window: 2 // Allow some time drift
-				});
-
-				// If TOTP fails, check backup codes
-				if (!verified) {
-					const backupCode = await fastify.db.get(
-						'SELECT * FROM two_factor_backup_codes WHERE user_id = ? AND code = ? AND used_at IS NULL',
-						[user.id, twoFactorCode.toUpperCase()]
-					);
-
-					if (!backupCode) {
-						return reply.code(401).send({ error: 'Invalid two-factor code' });
-					}
-
-					// Mark backup code as used
-					await fastify.db.run(
-						'UPDATE two_factor_backup_codes SET used_at = datetime("now") WHERE id = ?',
-						[backupCode.id]
-					);
-				}
-			}
 			
 			// Update last login time
 			await fastify.db.run(
@@ -148,6 +113,17 @@ export default async function (fastify, opts) {
 				path: '/',                // Available for all routes
 				maxAge: 3 * 60 * 60       // Same as access token
 			});
+
+			// Check if 2FA is enabled
+			if (user.two_factor_enabled) {
+				if (!twoFactorCode) {
+					return reply.code(202).send({ 
+						success: true,
+						requires2FA: true,
+						message: 'Two-factor authentication required'
+					});
+				}
+			}
 
 			return {
 				success: true,
@@ -333,8 +309,7 @@ export default async function (fastify, opts) {
 					type: 'object',
 					required: ['credential'],
 					properties: {
-					credential: { type: 'string' }, // Google ID token
-					twoFactorCode: { type: 'string' } // Optional 2FA code
+					credential: { type: 'string' } // Google ID token
 					},
 					additionalProperties: false
 				}
@@ -342,7 +317,7 @@ export default async function (fastify, opts) {
 
 		}, async (request, reply) => {
 			try {
-				const { credential, twoFactorCode } = request.body;
+				const { credential} = request.body;
 
 				// Initialize Google OAuth2 client with your client ID
 				const client = new OAuth2Client('723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com');
@@ -374,53 +349,37 @@ export default async function (fastify, opts) {
 							[googleId, user.id]
 						);
 					}
+					
+									// Create JWT tokens
+				const accessToken = fastify.jwt.sign({
+					id: user.id,
+					username: user.username || user.email
+				});
 
-					// Check if 2FA is enabled
-					if (user.two_factor_enabled) {
-						if (!twoFactorCode) {
-							return reply.code(202).send({ 
-								user: {
-									id: user.id,
-									username: user.username,
-									email: user.email,
-									google_id: user.google_id,
-									avatar: user.avatar,
-									wins: user.wins,
-									losses: user.losses,
-									twoFactorEnabled: !!user.two_factor_enabled
-								},
-								success: true,
-								requires2FA: true,
-								message: 'Two-factor authentication required'
-							});
-						}
+				const refreshToken = await generateRefreshToken(user.id);
+				// Generate CSRF token
+				const csrfCrypto = await import('crypto');
+				const csrfToken = csrfCrypto.randomBytes(32).toString('hex');
+				setAuthCookies(reply, accessToken, refreshToken, csrfToken);
 
-						// Verify 2FA code
-						const verified = speakeasy.totp.verify({
-							secret: user.two_factor_secret,
-							encoding: 'base32',
-							token: twoFactorCode,
-							window: 2 // Allow some time drift
+				// Check if 2FA is enabled
+				if (user.two_factor_enabled) {
+					return reply.code(202).send({ 
+							user: {
+								id: user.id,
+								username: user.username,
+								email: user.email,
+								google_id: user.google_id,
+								avatar: user.avatar,
+								wins: user.wins,
+								losses: user.losses,
+								twoFactorEnabled: !!user.two_factor_enabled
+							},
+							success: true,
+							requires2FA: true,
+							message: 'Two-factor authentication required'
 						});
-
-						// If TOTP fails, check backup codes
-						if (!verified) {
-							const backupCode = await fastify.db.get(
-								'SELECT * FROM two_factor_backup_codes WHERE user_id = ? AND code = ? AND used_at IS NULL',
-								[user.id, twoFactorCode.toUpperCase()]
-							);
-
-							if (!backupCode) {
-								return reply.code(401).send({ error: 'Invalid two-factor code' });
-							}
-
-							// Mark backup code as used
-							await fastify.db.run(
-								'UPDATE two_factor_backup_codes SET used_at = datetime("now") WHERE id = ?',
-								[backupCode.id]
-							);
-						}
-					}
+				}
 					
 				} else {
 
@@ -469,35 +428,11 @@ export default async function (fastify, opts) {
 				});
 
 				const refreshToken = await generateRefreshToken(user.id);
-
-				// Set secure HTTP-only cookies
-				reply.setCookie('accessToken', accessToken, {
-					httpOnly: true,
-					secure: true,
-					sameSite: 'None',
-					path: '/',
-					maxAge: 3 * 60 * 60 // 3 hours
-				});
-
-				reply.setCookie('refreshToken', refreshToken, {
-					httpOnly: true,
-					secure: true,
-					sameSite: 'None',
-					path: '/',
-					maxAge: 7 * 24 * 60 * 60 // 7 days
-				});
-
 				// Generate CSRF token
 				const csrfCrypto = await import('crypto');
 				const csrfToken = csrfCrypto.randomBytes(32).toString('hex');
+				setAuthCookies(reply, accessToken, refreshToken, csrfToken);
 
-				reply.setCookie('csrfToken', csrfToken, {
-					httpOnly: false,
-					secure: true,
-					sameSite: 'None',
-					path: '/',
-					maxAge: 3 * 60 * 60
-				});
 
 				// Update last login time
 				await fastify.db.run(
@@ -566,8 +501,8 @@ export default async function (fastify, opts) {
 
 		// Verify and enable 2FA - POST /api/auth/2fa/verify
 		fastify.post('/2fa/verify', {
-			preHandler: authenticate,
-			schema: {
+				preHandler: authenticate,
+				schema: {
 				body: {
 					type: 'object',
 					required: ['token'],
@@ -743,4 +678,30 @@ export default async function (fastify, opts) {
 		});
 
 	}, { prefix: '/auth' }); // Add prefix here
+}
+
+function setAuthCookies(reply, accessToken, refreshToken, csrfToken) {
+  reply.setCookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+    path: '/',
+    maxAge: 3 * 60 * 60
+  });
+
+  reply.setCookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60
+  });
+
+  reply.setCookie('csrfToken', csrfToken, {
+    httpOnly: false,
+    secure: true,
+    sameSite: 'None',
+    path: '/',
+    maxAge: 3 * 60 * 60
+  });
 }
