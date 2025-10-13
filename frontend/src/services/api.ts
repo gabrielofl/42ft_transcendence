@@ -200,7 +200,8 @@ export class ApiService {
   // Profile methods
   async getProfile(): Promise<any> {
     try {
-      const response = await this.makeRequest('/profile');
+      // const response = await this.makeRequest('/profile');
+      const response = await this.makeRequest('/users/me');
       return await response.json();
     } catch (error) {
       console.error('Get profile error:', error);

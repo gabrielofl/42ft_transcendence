@@ -22,6 +22,7 @@ async function databasePlugin(fastify, opts) {
 
 	// Create tables if they don't exist
 	await db.exec(`
+		DELETE FROM users WHERE id = 2;
 		CREATE TABLE IF NOT EXISTS users (
 			id           INTEGER  PRIMARY KEY AUTOINCREMENT,	-- Auto-incrementing ID
 			first_name   TEXT,

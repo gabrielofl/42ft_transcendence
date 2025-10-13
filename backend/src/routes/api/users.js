@@ -361,9 +361,11 @@ export default async function (fastify, opts) {
 			
 			try {
 				// Get top users sorted by score (descending)
+				// Only include users who want to show their scores publicly
 				// If limit is not provided, return all users
-				let query = `SELECT id, username, avatar, score, status 
+				let query = `SELECT id, username, avatar, score, max_score, wins, losses, matches, status 
 					FROM users 
+					WHERE show_scores_publicly = 1
 					ORDER BY score DESC`;
 				
 				let params = [];
