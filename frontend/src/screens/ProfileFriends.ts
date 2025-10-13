@@ -20,13 +20,10 @@ export function renderFriendsTab() {
 	} catch (err) {
     console.error("Failed to load friends:", err);
     container.innerHTML = `<p class="text-red-500">Failed to load friends tab.</p>`;
-    console.error("Failed to load friends:", err);
-    container.innerHTML = `<p class="text-red-500">Failed to load friends tab.</p>`;
   	}
 }
 
 export async function setupFriendsTab() {
-	await loadFriends(friendsCurrentPage, requestsCurrentPage); 
 	await loadFriends(friendsCurrentPage, requestsCurrentPage); 
 	initProfileModal(); 
     setupProfileLinks(); 
@@ -86,9 +83,7 @@ async function loadFriends(page: number, requestsPage: number) {
 	const friendAvatar = user.avatar
 		? `${API_BASE_URL}/profile/avatar/${user.avatar}`
 		: 'default.jpg';
-	// const friendAvatar = user.avatar
-	// 	? `${API_BASE_URL}/profile/avatar/${user.avatar}`
-	// 	: 'default.jpg';
+
 	// Status logic
 	let friendStatusColor = "bg-gray-400";
 	let friendStatusText = "Offline";
