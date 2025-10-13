@@ -199,6 +199,8 @@ export type RoomStatePayload = {
   mapKey?: string;
   powerUpAmount?: number;
   enabledPowerUps?: string[];
+  windAmount?: number;
+  pointToWinAmount?: number;
 };
 
 export type WaitPayloads = {
@@ -216,7 +218,7 @@ export type WaitPayloads = {
   JoinRoom: { roomCode: string; userId: number; username: string };
   LeaveRoom: { roomCode: string; userId: number };
   ToggleReady: { roomCode: string; userId: number };
-  SetMapConfig: { roomCode: string; mapKey: string; powerUpAmount: number; enabledPowerUps: string[] };
+  SetMapConfig: { roomCode: string; mapKey: string; powerUpAmount: number; enabledPowerUps: string[]; windAmount: number; pointToWinAmount: number };
   InviteAI: { roomCode: string };
 };
 

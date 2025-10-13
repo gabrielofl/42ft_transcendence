@@ -4,6 +4,8 @@ const DEFAULT_CFG = {
   mapKey: 'MultiplayerMap',
   powerUpAmount: 5,
   enabledPowerUps: ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"],
+  windAmount: 50,
+  pointToWinAmount: 7,
 };
 
   function requireUserFromCookie(req) {
@@ -34,7 +36,9 @@ export default async function (fastify, opts) {
           powerUpAmount: Number.isFinite(parsed.powerUpAmount) ? parsed.powerUpAmount : DEFAULT_CFG.powerUpAmount,
           enabledPowerUps: Array.isArray(parsed.enabledPowerUps) && parsed.enabledPowerUps.length
             ? parsed.enabledPowerUps
-            : DEFAULT_CFG.enabledPowerUps
+            : DEFAULT_CFG.enabledPowerUps,
+		  windAmount: Number.isFinite(parsed.windAmount) ? parsed.windAmount : DEFAULT_CFG.windAmount,
+          pointToWinAmount: Number.isFinite(parsed.pointToWinAmount) ? parsed.pointToWinAmount : DEFAULT_CFG.pointToWinAmount
         };
       } catch {
         return DEFAULT_CFG;
@@ -54,7 +58,9 @@ export default async function (fastify, opts) {
       const toSave = {
         mapKey: (typeof body.mapKey === 'string' && body.mapKey) ? body.mapKey : DEFAULT_CFG.mapKey,
         powerUpAmount: Number.isFinite(body.powerUpAmount) ? body.powerUpAmount : DEFAULT_CFG.powerUpAmount,
-        enabledPowerUps: Array.isArray(body.enabledPowerUps) ? body.enabledPowerUps : DEFAULT_CFG.enabledPowerUps
+        enabledPowerUps: Array.isArray(body.enabledPowerUps) ? body.enabledPowerUps : DEFAULT_CFG.enabledPowerUps,
+        windAmount: Number.isFinite(body.windAmount) ? body.windAmount : DEFAULT_CFG.windAmount,
+        pointToWinAmount: Number.isFinite(body.pointToWinAmount) ? body.pointToWinAmount : DEFAULT_CFG.pointToWinAmount
       };
 
       const existing = await fastify.db.get(
