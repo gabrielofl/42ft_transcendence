@@ -1,6 +1,8 @@
 import profileModalHtml from "./profile-modal.html?raw";
 import { API_BASE_URL } from "./config";
 import { loadUserGameStats, loadUserStats } from "./ProfilePerformance";
+import { navigateTo } from "../navigation";
+
 
 export function initProfileModal() {
   // Only append once
@@ -35,7 +37,7 @@ async function openUserProfile(username: string | number) {
   const winsVictim = document.getElementById("wins-victim");
   const strongestOpp = document.getElementById("strongest-opp");
   const lossesOpp = document.getElementById("losses-opp");
- 
+
   const friendActionBtn = document.getElementById("friend-action-btn");
   const rejectBtn = document.getElementById("friend-reject-btn");
   const status = document.getElementById("modal-profile-status");
@@ -103,7 +105,6 @@ async function openUserProfile(username: string | number) {
 		if (!isFriend.ok) throw new Error(`Failed to fetch profile for ${username}`);
 		const friendship = await isFriend.json();
 		// Friendship check: 0 = no; 1 = request sended by me, 2 request sended by user; 3 = friends;
-		// data.isFriend = 2;
 		if (friendActionBtn && rejectBtn)
 		{
 			let friendBtnStatus;
@@ -154,15 +155,19 @@ async function openUserProfile(username: string | number) {
 			// clone the node to remove old listeners
 			const newBtn = friendActionBtn.cloneNode(true) as HTMLButtonElement;
 			friendActionBtn.replaceWith(newBtn);
+			const removeBtn = rejectBtn.cloneNode(true) as HTMLButtonElement;
+			rejectBtn.replaceWith(removeBtn);
 
 			newBtn.addEventListener("click", async (e) => {
 				const btn = e.currentTarget as HTMLButtonElement;
 				const action = btn.dataset.action;
+				let message = "";
 				const userId = btn.dataset.userId;
 				const friendshipId = btn.dataset.friendshipId;
 
 				try {
 				let res;
+				let check = 0;
 				switch (action) {
 					case "add":
 					res = await fetch(`${API_BASE_URL}/profile/friends/request`, {
@@ -171,6 +176,8 @@ async function openUserProfile(username: string | number) {
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ userId }),
 					});
+					message = "Friend request sent.";
+					check = 1;
 					break;
 
 					case "accept":
@@ -180,6 +187,8 @@ async function openUserProfile(username: string | number) {
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ friendshipId }),
 					});
+					message = "Friend request accepted.";
+					check = 1;
 					break;
 
 					case "remove":
@@ -189,19 +198,55 @@ async function openUserProfile(username: string | number) {
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ friendshipId }),
 					});
+					message = "Friend removed from your list.";
+					check = 1;
 					break;
+
+					case "myProfile":
+					navigateTo("profile");
+					modal?.classList.add("hidden");
+					return;
 
 					default:
 					console.warn("Unknown action:", action);
 					return;
 				}
 
-				const data = await res.json();
-				if (!res.ok) throw new Error(data.error || "Action failed");
-				alert(`Success: ${action}`);
-				window.location.reload(); // 👈 refresh the whole page
+				if (res)
+				{
+					const data = await res.json();
+					if (!res.ok) throw new Error(data.error || "Friendship action failed");	
+					alert(`Success: ${message}`);
+					window.location.reload(); // refresh the whole page
+				}
+				
 				} catch (err) {
 				console.error("Friend action error:", err);
+				alert(err instanceof Error ? err.message : "Something went wrong");
+				}
+			});
+
+			removeBtn?.addEventListener("click", async (e) => {
+				const btn = e.currentTarget as HTMLButtonElement;
+				const friendshipId = btn.dataset.friendshipId;
+
+				try {
+				const res = await fetch(`${API_BASE_URL}/profile/friends/reject`, {
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ friendshipId }),
+				});
+
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || "Reject failed");
+
+				alert("Success: Request rejected.");
+				// optional: refresh profile/friends tab
+				window.location.reload(); // 👈 refresh the whole page
+
+				} catch (err) {
+				console.error("Reject error:", err);
 				alert(err instanceof Error ? err.message : "Something went wrong");
 				}
 			});
@@ -212,115 +257,6 @@ async function openUserProfile(username: string | number) {
     console.error("Profile modal friendship error:", error);
 		
 	}
-
-	 // Friend action
-
-	friendActionBtn?.addEventListener("click", async (e) => {
-		const btn = e.currentTarget as HTMLButtonElement;
-		const action = btn.dataset.action;
-		const userId = btn.dataset.userId;
-		const friendshipId = btn.dataset.friendshipId;
-
-		try {
-		let res;
-
-		switch (action) {
-			case "add":
-			res = await fetch(`${API_BASE_URL}/profile/friends/request`, {
-				method: "POST",
-				credentials: "include",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userId }),
-			});
-			break;
-
-			case "accept":
-			res = await fetch(`${API_BASE_URL}/profile/friends/accept`, {
-				method: "POST",
-				credentials: "include",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ friendshipId }),
-			});
-			break;
-
-			case "remove":
-			res = await fetch(`${API_BASE_URL}/profile/friends/remove`, {
-				method: "POST",
-				credentials: "include",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ friendshipId }),
-			});
-			break;
-
-			default:
-			console.warn("Unknown action:", action);
-			return;
-		}
-
-		const data = await res.json();
-		if (!res.ok) throw new Error(data.error || "Action failed");
-
-		alert(`Success: ${action}`);
-		// optional: refresh profile/friends tab
-		window.location.reload(); // 👈 refresh the whole page
-
-		} catch (err) {
-		console.error("Friend action error:", err);
-		alert(err instanceof Error ? err.message : "Something went wrong");
-		}
-	});
-
-  
-	rejectBtn?.addEventListener("click", async (e) => {
-		const btn = e.currentTarget as HTMLButtonElement;
-		const friendshipId = btn.dataset.friendshipId;
-
-		try {
-		const res = await fetch(`${API_BASE_URL}/profile/friends/reject`, {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ friendshipId }),
-		});
-
-		const data = await res.json();
-		if (!res.ok) throw new Error(data.error || "Reject failed");
-
-		alert("Request rejected");
-		// optional: refresh profile/friends tab
-		window.location.reload(); // 👈 refresh the whole page
-
-		} catch (err) {
-		console.error("Reject error:", err);
-		alert(err instanceof Error ? err.message : "Something went wrong");
-		}
-	});
-
-    // friendBtn.onclick = async () => {
-    //   try {
-    //     const action = data.isFriend ? "remove" : "add";
-    //     const res = await fetch(`${API_BASE_URL}/friends/${action}`, {
-    //       method: "POST",
-    //       credentials: "include",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //         "Authorization": `Bearer ${localStorage.getItem('token')}`
-    //       },
-    //       body: JSON.stringify({ username: username })
-    //     });
-
-    //     const result = await res.json();
-    //     if (!res.ok) throw new Error(result.error || "Failed to update friendship");
-
-    //     alert(result.message || `Friendship ${action}ed!`);
-    //     data.isFriend = !data.isFriend;
-    //     openUserProfile(username); // reload modal
-    //   } catch (err) {
-    //     console.error("Friendship error:", err);
-    //     alert("Could not update friendship. Please try again.");
-    //   }
-    // };
-
 
     // Show modal
     modal?.classList.remove("hidden");

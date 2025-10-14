@@ -86,7 +86,6 @@ export default async function (fastify, opts) {
 		});
 
 
-
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Only accepts file with name avatar_*
 		// Get avatar by filename - GET /api/profile/avatar/:filename
@@ -484,8 +483,7 @@ export default async function (fastify, opts) {
 			userMap[u.id] = u;
 		}
 
-		/** @type {import('../../../../shared/types/messages.js').FriendRequest[]} **/
-		const friendList = friends.map((f) => {
+		const friendList = friends.map(f => {
 			const friendId = f.player1_id === id ? f.player2_id : f.player1_id;
 			return {
 			id: f.id,
