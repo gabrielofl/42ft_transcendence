@@ -83,6 +83,10 @@ export interface UserData {
     updated_at: string;
 }
 
+/* export interface AllReadyMessage extends Message {
+    playerData: PlayerData[];
+} */
+
 export interface AddPlayerMessage extends Message {
     type: "AddPlayer";
     playerData: PlayerData;
@@ -96,7 +100,7 @@ export interface PlayerResult {
 }
 
 export interface PreMoveMessage extends Message {
-    id: string,
+    id: number,
     dir: number, // -1 Izquierda, 1 Derecha
 }
 
@@ -162,3 +166,58 @@ export interface FriendRequest {
 	friend: UserData;
 	isRequester: boolean;
 }
+
+// waiting-room.types.ts
+export type WaitMsgTypes =
+  | "RoomCreated"      // server → client (ack after host creates room)
+  | "RoomState"        // server → client (full snapshot)
+  | "AddPlayer"        // server → client (player joined)
+  | "RemovePlayer"     // server → client (player left)
+  | "PlayerReady"      // server → client (ready toggled true)
+  | "PlayerUnready"    // server → client (ready toggled false)
+  | "SetHost"          // server → client (host changed)
+  | "SetRoomCode"      // server → client (room code)
+  | "AllReady"         // server → client (transition to game)
+  | "Error"            // server → client (human-readable)
+  | "JoinRoom"         // client → server (join intent)
+  | "LeaveRoom"        // client → server
+  | "ToggleReady"      // client → server
+  | "SetMapConfig"     // client → server (selected map, powerups)
+  | "InviteAI";        // client → server (if you support bots)
+
+export type PlayerLite = {
+  userId: number;
+  username: string;
+  ready: boolean;
+  isHost?: boolean;
+};
+
+export type RoomStatePayload = {
+  roomCode: string;
+  players: PlayerLite[];
+  maxPlayers: number;
+  mapKey?: string;
+  powerUpAmount?: number;
+  enabledPowerUps?: string[];
+};
+
+export type WaitPayloads = {
+  RoomCreated: { roomCode: string; hostId: number };
+  RoomState: RoomStatePayload;
+  AddPlayer: PlayerLite;
+  RemovePlayer: { userId: number };
+  PlayerReady: { userId: number };
+  PlayerUnready: { userId: number };
+  SetHost: { userId: number };
+  SetRoomCode: { roomCode: string };
+  AllReady: { roomCode: string; players: PlayerLite[] };
+  Error: { code: string; message: string };
+
+  JoinRoom: { roomCode: string; userId: number; username: string };
+  LeaveRoom: { roomCode: string; userId: number };
+  ToggleReady: { roomCode: string; userId: number };
+  SetMapConfig: { roomCode: string; mapKey: string; powerUpAmount: number; enabledPowerUps: string[] };
+  InviteAI: { roomCode: string };
+};
+
+export type WaitMessage = { type: WaitMsgTypes } & (WaitPayloads[keyof WaitPayloads]);

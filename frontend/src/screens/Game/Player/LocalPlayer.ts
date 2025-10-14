@@ -7,9 +7,11 @@ export class LocalPlayer extends APlayer {
 	private leftKey: string;
 	private rightKey: string;
 	private inventoryKeys: [string, string, string] | undefined;
+	private id: number;
 
-	constructor(game: ClientGame, name: string, leftKey: string, rightKey: string, skills?: [string, string, string]) {
+	constructor(game: ClientGame, id: number, name: string, leftKey: string, rightKey: string, skills?: [string, string, string]) {
 		super(game, name);
+		this.id = id;
 		this.leftKey = leftKey;
 		this.rightKey = rightKey;
 		this.inventoryKeys = skills;
@@ -38,7 +40,7 @@ export class LocalPlayer extends APlayer {
 			this.game.MessageBroker.Publish("PlayerPreMove", {
 				type: "PlayerPreMove",
 				dir: -1,
-				id: this.name,
+				id: this.id,
 			});
 		}	
 		else if (inputMap[this.rightKey])
@@ -46,7 +48,7 @@ export class LocalPlayer extends APlayer {
 			this.game.MessageBroker.Publish("PlayerPreMove", {
 				type: "PlayerPreMove",
 				dir: 1,
-				id: this.name,
+				id: this.id,
 			});
 		}
 

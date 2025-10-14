@@ -1,11 +1,15 @@
 import * as BABYLON from "@babylonjs/core";
 import { MessageBroker } from "@shared/utils/MessageBroker";
-import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PreMoveMessage, ScoreMessage } from "@shared/types/messages";
+import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PreMoveMessage, RoomStatePayload, ScoreMessage } from "@shared/types/messages";
 import { IPowerUpBox } from "src/screens/Game/Interfaces/IPowerUpBox";
 import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
 import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
 import { APlayer } from "./Player/APlayer";
+import { SelectedMap } from "./map-selection";
+import { API_BASE_URL } from "../config";
+import { fetchJSON } from "../utils";
+import { Maps } from "./Maps";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -17,36 +21,6 @@ export class ClientGameSocket {
 	public static Canvas: HTMLCanvasElement;
 
 	private constructor() {
-		console.log("ClientGameSocket");
-		
-		//try { if (ClientGameSocket.socket && ClientGameSocket.socket.readyState <= 1) ClientGameSocket.socket.close(1000, 're-render'); } catch {}
-		//socket = new WebSocket(`${API_BASE_URL.replace('https', 'wss')}/game-ws`);
-		const connect = () => {
-			const roomCode = "ABC123";
-			const username = "Gabriel";
-
-			const ws = new WebSocket(`wss://localhost:443/gamews?room=${roomCode}&user=${username}`);
-			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
-			
-			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));
-			ws.addEventListener('error', (e) => console.log('[ws] error', e));
-			ws.addEventListener('close', (e) => {
-				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
-				// Intenta reconectar después de un breve retraso para no sobrecargar el servidor.
-				setTimeout(connect, 1000);
-			});
-			ClientGameSocket.socket = ws;
-		};
-
-		connect();
-
-		// this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.connection.send(msg));
-		// socket.msgs.Subscribe("BallMove", (msg) => this.RecieveSocketMessage(msg));
-		// socket.msgs.Subscribe("BallRemove", (msg) => this.RecieveSocketMessage(msg));
-		// socket.msgs.Subscribe("PaddlePosition", (msg) => this.RecieveSocketMessage(msg));
-		// socket.msgs.Subscribe("CreatePowerUp", (msg) => this.RecieveSocketMessage(msg));
-		// socket.msgs.Subscribe("InventoryChanged", (msg) => this.RecieveSocketMessage(msg));
-
 		this.handlers = {
 			"AddPlayer": (m: MessagePayloads["AddPlayer"]) => this.HandleAddPlayer(m),
 			"CreatePowerUp": (m: MessagePayloads["CreatePowerUp"]) => this.HandleCreatePowerUp(m),
@@ -76,15 +50,56 @@ export class ClientGameSocket {
 		return ClientGameSocket.Instance;
 	}
 
+	private Connect(code: string) {
+		console.log(`Connecting to: ${code}`);
+		const connect = () => {
+			const userID = 42;
+
+			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
+			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
+			
+			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));
+			ws.addEventListener('error', (e) => console.log('[ws] error', e));
+			ws.addEventListener('close', (e) => {
+				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
+				// Intenta reconectar después de un breve retraso para no sobrecargar el servidor.
+				setTimeout(connect, 1000);
+			});
+			ClientGameSocket.socket = ws;
+		};
+
+		connect();
+	}
+
 	/**
 	 * Crea una nueva instancia del juego en el cliente, se suscribe a los eventos
 	 * necesarios y notifica al servidor que el juego ha comenzado.
 	 */
-	public CreateGame(): void {
+	public async StartGame(): Promise<ClientGame> {
 		console.log("CreateGame");
-		this.game = new ClientGame(ClientGameSocket.Canvas);
-		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg) );
-		this.Send({ type: "GameStart" });
+		if (this.game)
+			this.game.Dispose();
+
+		/** Petición a back para obtener la información del juego **/
+		// const roomState: RoomStatePayload | null = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
+		const roomState: RoomStatePayload | null = await fetchJSON(`https://localhost:443/rooms/mine`, { credentials: "include" });
+		if (!roomState) {
+			throw new Error(`Failed to fetch room data or room is not available.`);
+		}
+
+		ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
+		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.config.mapKey]);
+		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
+		
+		console.log('roomState', roomState.config.mapKey);
+		this.Connect(roomState.roomCode);
+		// El backend en `waitroom-websocket.js` devuelve un `nArray` en el evento `AllReady`.
+		// Aquí lo simulamos a partir de la lista de jugadores del estado de la sala.
+		const nArray: [number, string][] = roomState.players.map((p: any) => [p.userId, p.username]);
+		await this.game.AddPlayers({ type: 'AllReady', nArray });
+
+		// this.Send({ type: "GameStart" });
+		return this.game;
 	}
 
 	public GetGame(): ClientGame {

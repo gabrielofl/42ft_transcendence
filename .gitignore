@@ -10,3 +10,4 @@ backend/uploads/avatars
 /.vscode
 client_secret_*.json
 CLAUDE.md
+backend/db/pong.db
