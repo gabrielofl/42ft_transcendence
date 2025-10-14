@@ -1,51 +1,13 @@
 import { navigateTo } from "../navigation.js";
+import homeTemplate from "./home.html?raw";
 
 export function renderHome(): void {
 	const main = document.getElementById('main');
 	if (!main) return;
 
-	main.innerHTML = `
-	<section class="text-center text-[--secondary-color] font-press px-6  pt-8 py-2 space-y-2">
-		<h1 class="text-5xl font-bold text-white">Pong Game</h1>
-		<h2 class="text-lg text-yellow-500 pb-4">THE LEGEND RETURNS</h2>
-		<p class="text-sm text-[--secondary-color] mx-auto leading-relaxed">
-			SMASH BALLS. BEAT FRIENDS. RULE THE RETRO COURT.<br>
-			Jump into the arcade classic that started it all. Simple, fast, and endlessly fun!
-		</p>
-
-			<h3 class="mt-6 text-[--secondary-color] pt-6">Choose your match:</h3>
-		
-
-			<div class="flex flex-col py-4 items-center gap-4">
-				<hr class="lg:w-2/5 w-2/3 h-px  bg-secondary border-0">
-				<button id="local-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS 2P Local</button>
-				<button id="local-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS 2P Remote</button>
-				<button id="ai-btn" class="btn-primary lg:w-1/4 w-2/4 ">1P VS AI</button>
-				<button id="tournament-btn" class="btn-primary lg:w-1/4 w-2/4 ">TOURNAMENT MODE</button>
-				<button id="multiplayer-btn" class="btn-primary lg:w-1/4 w-2/4 ">MULTIPLAYER MODE</button>
-				<hr class="lg:w-2/5 w-2/3 h-px  bg-secondary border-0">
-			</div>
-			
-			
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left text-xs sm:text-sm text-white mt-6 px-6 pt-8  mx-auto ">
-				<div>
-					<h4 class="text-[--secondary-color] text-xs text-center font-bold mb-2">THE OG PONG VIBES</h4>
-					<p class="text-xs">
-						A faithful tribute to the first-ever video game sensation, now with a twist. Challenge friends online, face off against a smart AI, customize your map, and unleash wild power-ups. It's classic Pong… leveled up.
-					</p>
-				</div>
-				<div>
-					<h4 class="text-[--secondary-color] text-xs text-center font-bold mb-2">PONG: WHERE IT ALL BEGAN</h4>
-					<p class="text-xs">
-						Born in 1972, Pong sparked the arcade revolution. We're bringing that pixel-perfect feeling back—with style.
-					</p>
-				</div>
-			</div>
-		</section>
-	`;
+	main.innerHTML = homeTemplate;
 	setupHome();
 }
-
 
 		// <!-- Avalanche Button -->
 		// 	<button id="open-avalanche-dock"
@@ -90,30 +52,23 @@ export function renderHome(): void {
 
 export function setupHome() {
 	// const modeBtn = document.getElementById('mode-btn')!;
-	const localBtn = document.getElementById('local-btn')!;
+	const createBtn = document.getElementById('create-btn')!;
+	const joinBtn = document.getElementById('join-btn')!;
 	const tournamentBtn = document.getElementById('tournament-btn')!;
-	const aiBtn = document.getElementById('ai-btn')!;
-	const multiplayerBtn = document.getElementById('multiplayer-btn')!;
 
+	createBtn?.addEventListener('click', async () => {
+		// Selección de mapa y configuración.
+		navigateTo('create');
+	});
 
-	localBtn?.addEventListener('click', async () => {
-		// navigateTo('game', type, players);
-		navigateTo('game');
+	joinBtn?.addEventListener('click', async () => {
+		// Lógica para juego remoto
+		navigateTo('join');
 	});
 
 	tournamentBtn?.addEventListener('click', async () => {
 		navigateTo('tournament');
 		// navigateTo('game', type, players);
-	});
-
-	aiBtn?.addEventListener('click', async () => {
-		// navigateTo('game', type, players);
-		navigateTo('game');
-	});
-
-	multiplayerBtn?.addEventListener('click', async () => {
-		// navigateTo('game', type, players);
-		navigateTo('game');
 	});
 
 	// const panels = ['modes-panel'];

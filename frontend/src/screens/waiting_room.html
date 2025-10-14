@@ -1,0 +1,30 @@
+<section class="text-center text-[--secondary-color] font-press px-6 pt-10 space-y-6">
+  <h1 class="text-3xl text-[--primary-color] font-bold">Waiting room</h1>
+  <p class="text-[--secondary-color] font-semibold text-base">Starting match, please wait</p>
+  <p id="ready-counter" class="text-xs text-[--secondary-color]">—</p>
+
+  <div class="flex justify-center gap-4 pt-4">
+    <button class="btn-primary bg-[--secondary-color] text-black hover:bg-black shadow-md px-6 py-2 rounded-md">
+      READY
+    </button>
+
+    <button class="btn-primary bg-[--primary-color] hover:bg-[--primary-color] px-6 py-2 rounded-md">
+      EDIT SETTINGS
+    </button>
+    
+    <div class="bg-black/40 border border-[--primary-color] text-[--primary-color] px-4 py-2 rounded-md">
+  <span class="text-xs">ROOM ID</span>
+  <span id="room-code" class="block text-[--secondary-color] font-bold tracking-widest">—</span>
+</div>
+    
+    <button class="btn-primary bg-[--primary-color] hover:bg-[--primary-color] px-6 py-2 rounded-md">
+      SHARE
+    </button>
+  </div>
+
+  <div class="border border-[--primary-color] mx-auto w-11/12 lg:w-2/3 mt-10 p-6 rounded-md min-h-[150px]">
+    <div id="player-cards-container" class="flex flex-col sm:flex-row justify-center items-center gap-8">
+      <!-- Player cards will be inserted here dynamically -->
+    </div>
+  </div>
+</section>

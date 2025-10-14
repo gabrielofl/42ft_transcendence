@@ -1,0 +1,15 @@
+<div id="card" class="relative player-card-add flex items-center justify-center w-64 h-24 border-2 border-dashed border-gray-500 rounded-md cursor-pointer hover:border-yellow-400 hover:text-yellow-400 transition-colors group">
+    <div id="add-player-btn" class="text-5xl font-thin text-gray-500 group-hover:text-yellow-400">+</div>
+
+    <!-- Context Menu (hidden by default) -->
+    <div id="add-player-menu" class="absolute top-full mt-2 w-48 bg-[#1a1d26] border border-[--primary-color] rounded-md shadow-lg z-10 hidden">
+        <ul class="py-1 text-white">
+            <li>
+                <a href="#" id="add-ai-player" class="block px-4 py-2 text-sm hover:bg-gray-700">Add AI Player</a>
+            </li>
+            <li>
+                <a href="#" id="add-local-player" class="block px-4 py-2 text-sm hover:bg-gray-700">Add Local Player</a>
+            </li>
+        </ul>
+    </div>
+</div>
