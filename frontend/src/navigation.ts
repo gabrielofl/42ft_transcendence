@@ -12,6 +12,10 @@ import { ClientGameSocket } from "./screens/Game/ClientGameSocket.js";
 import { renderMapSelection } from "./screens/Game/map-selection.js";
 import { renderWaitingRoom } from "./screens/waiting_room.js";
 import { renderJoinGame } from "./screens/join-game.js";
+import { renderTournamentSelection } from "./screens/Game/tournament-selection.js";
+import { renderTournamentLobby } from "./screens/tournament-lobby.js";
+import { renderWaitingRoom as renderTournamentWaitingRoom } from "./screens/tournament_waiting_room.js";
+import { ClientTournamentSocket } from "./services/tournament-socket.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -25,6 +29,7 @@ export function initNavigation() {
   // Renderizar en base al estado del store
   AppStore.NavigoStore.Subscribe(() => {
     const screen = AppStore.NavigoStore.GetState();
+    const previousScreen = (window as any).__previousScreen;
 
     let socket: ClientGameSocket = ClientGameSocket.GetInstance();
   
@@ -36,6 +41,13 @@ export function initNavigation() {
         }
     }
 
+    // Cleanup tournament socket cuando sales de tournament-waiting
+    if (previousScreen === "tournament-waiting" && screen !== "tournament-waiting") {
+      const tournamentSocket = ClientTournamentSocket.GetInstance();
+      tournamentSocket.Disconnect();
+    }
+
+    (window as any).__previousScreen = screen;
     console.log(`Navegando a ${screen}`);
     renderScreen(screen);
   });
@@ -101,8 +113,14 @@ function renderScreen(screen: Screen) {
 	case "join":
       renderJoinGame();
       break;
-    case "tournament":
-      // renderTournament();
+    case "tournament-selection":
+      renderTournamentSelection();
+      break;
+    case "tournament-lobby":
+      renderTournamentLobby();
+      break;
+    case "tournament-waiting":
+      renderTournamentWaitingRoom();
       break;
     case "profile":
       renderProfile();

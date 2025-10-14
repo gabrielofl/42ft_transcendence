@@ -19,6 +19,7 @@ import { resetGame, movePlayer, gameTick, getState } from './game.js';
 import registerWebsocket from './websocket/index.js';
 import onlineWebsocket from './websocket/online-websocket.js';
 import waitroomWebsocket from './websocket/waitroom-websocket.js';
+import tournamentWebsocket from './websocket/tournament-websocket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -90,6 +91,7 @@ await app.register(fastifyCors, app.config.cors);
 	await registerWebsocket(app);
 	await app.register(onlineWebsocket);
 	await app.register(waitroomWebsocket);
+	await app.register(tournamentWebsocket);
 
 	
 	// File upload support
