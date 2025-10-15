@@ -30,12 +30,15 @@ export async function setupPerformanceTab() {
 		}
 	    const data = await res.json();
 
-		loadUserStats(data.username);
+		loadUserStats(data.username, data.id);
 		loadUserGameStats(data.id);
 		const scoreTitle = document.getElementById('score-ranking-title')!;
 		if (scoreTitle) {
-			let rankingPos = data.ranking | 0;
-			scoreTitle.textContent = `${data.score} Pts | Top ranking #${rankingPos}`;
+			if (data.ranking !== null) {
+				scoreTitle.textContent = `${data.score} Pts | Top ranking #${data.ranking} 🏆`;
+			} else {
+				scoreTitle.textContent = `${data.score} Pts | 🔒 Ranking Private`;
+			}
 		}
 		
 	} catch (err) {
@@ -44,7 +47,7 @@ export async function setupPerformanceTab() {
 }
 
 
-export async function loadUserStats(username: string | number) {
+export async function loadUserStats(username: string | number, currentUserId?: number) {
   try {
     const res = await fetch(`${API_BASE_URL}/users/username?username=${encodeURIComponent(username)}`, {
       credentials: "include",
@@ -61,17 +64,34 @@ if (!res.ok) throw new Error(`Failed to fetch profile for ${username}`);
 	const statWinRate = document.getElementById("stat-winrate");
 	const statMaxScore = document.getElementById("stat-maxscore");
 
-    if (profileScore)
-		profileScore.textContent = data.score ? `${data.score} pts` : `0 pts`;
+	const isOwnProfile = currentUserId && data.id === currentUserId;
+	const shouldShowScores = isOwnProfile || data.show_scores_publicly === 1;
+
+    if (profileScore) {
+		if (shouldShowScores) {
+			profileScore.textContent = data.score ? `${data.score} pts` : `0 pts`;
+		} else {
+			profileScore.textContent = '🔒 Private';
+		}
+	}
+	
 	if (statMatches && statWins && statLosses && statMaxScore && statWinRate)
 	{
-		statMatches.textContent = data.matches ?? 0;
-		statWins.textContent = data.wins ?? 0;
-		statLosses.textContent = data.losses ?? 0;
-		statMaxScore.textContent = data.max_score ?? 0;
-		const totalGames = data.wins + data.losses;
-		const winRate = totalGames > 0 ? (data.wins / totalGames) * 100 : 0;
-		statWinRate.textContent = `${winRate.toFixed(2)}%`;
+		if (shouldShowScores) {
+			statMatches.textContent = data.matches ?? 0;
+			statWins.textContent = data.wins ?? 0;
+			statLosses.textContent = data.losses ?? 0;
+			statMaxScore.textContent = data.max_score ?? 0;
+			const totalGames = data.wins + data.losses;
+			const winRate = totalGames > 0 ? (data.wins / totalGames) * 100 : 0;
+			statWinRate.textContent = `${winRate.toFixed(2)}%`;
+		} else {
+			statMatches.textContent = '-';
+			statWins.textContent = '-';
+			statLosses.textContent = '-';
+			statMaxScore.textContent = '-';
+			statWinRate.textContent = '-';
+		}
 	}
   } catch (err) {
     console.error("Error loading game stats:", err);
