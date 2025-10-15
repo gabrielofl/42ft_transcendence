@@ -262,9 +262,18 @@ export class ApiService {
   }
 
   // Leaderboard methods
-  async getLeaderboard(limit?: number): Promise<any[]> {
+  async getLeaderboard(limit?: number, offset?: number): Promise<{ users: any[], total: number, page: number, totalPages: number, perPage: number }> {
     try {
-      const url = limit ? `/users/leaderboard?limit=${limit}` : '/users/leaderboard';
+      let url = '/users/leaderboard';
+      const params = new URLSearchParams();
+      
+      if (limit !== undefined) params.append('limit', limit.toString());
+      if (offset !== undefined) params.append('offset', offset.toString());
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
       const response = await this.makeRequest(url);
       return await response.json();
     } catch (error) {

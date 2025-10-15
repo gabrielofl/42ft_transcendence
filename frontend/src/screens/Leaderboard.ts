@@ -1,27 +1,32 @@
 import { apiService } from "../services/api.js";
 import { initProfileModal, setupProfileLinks } from "./ProfileModal.js";
+import { setupPagination } from "./ProfileFriends";
+import { UserData } from "@shared/types/messages";
 
-interface Player {
-	id: number;
-	username: string;
-	score: number;
-	max_score: number;
-	wins: number;
-	losses: number;
-	matches: number;
-	status: number; // 0 = offline, 1 = online
-	avatar?: string;
-}
+let playersPerPage = 10;
+let currentPage = 1;
 
 function formatScore(score: number): string {
 	return score.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-export function renderPlayersPanel(players: Player[], currentUserId?: number): string {
+export function renderPlayersPanel(players: UserData[], currentUserId?: number, page: number = 1, totalPages: number = 1, total: number = 0): string {
 	// Players already sorted by score from backend
 	return `
 		<div class="grid gap-2 box-border px-4 pb-[200px]">
 			<h2 class="block txt-subtitle text-center color-primary p-4">Leaderboard</h2>
+			
+			<!-- Pagination controls -->
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4">
+				<button id="prev-btn" class="col-start-1 md:col-start-2 btn-disabled w-full">Prev Page</button>
+				<button id="next-btn" class="col-start-2 md:col-start-3 btn-primary w-full">Next Page</button>
+			</div>
+			
+			<!-- Page info -->
+			<p id="page-info" class="block txt-subheading text-center pb-4">
+				Page: ${page} / ${totalPages} | Total Players: ${total}
+			</p>
+			
 			${players.length === 0 ? `
 				<div class="text-center text-gray-400 py-4">
 					No players yet
@@ -38,22 +43,24 @@ export function renderPlayersPanel(players: Player[], currentUserId?: number): s
 					<div class="th">Win Rate</div>
 					
 					${players.map((player, index) => {
-						// Calculate win rate
 						const winRate = player.matches > 0 ? ((player.wins / player.matches) * 100).toFixed(2) : '0.0';
 						const isCurrentUser = currentUserId && player.id === currentUserId;
 						
+						const globalRank = (page - 1) * playersPerPage + index + 1;
+						
 						const highlightStyle = isCurrentUser ? 'style="background-color: rgba(255, 255, 150, 0.25);"' : '';
-						const boldClass = (index === 0 || isCurrentUser) ? 'font-bold' : '';
+						const boldClass = (globalRank === 1 || isCurrentUser) ? 'font-bold' : '';
+						
+						const statusIndicator = player.status === 1 ? '🟢 ' : '⚫ ';
+						const crownIndicator = globalRank === 1 ? '⭐ ' : '';
 						
 						return `
 						<!-- Row ${index + 1} -->
-						<div class="td ${boldClass}" ${highlightStyle}>#${index + 1}</div>
+						<div class="td ${boldClass}" ${highlightStyle}>#${globalRank}</div>
 						<div class="td ${boldClass}" ${highlightStyle} style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
-							${index === 0 ? '⭐ ' : ''}
-							<a href="#" class="open-profile" data-user="${player.username}">
+							${statusIndicator}${crownIndicator}<a href="#" class="open-profile" data-user="${player.username}">
 								<span class="font-bold text-white hover:text-yellow-400 transition-colors">${player.username}</span>
 							</a>
-							${player.status === 1 ? ' 🟢' : ''}
 						</div>
 						<div class="td ${boldClass}" ${highlightStyle}>${formatScore(player.score)}</div>
 						<div class="td ${boldClass}" ${highlightStyle}>${player.matches || 0}</div>
@@ -72,12 +79,17 @@ export async function renderLeaderboard(): Promise<void> {
 	const main = document.getElementById('main');
 	if (!main) return;
 
+	await loadLeaderboard(1);
+}
+
+async function loadLeaderboard(page: number): Promise<void> {
+	const main = document.getElementById('main');
+	if (!main) return;
+
 	try {
-		// Fetch leaderboard data from API
-		// const players = await apiService.getLeaderboard(10); // Get top 10 players
-		const players = await apiService.getLeaderboard(); // Get all users (no limit parameter)
+		const offset = (page - 1) * playersPerPage;
+		const data = await apiService.getLeaderboard(playersPerPage, offset);
 		
-		// Get current user ID
 		let currentUserId: number | undefined;
 		try {
 			const currentUser = await apiService.getProfile();
@@ -86,15 +98,22 @@ export async function renderLeaderboard(): Promise<void> {
 			console.log('Could not fetch current user, continuing without highlighting');
 		}
 		
-		main.innerHTML += `
-			${renderPlayersPanel(players, currentUserId)}
-		`;
-		setupLeaderboard();
+		currentPage = data.page;
+		
+		main.innerHTML = renderPlayersPanel(
+			data.users, 
+			currentUserId, 
+			data.page, 
+			data.totalPages, 
+			data.total
+		);
+		
+		setupLeaderboardPagination(data.page, data.totalPages);
 		initProfileModal();
 		setupProfileLinks();
 	} catch (error) {
 		console.error('Error loading leaderboard:', error);
-		main.innerHTML += `
+		main.innerHTML = `
 			<div class="grid gap-2 box-border px-4">
 				<h2 class="block txt-subtitle text-center color-primary p-4">Leaderboard</h2>
 				<div class="text-center text-red-400 py-4">
@@ -105,6 +124,14 @@ export async function renderLeaderboard(): Promise<void> {
 	}
 }
 
-export function setupLeaderboard() {
+function setupLeaderboardPagination(page: number, totalPages: number): void {
+	const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement | null;
+	const nextBtn = document.getElementById('next-btn') as HTMLButtonElement | null;
 
+	setupPagination(prevBtn, nextBtn, page, totalPages, (newPage) => {
+		loadLeaderboard(newPage);
+	});
+}
+
+export function setupLeaderboard() {
 }

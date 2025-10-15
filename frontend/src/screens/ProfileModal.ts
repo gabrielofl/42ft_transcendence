@@ -59,31 +59,33 @@ async function openUserProfile(username: string | number) {
 	if (profileUsername)
 		profileUsername.textContent = data.username.toUpperCase();
 	
-	// Status logic
 	if (status && statusTooltip) {
 		let statusColor = "bg-gray-400";
 		let statusText = "Offline";
 
-		switch (data.status) {
-			case 1:
+		if (data.status === 1) {
 			statusColor = "bg-[--success-color]";
 			statusText = "Online";
-			break;
-			case 2:
-			statusColor = "bg-[--warning-color]";
-			statusText = "Inactive";
-			break;
 		}
+		
 		statusTooltip.textContent = statusText;
-		// Reset + apply new color
-		status.classList.remove("bg-gray-400", "bg-[--success-color]", "bg-[--success-warning]");
+		status.classList.remove("bg-gray-400", "bg-[--success-color]", "bg-[--warning-color]");
 		status.classList.add(statusColor);
 	}
 
 	//Score
 	if (profileScore &&statMatches && statWins && statLosses && statMaxScore && statWinRate)
 	{
-		loadUserStats(data.username);
+		let currentUserId: number | undefined;
+		try {
+			const meRes = await fetch(`${API_BASE_URL}/users/session`, { credentials: 'include' });
+			const meData = await meRes.json();
+			currentUserId = meData?.userId;
+		} catch {
+			currentUserId = undefined;
+		}
+		
+		loadUserStats(data.username, currentUserId);
 	}
 	if (topVictim && winsVictim && strongestOpp && lossesOpp)
 	{

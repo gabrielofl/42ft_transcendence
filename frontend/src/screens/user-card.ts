@@ -9,23 +9,22 @@ export function createUserCard(userData: UserData): string {
 		: 'default.jpg';
 
 	const statusInfo = getStatusInfo(userData.status);
+	
+	const scoreDisplay = userData.show_scores_publicly === 1 
+		? `${userData.score ?? 0} pts` : '🔒 Private';
 
 	return replaceTemplatePlaceholders(userCardTemplate, {
 		borderColor: '[--primary-color]',
 		username: userData.username,
 		avatarUrl,
 		...statusInfo,
-		score: userData.score ?? 0,
+		score: scoreDisplay,
 	});
 }
 
 function getStatusInfo(status: number): { statusColor: string, statusText: string } {
-	switch (status) {
-		case 1:
-			return { statusColor: "bg-[--success-color]", statusText: "Online" };
-		case 2:
-			return { statusColor: "bg-[--warning-color]", statusText: "Inactive" };
-		default:
-			return { statusColor: "bg-gray-400", statusText: "Offline" };
+	if (status === 1) {
+		return { statusColor: "bg-[--success-color]", statusText: "Online" };
 	}
+	return { statusColor: "bg-gray-400", statusText: "Offline" };
 }

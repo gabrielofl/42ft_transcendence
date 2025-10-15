@@ -18,9 +18,20 @@ export default async function (fastify, opts) {
 				return reply.code(404).send({ error: 'User not found' });
 			}
 			
+			let ranking = null;
+			if (user.show_scores_publicly === 1) {
+				const rankResult = await fastify.db.get(
+					`SELECT COUNT(*) + 1 as ranking FROM users 
+					WHERE score > ? AND show_scores_publicly = 1`,
+					[user.score]
+				);
+				ranking = rankResult?.ranking || 1;
+			}
+			
 			return {
 				...user,
-				twoFactorEnabled: !!user.two_factor_enabled
+				twoFactorEnabled: !!user.two_factor_enabled,
+				ranking: ranking
 			};
 		});
 		
@@ -352,32 +363,48 @@ export default async function (fastify, opts) {
 				querystring: {
 					type: 'object',
 					properties: {
-						limit: { type: 'integer', minimum: 1 }
+						limit: { type: 'integer', minimum: 1 },
+						offset: { type: 'integer', minimum: 0 }
 					}
 				}
 			}
 		}, async (request, reply) => {
-			const { limit } = request.query;
+			const { limit, offset } = request.query;
 			
 			try {
-				// Get top users sorted by score (descending)
-				// Only include users who want to show their scores publicly
-				// If limit is not provided, return all users
+				const countResult = await fastify.db.get(
+					`SELECT COUNT(*) as total FROM users WHERE show_scores_publicly = 1`
+				);
+				const total = countResult?.total || 0;
+				
 				let query = `SELECT id, username, avatar, score, max_score, wins, losses, matches, status 
-					FROM users 
-					WHERE show_scores_publicly = 1
-					ORDER BY score DESC`;
+					FROM users WHERE show_scores_publicly = 1 ORDER BY score DESC`;
 				
 				let params = [];
 				
 				if (limit && limit > 0) {
 					query += ` LIMIT ?`;
 					params.push(limit);
+					
+					if (offset && offset >= 0) {
+						query += ` OFFSET ?`;
+						params.push(offset);
+					}
 				}
 				
 				const users = await fastify.db.all(query, params);
 				
-				return users;
+				const perPage = limit || total;
+				const currentPage = perPage > 0 ? Math.floor((offset || 0) / perPage) + 1 : 1;
+				const totalPages = perPage > 0 ? Math.ceil(total / perPage) : 1;
+				
+				return {
+					users,
+					total,
+					page: currentPage,
+					totalPages,
+					perPage
+				};
 				
 			} catch (error) {
 				console.error('Leaderboard fetch error:', error);
