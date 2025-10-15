@@ -137,8 +137,6 @@ async function databasePlugin(fastify, opts) {
 			map_key          TEXT NOT NULL,
 			powerup_amount   INTEGER NOT NULL,
 			enabled_powerups TEXT NOT NULL,         -- JSON string (array)
-			wind_amount      INTEGER DEFAULT 50,
-			point_to_win_amount INTEGER DEFAULT 7,
 			max_players      INTEGER,
 			status           TEXT DEFAULT 'waiting',-- waiting | active | closed
 			created_at       DATETIME DEFAULT CURRENT_TIMESTAMP

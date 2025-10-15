@@ -1,4 +1,5 @@
 import { ServerPaddle } from "../Collidable/ServerPaddle.js";
+import { APlayer } from "./APlayer.js";
 
 export class ServerSocketPlayer extends APlayer {
     game;

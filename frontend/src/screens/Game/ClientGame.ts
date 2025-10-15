@@ -11,12 +11,16 @@ import { PowerUpShield } from "./PowerUps/PowerUpShield";
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { ObservableList } from "@shared/utils/ObservableList";
 import { Event } from "@shared/utils/Event";
-import { MessagePayloads } from "@shared/types/messages";
 import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
 import { ClientBall } from "../Collidable/ClientBall";
 import { APlayer } from "./Player/APlayer";
 import { IDisposable } from "./Interfaces/IDisposable";
 import { APongTable } from "./Abstract/APongTable";
+import { AllReadyMessage } from "../waiting_room"
+import { LocalPlayer } from "./Player/LocalPlayer";
+import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
+import { API_BASE_URL } from "../config";
+import { MessagePayloads } from "@shared/types/messages";
 
 export class ClientGame implements IDisposable {
 protected readonly WIN_POINTS = 50;
@@ -122,15 +126,87 @@ protected readonly WIN_POINTS = 50;
 		return this.materialFact.GetMaterial(name);
 	}
 
+
+    /* function addPlayer(msg: AddPlayerMessage): void {
+        const container = document.getElementById("player-cards-client");
+        if (!container)
+            return;
+    
+        let clientgame: ClientGame | undefined= ClientGameSocket.GetInstance().GetGame();
+        if (!clientgame)
+            return;
+        
+        const isLocal = msg.playerData.name === "Gabriel"; // Asumiendo que "Gabriel" es el jugador local
+        let player: APlayer;
+        if (isLocal) {
+            player = new LocalPlayer(clientgame, msg.playerData.name, "d", "a");
+        } else {
+            player = new ClientSocketPlayer(clientgame, msg.playerData.name);
+        }
+        // clientgame.AddPlayer(player);
+    
+        // Asignar color desde el mensaje del backend
+        player.Color = BABYLON.Color3.FromHexString(msg.playerData.color);
+        // Configurar la pala del jugador con la posición y rotación del backend
+        player.ConfigurePaddleBehavior(
+            { 
+                position: new BABYLON.Vector3(msg.position.x, msg.position.y, msg.position.z),
+                lookAt: new BABYLON.Vector3(msg.lookAt.x, msg.lookAt.y, msg.lookAt.z)
+            });
+    
+        // Añadir la tarjeta del jugador a la UI
+        container.insertAdjacentHTML("beforeend", createPlayerCard(msg));
+    } */
+
+    
+    private async GetMe(): Promise<any> {
+        const res = await fetch(`${API_BASE_URL}/users/me`, {
+            credentials: 'include',
+            headers: {
+                
+            }
+        });
+
+        if (!res.ok) {
+            const text = res.text();
+            throw new Error(`Backend error: ${text}`);
+        }
+        return res.json();
+    }    
+
     /**
      * @param players 
      */
-    public CreateGame(players: APlayer[]): void {
+    public async AddPlayers(msg: AllReadyMessage): Promise<void> {
+        console.log("AddPlayers");
+        console.log(msg);
+        this.players = [];
+
+        if (!msg.nArray)
+            throw new Error('Invalid AllReadyMessage received');
+
+        const me = (await this.GetMe()).username;
+
+        console.log(me);
+
+        msg.nArray.forEach(d => {
+            let player: APlayer;
+            const isLocal = d[1] === me;
+            if (isLocal) {
+                console.log("LocalPlayer", d);
+                player = new LocalPlayer(this, d[0], d[1], "d", "a");
+            } else {
+                console.log("ClientSocketPlayer");
+                player = new ClientSocketPlayer(this, d[1]);
+            }
+
+            this.players.push(player);
+        });
+
         // TABLE
         const inputMap: Record<string, boolean> = {};
-        this.players = players;
 
-        players.forEach((p, idx) =>{
+        this.players.forEach((p, idx) =>{
             p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0)});
         });
 
@@ -180,9 +256,9 @@ protected readonly WIN_POINTS = 50;
 		return [...this.players];
 	}
 
-    public AddPlayer(player: APlayer) {
+/*     public AddPlayer(player: APlayer) {
         this.players.push(player);
-    }
+    } */
 
     /**
      * Obtain the scene and save a reference to the owner.

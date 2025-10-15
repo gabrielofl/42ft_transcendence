@@ -19,6 +19,7 @@ export interface LoginResponse {
   success: boolean;
   requires2FA?: boolean;
   error?: string;
+  status?: number;
   user?: {
     id: number;
     username: string;
@@ -26,6 +27,7 @@ export interface LoginResponse {
     avatar?: string;
     wins: number;
     losses: number;
+	google_id: string;
     twoFactorEnabled: boolean;
   };
 }
@@ -130,11 +132,13 @@ export class ApiService {
     try {
       const response = await this.makeRequest('/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ credential })
+        body: JSON.stringify({ credential})
       });
 
       const result = await response.json();
-      
+    // ✅ Attach HTTP status so caller can decide what to do
+      result.status = response.status;
+
       return result;
     } catch (error) {
       console.error('Google login error:', error);
@@ -174,6 +178,7 @@ export class ApiService {
     try {
       const response = await this.makeRequest('/auth/2fa/verify', {
         method: 'POST',
+		credentials: 'include',
         body: JSON.stringify(data)
       });
 

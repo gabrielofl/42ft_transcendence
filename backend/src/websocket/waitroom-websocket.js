@@ -10,6 +10,7 @@ import {
   countVirtuals,
   sortCombinedPlayers,
 } from './virtual-players.js';
+import { startGame } from './game-manager.js'
 
 async function waitroomWebsocket(fastify) {
   const roomSockets = new Map(); // roomCode -> Set<{ userId, socket }>
@@ -150,6 +151,7 @@ async function waitroomWebsocket(fastify) {
       await fastify.db.run(`UPDATE rooms SET status = 'active' WHERE id = ?`, [room.id]);
       const nArray = playersToNArrayFromCombined(combined);
       broadcast(code, { type: 'AllReady', players: combined, nArray });
+      await startGame(code, combined);
       return { room, players: combined };
     }
     return null;
@@ -256,6 +258,7 @@ async function waitroomWebsocket(fastify) {
         LIMIT 1`,
       [userId]
     );
+    console.log('getUsersCurrentRoom', row);
     return row || null;
   }
 

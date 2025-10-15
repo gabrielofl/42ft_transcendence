@@ -12,15 +12,27 @@ interface Window {
 window.handleCredentialResponse = async (response: any) => {
 	try {
 		// console.log('Google credential received:', response);
-		
+		if (!response.credential)
+			return;
 		const result = await apiService.googleLogin(response.credential);
 		
-		if (result.success) {
-			console.log('Google login successful:', result.user);
-			navigateTo('home');
-		} else {
-			alert(result.error || 'Google authentication failed');
+	// ✅ Detect 2FA requirement
+		if (result.status === 202 && result.requires2FA) {
+		console.log('2FA required for user:', result.user?.username);
+		show2FA(false);
+		return;
 		}
+
+		// ✅ Normal login success
+		if (result.success) {
+		console.log('Google login successful:', result.user);
+		navigateTo('home');
+		return;
+		}
+
+		// ✅ Any other error
+		alert(result.error || 'Google authentication failed');
+			alert(result.error || 'Google authentication failed');
 	} catch (error) {
 		console.error('Google authentication error:', error);
 		alert('Google authentication failed. Please try again.');
@@ -28,7 +40,6 @@ window.handleCredentialResponse = async (response: any) => {
 };
 
 let isLogin = true;
-let loginCredentials: { username: string; password: string } | null = null;
 
 export function renderAuthContainer(): void {
 const main = document.getElementById('main');
@@ -453,8 +464,6 @@ if (googleLoginBtn) {
 			
 			if (response.success) {
 				if (response.requires2FA) {
-					// Store credentials for 2FA login
-					loginCredentials = { username: email, password: password };
 					show2FA(false); // Show 2FA for login (no QR code needed)
 				} else {
 					navigateTo('home'); // Direct login if no 2FA
@@ -467,37 +476,7 @@ if (googleLoginBtn) {
 			alert('Something went wrong. Try again.');
 		}
 	});
-// 		loginBtn.addEventListener('click', async () => {
-// 			const username = (document.getElementById('email') as HTMLInputElement)?.value;
-// 			const password = (document.getElementById('password') as HTMLInputElement)?.value;
-// 			const loginResult = document.getElementById('login-result');
-			
-// 			try {
-// 				const response = await fetch(`https://localhost:443/api/auth/login`, { //or direct to backend port?
-// 					method: 'POST',
-// 					headers: { 'Content-Type': 'application/json' },
-// 					body: JSON.stringify({ username, password }),
-// 					credentials: 'include',
-// 				});
 
-// 				const data = await response.json();
-// 				if (!response.ok) {
-// 					try {
-// 						if (loginResult) loginResult.innerText = data?.error;
-// 					}
-// 					catch {
-// 						if (loginResult) loginResult.innerText = 'Login failed.';
-// 					}
-// 					return;
-// 				}
-// 				show2FA(false);
-// 				// navigateTo('home');
-// 			} catch (err) {
-// 				if (loginResult) loginResult.innerText = 'Something went wrong. Try again.';
-// 			}
-// 			// show2FA(false);
-// 			// navigateTo('home');
-// 		});
 	}
 
 const registerBtn = document.getElementById('submit-register-btn');
@@ -543,33 +522,6 @@ const registerBtn = document.getElementById('submit-register-btn');
 			console.error('Registration error:', err);
 			alert('Something went wrong. Try again.');
 		}
-// 		try {
-// 			console.log('Request body:', JSON.stringify({ username, email, password, firstName, lastName }));
-
-// 			const response = await fetch(`https://localhost:443/api/auth/register`, { //or direct to backend port?
-// 				method: 'POST',
-// 				headers: { 'Content-Type': 'application/json' },
-// 				body: JSON.stringify({ username, email, password, firstName, lastName }),
-// 				credentials: 'include',
-// 			});
-
-// 			const data = await response.json();
-// 			if (!response.ok) {
-// 				// try {
-// 				// 	loginResult!.innerText = data?.error;
-// 				// }
-// 				// catch {
-// 				// 	loginResult!.innerText = 'Register failed.';
-// 				// }
-// 				return;
-// 			}
-// 			//login function?
-// 			show2FA(true);
-// 			// navigateTo('home');
-// 		} catch (err) {
-// 			// loginResult!.innerText = 'Something went wrong. Try again.';
-// 		}
-// 		// navigateTo('home');
 	});
 	}
 
@@ -676,28 +628,13 @@ function show2FA(isRegistering: boolean, qrCodeData?: string): void {
 			return;
 		}
 
-		if (!loginCredentials) {
-			alert('Login session expired. Please try again.');
-			container.classList.add('hidden');
-			authContainer.classList.remove('hidden');
-			return;
-		}
-
 		try {
-			// Send login request again with 2FA code
-			const loginData: LoginRequest = {
-				username: loginCredentials.username,
-				password: loginCredentials.password,
-				twoFactorCode: code
-			};
-
-			const response = await apiService.login(loginData);
-			
-			if (response.success) {
-				loginCredentials = null; // Clear stored credentials
+			const verifyData = await apiService.verify2FA({ token: code });
+					
+			if (verifyData.success) {
 				navigateTo('home');
 			} else {
-				alert(response.error || '2FA verification failed');
+				alert(verifyData.error || '2FA verification failed');
 			}
 		} catch (err) {
 			console.error('2FA login error:', err);

@@ -28,11 +28,12 @@ export class ServerGameSocket {
      */
     constructor(roomId) {
         this.roomId = roomId;
+        this.game = new ServerGame();
+        this.setupGameEventListeners();
         this.people = new Map();
         this.handlers = {
 			"PlayerPreMove": (m, u) => this.HandlePreMoveMessage(m, u),
             "GameDispose": (m, u) => this.HandleGameDispose(m, u),
-            "GameStart": (m, u) => this.HandleGameStarted(m, u),
 		};
     }
 
@@ -82,49 +83,6 @@ export class ServerGameSocket {
     }
 
     /**
-     * Maneja el mensaje de inicio de juego, creando una nueva instancia de ServerGame.
-     * @param {any} msg El mensaje recibido.
-     */
-    HandleGameStarted(msg) {
-        console.log(`🚀 ¡Partida iniciada!`);
-        this.game = new ServerGame();
-        this.setupGameEventListeners();
-
-        /***** MOVER *****/
-        let players = [
-            new AIPlayer(this.game, "A"),
-            new AIPlayer(this.game, "B"),
-            new AIPlayer(this.game, "C"),
-            new AIPlayer(this.game, "D"),
-        ];
-
-        // Asignar colores a los jugadores para diferenciarlos en el frontend
-        players[0].Color = new BABYLON.Color3(0.8, 0.2, 0.2); // Rojo
-        players[1].Color = new BABYLON.Color3(0.2, 0.8, 0.2); // Verde
-        players[2].Color = new BABYLON.Color3(0.2, 0.2, 0.8); // Azul
-        players[3].Color = new BABYLON.Color3(0.8, 0.8, 0.2); // Amarillo
-
-        this.game.CreateGame(players);
-
-        // Enviar un mensaje 'AddPlayer' por cada jugador a todos los clientes
-        players.forEach(player => {
-            const behavior = player.GetBehavior();
-            if (!behavior) {
-                console.warn(`El jugador ${player.GetName()} no tiene 'behavior' configurado. No se puede enviar AddPlayer.`);
-                return;
-            }
-
-            this.Broadcast({
-                type: "AddPlayer",
-                playerData: player.ToPlayerData(),
-                position: { x: behavior.position.x, y: behavior.position.y, z: behavior.position.z },
-                lookAt: { x: behavior.lookAt.x, y: behavior.lookAt.y, z: behavior.lookAt.z }
-            });
-        });
-        /***** MOVER *****/
-    }
-
-    /**
      * Envía un mensaje a todos los jugadores en la sala, con la opción de excluir a uno.
      * @param {any} msg El mensaje a enviar.
      * @param {string | null} [exceptUser=null] El usuario a excluir del broadcast.
@@ -147,7 +105,7 @@ export class ServerGameSocket {
      */
     setupGameEventListeners() {
         const queue = [];
-        const sendInterval = 500; // ms entre mensajes enviados, ajusta según tu necesidad
+        const sendInterval = 2; // ms entre mensajes enviados, ajusta según tu necesidad
 
         // Procesador que envía mensajes de la cola de uno en uno
         setInterval(() => {
@@ -167,7 +125,7 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("PointMade", enqueueMessage);
         this.game.MessageBroker.Subscribe("GameEnded", enqueueMessage);
         this.game.MessageBroker.Subscribe("GamePause", enqueueMessage);
-        // this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
+        this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
         // this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);

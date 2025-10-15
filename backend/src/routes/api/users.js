@@ -37,7 +37,7 @@ export default async function (fastify, opts) {
           enabledPowerUps: Array.isArray(parsed.enabledPowerUps) && parsed.enabledPowerUps.length
             ? parsed.enabledPowerUps
             : DEFAULT_CFG.enabledPowerUps,
-		  windAmount: Number.isFinite(parsed.windAmount) ? parsed.windAmount : DEFAULT_CFG.windAmount,
+          windAmount: Number.isFinite(parsed.windAmount) ? parsed.windAmount : DEFAULT_CFG.windAmount,
           pointToWinAmount: Number.isFinite(parsed.pointToWinAmount) ? parsed.pointToWinAmount : DEFAULT_CFG.pointToWinAmount
         };
       } catch {
@@ -82,7 +82,7 @@ export default async function (fastify, opts) {
 
       return { ok: true };
     } catch (e) {
-      log('error', 'POST /room-config failed', { err: e?.message });
+      // log('error', 'POST /room-config failed', { err: e?.message });
       return reply.code(e?.statusCode || 400).send({ error: e?.message || 'Bad Request' });
     }
   });

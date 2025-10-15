@@ -83,9 +83,9 @@ export interface UserData {
     updated_at: string;
 }
 
-export interface AllReadyMessage extends Message {
+/* export interface AllReadyMessage extends Message {
     playerData: PlayerData[];
-}
+} */
 
 export interface AddPlayerMessage extends Message {
     type: "AddPlayer";
@@ -100,7 +100,7 @@ export interface PlayerResult {
 }
 
 export interface PreMoveMessage extends Message {
-    id: string,
+    id: number,
     dir: number, // -1 Izquierda, 1 Derecha
 }
 

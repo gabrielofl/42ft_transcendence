@@ -4,8 +4,9 @@ import { ClientGameSocket } from "./Game/ClientGameSocket";
 import { createAddPlayerCard } from "./add_player_card";
 import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
-import { PlayerLite, RoomStatePayload, UserData } from "../../../shared/types/messages";
+import { PlayerLite, RoomStatePayload, UserData } from "@shared/types/messages";
 import { API_BASE_URL } from "./config";
+import { fetchJSON } from "./utils";
 
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
 let serverPlayers: PlayerLite[] = [];
@@ -17,11 +18,6 @@ let totalSlots = 0;
 export let localPlayersUserName: [number, string][] = [];
 
 // ---------- utilities ----------
-async function fetchJSON(url: string, init?: RequestInit) {
-  const res = await fetch(url, init);
-  if (!res.ok) return null;
-  try { return await res.json(); } catch { return null; }
-}
 
 function selectButtonByText(txt: string): HTMLButtonElement | null {
   const all = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
@@ -328,14 +324,13 @@ function buildPlayersPayload(): [number, string][] {
   return ordered.slice(0, totalSlots).map(p => [p.userId, p.username] as [number, string]);
 }
 
-type AllReadyMessage = { type: 'AllReady'; nArray?: [number, string][]; };
+export type AllReadyMessage = { type: 'AllReady'; nArray?: [number, string][]; };
 
 function allReady(msg: AllReadyMessage) {
   const list = Array.isArray(msg?.nArray) && msg.nArray.length ? msg.nArray : buildPlayersPayload();
   localPlayersUserName = list;
 
   try { ClientWaitRoomSocket.GetInstance().Dispose(); } catch {}
+  
   navigateTo('game');
-  ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
-  ClientGameSocket.GetInstance().CreateGame();
 }

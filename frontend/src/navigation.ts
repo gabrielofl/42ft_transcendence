@@ -21,23 +21,31 @@ export function navigateTo(screen: Screen): void {
   window.history.pushState({ screen }, "", `#${screen}`);
 }
 
+function onScreenEnter(screen: Screen, callback: () => void) {
+  return AppStore.NavigoStore.Subscribe((prev, next) => {
+    if (next === screen && prev !== screen) callback();
+  });
+}
+
+function onScreenLeave(screen: Screen, callback: () => void) {
+  return AppStore.NavigoStore.Subscribe((prev, next) => {
+    if (prev === screen && next !== screen) callback();
+  });
+}
+
 export function initNavigation() {
   // Renderizar en base al estado del store
-  AppStore.NavigoStore.Subscribe(() => {
-    const screen = AppStore.NavigoStore.GetState();
-
-    let socket: ClientGameSocket = ClientGameSocket.GetInstance();
-  
-    if (socket) {
-      if (AppStore.NavigoStore.GetState() === "game")
-        {
-          console.log("Cerrando juego");
-          socket.DisposeGame();
-        }
+  AppStore.NavigoStore.Subscribe((prev, next) => {
+    if (prev != next)
+    {
+      console.log(`Navegando a ${next}`);
+      renderScreen(next);
     }
+  });
 
-    console.log(`Navegando a ${screen}`);
-    renderScreen(screen);
+  onScreenLeave("game", () => {
+    console.log("Saliendo de game");
+    ClientGameSocket.GetInstance()?.DisposeGame();
   });
 
   // Render inicial
@@ -90,7 +98,7 @@ function renderScreen(screen: Screen) {
       renderHome();
       break;
     case "game":
-      renderGame();
+      renderGame().then(() => ClientGameSocket.GetInstance().StartGame());
       break;
     case "create":
       renderMapSelection();
