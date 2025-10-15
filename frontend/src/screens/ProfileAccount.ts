@@ -568,35 +568,68 @@ Do NOT share these codes with anyone.`;
 		}
 	});
 
-	document.getElementById('disable-2fa-btn')?.addEventListener('click', async () => {
-		const password = prompt('Enter your password to disable 2FA:');
-		if (!password) return;
-		
-		try {
-			// Note: The API service doesn't have a disable2FA method, so we'll use direct fetch with proper auth
-			const token = localStorage.getItem('token');
-			const response = await fetch(`${API_BASE_URL}/auth/2fa/disable`, {
-				method: 'POST',
-				headers: { 
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${token}`
-				},
-				credentials: 'include',
-				body: JSON.stringify({ password })
-			});
-			const data = await response.json();
-			
-			if (data.success) {
-				alert('2FA disabled successfully!');
-				update2FAStatus(false);
-			} else {
-				alert(data.error || 'Failed to disable 2FA');
-			}
-		} catch (error) {
-			console.error('2FA disable error:', error);
-			alert('Failed to disable 2FA');
-		}
+document.getElementById('disable-2fa-btn')?.addEventListener('click', async () => {
+	const modal = document.getElementById('password-modal');
+	const input = document.getElementById('password-input') as HTMLInputElement | null;;
+	const confirmBtn = document.getElementById('confirm-password-btn') as HTMLButtonElement | null;
+	const cancelBtn = document.getElementById('cancel-password-btn') as HTMLButtonElement | null;
+
+	if (!modal || !input || !confirmBtn || !cancelBtn)
+		return;
+	// Show the modal
+	modal.classList.remove('hidden');
+	input.value = '';
+	input.focus();
+
+	// Return a Promise that resolves with the entered password
+	const getPassword = () => new Promise((resolve) => {
+		const cleanup = () => {
+		confirmBtn.removeEventListener('click', onConfirm);
+		cancelBtn.removeEventListener('click', onCancel);
+		modal.classList.add('hidden');
+		};
+
+		const onConfirm = () => {
+		const password = input.value.trim();
+		cleanup();
+		resolve(password || null);
+		};
+
+		const onCancel = () => {
+		cleanup();
+		resolve(null);
+		};
+
+		confirmBtn.addEventListener('click', onConfirm);
+		cancelBtn.addEventListener('click', onCancel);
 	});
+
+	const password = await getPassword();
+	if (!password) return; // Cancel or empty
+
+	try {
+		const response = await fetch(`${API_BASE_URL}/auth/2fa/disable`, {
+		method: 'POST',
+		headers: { 
+			'Content-Type': 'application/json',
+		},
+		credentials: 'include',
+		body: JSON.stringify({ password })
+		});
+
+		const data = await response.json();
+		if (data.success) {
+		alert('2FA disabled successfully!');
+		update2FAStatus(false);
+		} else {
+		alert(data.error || 'Failed to disable 2FA');
+		}
+	} catch (error) {
+		console.error('2FA disable error:', error);
+		alert('Failed to disable 2FA');
+	}
+	});
+
 }
 
 

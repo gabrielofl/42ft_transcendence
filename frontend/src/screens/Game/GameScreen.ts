@@ -42,23 +42,13 @@ function setupGameEvents(): void {
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
 		console.log("Iniciando Pong local");
-		const startGameBtn = document.getElementById('start-game-btn');
-		const startGameOverlay = document.getElementById('start-game-overlay');
-
-		if (startGameBtn && startGameOverlay) {
-			startGameBtn.addEventListener('click', () => {
-				ClientGameSocket.Canvas = canvas;
-				ClientGameSocket.GetInstance().CreateGame();
-				startGameOverlay.style.display = 'none'; // Ocultar el overlay
-			}, { once: true }); // El listener se ejecuta solo una vez
-		}
 
 		const container = document.getElementById("player-cards-client");
 		if (!container)
 			return;
 
 		container.innerHTML = "";
-		ClientGameSocket.GetInstance().UIBroker.Subscribe("AddPlayer", (msg) => addPlayer(msg));
+		// ClientGameSocket.GetInstance().UIBroker.Subscribe("AddPlayer", (msg) => addPlayer(msg));
 		// setupGameEndedListener(clientgame);
 		// setupPointMadeListener(clientgame);
 	}
@@ -68,28 +58,6 @@ function addPlayer(msg: AddPlayerMessage): void {
 	const container = document.getElementById("player-cards-client");
 	if (!container)
 		return;
-
-	let clientgame: ClientGame | undefined= ClientGameSocket.GetInstance().GetGame();
-	if (!clientgame)
-		return;
-	
-	const isLocal = msg.playerData.name === "Gabriel"; // Asumiendo que "Gabriel" es el jugador local
-	let player: APlayer;
-	if (isLocal) {
-		player = new LocalPlayer(clientgame, msg.playerData.name, "d", "a");
-	} else {
-		player = new ClientSocketPlayer(clientgame, msg.playerData.name);
-	}
-	clientgame.AddPlayer(player);
-
-	// Asignar color desde el mensaje del backend
-	player.Color = BABYLON.Color3.FromHexString(msg.playerData.color);
-	// Configurar la pala del jugador con la posición y rotación del backend
-	player.ConfigurePaddleBehavior(
-		{ 
-			position: new BABYLON.Vector3(msg.position.x, msg.position.y, msg.position.z),
-			lookAt: new BABYLON.Vector3(msg.lookAt.x, msg.lookAt.y, msg.lookAt.z)
-		});
 
 	// Añadir la tarjeta del jugador a la UI
 	container.insertAdjacentHTML("beforeend", createPlayerCard(msg));
