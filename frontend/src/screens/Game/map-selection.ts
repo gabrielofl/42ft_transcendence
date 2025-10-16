@@ -100,7 +100,9 @@ function applyConfigToUI(stateLike: any) {
     const mapKey = cfg?.mapKey || 'MultiplayerMap';
     const pua = Number.isFinite(cfg?.powerUpAmount) ? cfg.powerUpAmount : 5;
     const enabled = new Set(Array.isArray(cfg?.enabledPowerUps) ? cfg.enabledPowerUps : ALL_POWERUPS);
-
+    const windAmount = Number.isFinite(cfg?.windAmount) ? cfg.windAmount : 50;
+    const pointToWinAmount = Number.isFinite(cfg?.pointToWinAmount) ? cfg.pointToWinAmount : 7;
+    
     const mapList = document.getElementById("map-list")!;
     Array.from(mapList.children).forEach(el => (el as HTMLElement).style.background = "");
     const li = Array.from(mapList.children).find(el => (el as HTMLElement).textContent?.trim() === mapKey) as HTMLElement | undefined;
@@ -121,6 +123,20 @@ function applyConfigToUI(stateLike: any) {
       powerupTypesContainer
         .querySelectorAll<HTMLInputElement>('input[name="powerup-type"]')
         .forEach(cb => { cb.checked = enabled.has(cb.value as PowerUpType); });
+    }
+
+    const windAmountSlider = document.getElementById('wind-amount') as HTMLInputElement | null;
+    const windAmountValue = document.getElementById('wind-amount-value');
+    if (windAmountSlider && windAmountValue) {
+      windAmountSlider.value = String(windAmount);
+      windAmountValue.textContent = windAmountSlider.value;
+    }
+    
+    const pointToWinAmountSlider = document.getElementById('point-to-win-amount') as HTMLInputElement | null;
+    const pointToWinAmountValue = document.getElementById('point-to-win-amount-value');
+    if (pointToWinAmountSlider && pointToWinAmountValue) {
+      pointToWinAmountSlider.value = String(pointToWinAmount);
+      pointToWinAmountValue.textContent = pointToWinAmountSlider.value;
     }
   } catch {}
 }
@@ -174,7 +190,11 @@ function setupMapSelectionControls(): void {
   const powerupTypesContainer = document.getElementById('powerup-types');
   const createGameBtn = document.getElementById('create-game-btn');
   const mapList = document.getElementById("map-list")!;
-
+  const windAmountSlider = document.getElementById('wind-amount') as HTMLInputElement;
+  const windAmountValue = document.getElementById('wind-amount-value');
+  const pointToWinAmountSlider = document.getElementById('point-to-win-amount') as HTMLInputElement;
+  const pointToWinAmountValue = document.getElementById('point-to-win-amount-value');
+  
   // Build map list
   let selectedMapKey: string | null = null;
 
@@ -200,6 +220,20 @@ function setupMapSelectionControls(): void {
     powerupAmountValue.textContent = powerupAmountSlider.value;
     powerupAmountSlider.addEventListener('input', () => {
       powerupAmountValue.textContent = powerupAmountSlider.value;
+    });
+  }
+
+  if (windAmountSlider && windAmountValue) {
+    windAmountValue.textContent = windAmountSlider.value;
+    windAmountSlider.addEventListener('input', () => {
+      windAmountValue.textContent = windAmountSlider.value;
+    });
+  }
+
+  if (pointToWinAmountSlider && pointToWinAmountValue) {
+    pointToWinAmountValue.textContent = pointToWinAmountSlider.value;
+    pointToWinAmountSlider.addEventListener('input', () => {
+      pointToWinAmountValue.textContent = pointToWinAmountSlider.value;
     });
   }
 
@@ -232,6 +266,8 @@ function setupMapSelectionControls(): void {
       powerUpAmount: parseInt(powerupAmountSlider.value, 10),
       enabledPowerUps: enabledPowerups,
       maxPlayers: suggestedMaxPlayers, // suggestion only; backend decides
+      windAmount: parseInt(windAmountSlider.value, 10),
+      pointToWinAmount: parseInt(pointToWinAmountSlider.value, 10),
     };
 
     // 2) ensure session
@@ -265,7 +301,9 @@ function setupMapSelectionControls(): void {
       body: JSON.stringify({
         mapKey: createOptions.mapKey,
         powerUpAmount: createOptions.powerUpAmount,
-        enabledPowerUps: createOptions.enabledPowerUps
+        enabledPowerUps: createOptions.enabledPowerUps,
+        windAmount: createOptions.windAmount,
+        pointToWinAmount: createOptions.pointToWinAmount,
       })
     }).catch(() => {});
 
@@ -278,6 +316,8 @@ function setupMapSelectionControls(): void {
           powerUpAmount: createOptions.powerUpAmount,
           enabledPowerUps: createOptions.enabledPowerUps,
           maxPlayers: createOptions.maxPlayers,
+          windAmount: createOptions.windAmount,
+          pointToWinAmount: createOptions.pointToWinAmount,
         });
       }
       socket.UIBroker.Unsubscribe?.("RoomState", onFirstState);

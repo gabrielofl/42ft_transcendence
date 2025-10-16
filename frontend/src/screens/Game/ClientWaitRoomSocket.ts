@@ -100,7 +100,7 @@ export class ClientWaitRoomSocket {
     connect();
   }
 
-  public SetMapConfig(opts: { mapKey: string; powerUpAmount: number; enabledPowerUps: string[]; maxPlayers?: number; }) {
+  public SetMapConfig(opts: { mapKey: string; powerUpAmount: number; enabledPowerUps: string[]; maxPlayers?: number; windAmount?: number; pointToWinAmount?: number; }) {
     if (!this._roomCode) return;
     this.Send({
       type: "SetMapConfig",
@@ -109,6 +109,8 @@ export class ClientWaitRoomSocket {
       powerUpAmount: opts.powerUpAmount,
       enabledPowerUps: opts.enabledPowerUps,
       maxPlayers: typeof opts.maxPlayers === "number" ? opts.maxPlayers : undefined,
+      windAmount: typeof opts.windAmount === "number" ? opts.windAmount : undefined,
+      pointToWinAmount: typeof opts.pointToWinAmount === "number" ? opts.pointToWinAmount : undefined,
     } as any);
   }
 
