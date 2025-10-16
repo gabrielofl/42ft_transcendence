@@ -226,8 +226,40 @@ export async function renderWaitingRoom(): Promise<void> {
   });
   
   tournamentSocket.UIBroker.Subscribe("TournamentStarting", () => {
-    alert("🏆 Tournament is starting!");
-    // TODO: Navigate to first match (siguiente paso)
+    // Torneo iniciando, esperar bracket
+  });
+  
+  tournamentSocket.UIBroker.Subscribe("BracketGenerated", (data) => {
+    // Encontrar mi match en el bracket
+    const myMatch = data.bracket.matches.find((m: any) =>
+      m.player1.userId === userId || m.player2.userId === userId
+    );
+
+    if (myMatch) {
+      const opponentName = myMatch.player1.userId === userId 
+        ? myMatch.player2.username 
+        : myMatch.player1.username;
+
+      // Guardar info del match para el ClientGameSocket
+      sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
+        tournamentId: data.tournamentId,
+        matchId: myMatch.matchId,
+        roomId: myMatch.roomId,
+        userId: userId, // Guardar userId para el ClientGameSocket
+        opponent: myMatch.player1.userId === userId ? myMatch.player2 : myMatch.player1,
+        round: data.bracket.roundName,
+        isTournament: true
+      }));
+
+      // Desconectar del WebSocket de torneos
+      tournamentSocket.Disconnect();
+
+      // Navegar a la partida
+      alert(`🏆 Your match is starting!\n\nOpponent: ${opponentName}\nRound: ${data.bracket.roundName}`);
+      navigateTo('game');
+    } else {
+      console.error('No se encontró match para este jugador en el bracket');
+    }
   });
   
   // Conectar DESPUÉS de suscribir

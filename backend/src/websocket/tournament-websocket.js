@@ -2,6 +2,7 @@
 // Inspirado en waitroom-websocket.js pero simplificado para torneos
 
 import fp from 'fastify-plugin';
+import { generateBracket, updateBracketWithWinner, advanceRoundIfReady } from './tournament-brackets.js';
 
 async function tournamentWebsocket(fastify) {
   // Conexiones por torneo: tournamentId -> Set<{ userId, socket }>
@@ -39,8 +40,6 @@ async function tournamentWebsocket(fastify) {
 
   // Ejecutar limpieza al iniciar
   await cleanupOrphanedTournaments();
-
-  // Limpieza periódica cada 5 minutos
   setInterval(cleanupOrphanedTournaments, 5 * 60 * 1000);
 
   // Helper: Obtener torneo de DB con jugadores
@@ -96,6 +95,268 @@ async function tournamentWebsocket(fastify) {
     return fastify.jwt.verify(token);
   }
 
+  // Helper: Iniciar torneo - Generar bracket y crear salas
+  async function startTournament(tournamentId, fastify) {
+    try {
+      // 1. Obtener todos los jugadores del torneo
+      const players = await fastify.db.all(
+        `SELECT user_id AS userId, username
+         FROM tournament_players
+         WHERE tournament_id = ?
+         ORDER BY joined_at ASC`,
+        [tournamentId]
+      );
+
+      if (players.length !== 8) {
+        console.error(`Error: Torneo ${tournamentId} no tiene 8 jugadores (tiene ${players.length})`);
+        return;
+      }
+
+      // 2. Generar bracket
+      const bracket = generateBracket(players);
+
+      // 3. Guardar bracket en DB
+      await fastify.db.run(
+        `UPDATE tournaments 
+         SET status = 'in_progress', 
+             bracket = ?,
+             started_at = datetime('now')
+         WHERE id = ?`,
+        [JSON.stringify(bracket), tournamentId]
+      );
+
+      // 4. Preparar info de salas (no pre-crear, /gamews las crea cuando jugadores conectan)
+      const quarterfinals = bracket.rounds[0].matches;
+      const roomIds = [];
+
+      for (let i = 0; i < quarterfinals.length; i++) {
+        const match = quarterfinals[i];
+        const roomId = `tournament-${tournamentId}-match-${match.matchId}`;
+
+        roomIds.push({
+          matchId: match.matchId,
+          roomId,
+          player1: match.player1,
+          player2: match.player2
+        });
+      }
+
+      // 5. Broadcast del bracket completo a todos (incluye toda la info necesaria)
+      broadcast(tournamentId, {
+        type: 'BracketGenerated',
+        tournamentId,
+        bracket: {
+          currentRound: bracket.currentRound,
+          roundName: bracket.rounds[0].name,
+          matches: roomIds.map(r => ({
+            matchId: r.matchId,
+            roomId: r.roomId,
+            player1: r.player1,
+            player2: r.player2
+          }))
+        }
+      });
+
+    } catch (error) {
+      console.error('Error al iniciar torneo:', error);
+      broadcast(tournamentId, {
+        type: 'Error',
+        message: 'Failed to start tournament'
+      });
+    }
+  }
+
+  // Handler: Auto-unir al jugador al torneo si no está
+  async function handlePlayerAutoJoin(tournamentId, user, socket) {
+    const alreadyIn = await fastify.db.get(
+      `SELECT id FROM tournament_players 
+       WHERE tournament_id = ? AND user_id = ?`,
+      [tournamentId, user.id]
+    );
+
+    if (alreadyIn) return true;
+
+    // Obtener username del usuario
+    const userRow = await fastify.db.get(
+      `SELECT username FROM users WHERE id = ?`,
+      [user.id]
+    );
+    const username = userRow?.username || user.username || `Player${user.id}`;
+
+    try {
+      await fastify.db.run(
+        `INSERT INTO tournament_players (tournament_id, user_id, username, is_host, ready)
+         VALUES (?, ?, ?, 0, 0)`,
+        [tournamentId, user.id, username]
+      );
+
+      // Broadcast a OTROS jugadores (no a quien se acaba de unir)
+      broadcast(tournamentId, {
+        type: 'PlayerJoined',
+        userId: user.id,
+        username,
+        isHost: false,
+        ready: false
+      });
+
+      return true;
+
+    } catch (error) {
+      if (!error.message.includes('UNIQUE constraint')) {
+        console.error('Error joining tournament:', error);
+        socket.send(JSON.stringify({
+          type: 'Error',
+          message: 'Failed to join tournament'
+        }));
+        return false;
+      }
+      return true;
+    }
+  }
+
+  // Handler: Toggle ready del jugador
+  async function handleToggleReady(tournamentId, userId) {
+    // Obtener estado actual
+    const current = await fastify.db.get(
+      `SELECT ready FROM tournament_players 
+       WHERE tournament_id = ? AND user_id = ?`,
+      [tournamentId, userId]
+    );
+
+    if (!current) return;
+
+    const newReady = current.ready ? 0 : 1;
+
+    // Actualizar en DB
+    await fastify.db.run(
+      `UPDATE tournament_players SET ready = ? 
+       WHERE tournament_id = ? AND user_id = ?`,
+      [newReady, tournamentId, userId]
+    );
+
+    // Notificar a todos
+    broadcast(tournamentId, {
+      type: newReady ? 'PlayerReady' : 'PlayerUnready',
+      userId
+    });
+
+    // Enviar estado actualizado
+    const updatedState = await getTournamentState(tournamentId);
+    if (updatedState) {
+      broadcast(tournamentId, {
+        type: 'TournamentState',
+        ...updatedState
+      });
+    }
+
+    // Verificar si todos están ready
+    const allPlayers = await fastify.db.all(
+      `SELECT ready FROM tournament_players WHERE tournament_id = ?`,
+      [tournamentId]
+    );
+
+    const allReady = allPlayers.length === 8 && 
+                     allPlayers.every(p => p.ready === 1);
+
+    if (allReady) {
+      broadcast(tournamentId, { type: 'TournamentStarting' });
+      
+      // Generar bracket
+      await startTournament(tournamentId, fastify);
+    }
+  }
+
+  // Handler: Reasignar host si el actual se fue
+  async function handleHostReassignment(tournamentId) {
+    const wasHost = await fastify.db.get(
+      `SELECT COUNT(*) as count FROM tournament_players 
+       WHERE tournament_id = ? AND is_host = 1`,
+      [tournamentId]
+    );
+
+    if (wasHost.count > 0) return; // Ya hay un host
+
+    // No hay host, asignar al primer jugador
+    const firstPlayer = await fastify.db.get(
+      `SELECT user_id FROM tournament_players 
+       WHERE tournament_id = ? 
+       ORDER BY joined_at ASC LIMIT 1`,
+      [tournamentId]
+    );
+
+    if (firstPlayer) {
+      await fastify.db.run(
+        `UPDATE tournament_players SET is_host = 1 
+         WHERE tournament_id = ? AND user_id = ?`,
+        [tournamentId, firstPlayer.user_id]
+      );
+
+      broadcast(tournamentId, {
+        type: 'NewHost',
+        userId: firstPlayer.user_id
+      });
+    }
+  }
+
+  // Handler: Cleanup al desconectar jugador
+  async function handlePlayerDisconnect(tournamentId, userId) {
+    // Obtener estado del torneo
+    const tournament = await fastify.db.get(
+      `SELECT status FROM tournaments WHERE id = ?`,
+      [tournamentId]
+    );
+
+    if (!tournament) return;
+
+    // Solo limpiar si el torneo está en waiting (no ha empezado)
+    if (tournament.status !== 'waiting') return;
+
+    // Quitar jugador del torneo
+    const result = await fastify.db.run(
+      `DELETE FROM tournament_players 
+       WHERE tournament_id = ? AND user_id = ?`,
+      [tournamentId, userId]
+    );
+
+    if (result.changes === 0) return;
+
+    // Notificar a otros jugadores que salió
+    broadcast(tournamentId, {
+      type: 'PlayerLeft',
+      userId
+    });
+
+    // Verificar cuántos jugadores quedan
+    const remainingPlayers = await fastify.db.get(
+      `SELECT COUNT(*) as count FROM tournament_players 
+       WHERE tournament_id = ?`,
+      [tournamentId]
+    );
+
+    if (remainingPlayers.count === 0) {
+      // Torneo vacío → Eliminarlo
+      await fastify.db.run(
+        `DELETE FROM tournaments WHERE id = ?`,
+        [tournamentId]
+      );
+      
+      // Limpiar conexiones
+      connections.delete(tournamentId);
+    } else {
+      // Enviar estado actualizado a los que quedan
+      const updatedState = await getTournamentState(tournamentId);
+      if (updatedState) {
+        broadcast(tournamentId, {
+          type: 'TournamentState',
+          ...updatedState
+        });
+      }
+
+      // Reasignar host si es necesario
+      await handleHostReassignment(tournamentId);
+    }
+  }
+
   // WebSocket endpoint
   fastify.get('/tournamentws', { websocket: true }, async (socket, req) => {
     let user;
@@ -123,48 +384,9 @@ async function tournamentWebsocket(fastify) {
     const conn = { userId: user.id, socket };
     set.add(conn);
 
-    // Asegurar que el usuario esté en el torneo
-    const alreadyIn = await fastify.db.get(
-      `SELECT id FROM tournament_players 
-       WHERE tournament_id = ? AND user_id = ?`,
-      [tournamentId, user.id]
-    );
-
-    if (!alreadyIn) {
-      // Unirse automáticamente
-      const userRow = await fastify.db.get(
-        `SELECT username FROM users WHERE id = ?`,
-        [user.id]
-      );
-      const username = userRow?.username || user.username || `Player${user.id}`;
-
-      try {
-        await fastify.db.run(
-          `INSERT INTO tournament_players (tournament_id, user_id, username, is_host, ready)
-           VALUES (?, ?, ?, 0, 0)`,
-          [tournamentId, user.id, username]
-        );
-
-        // Broadcast a OTROS jugadores (no a quien se acaba de unir)
-        broadcast(tournamentId, {
-          type: 'PlayerJoined',
-          userId: user.id,
-          username,
-          isHost: false,
-          ready: false
-        });
-
-      } catch (error) {
-        if (!error.message.includes('UNIQUE constraint')) {
-          console.error('Error joining tournament:', error);
-          socket.send(JSON.stringify({
-            type: 'Error',
-            message: 'Failed to join tournament'
-          }));
-          return;
-        }
-      }
-    }
+    // Auto-unir al jugador si no está en el torneo
+    const joined = await handlePlayerAutoJoin(tournamentId, user, socket);
+    if (!joined) return;
 
     // Enviar estado inicial
     const state = await getTournamentState(tournamentId);
@@ -181,56 +403,9 @@ async function tournamentWebsocket(fastify) {
         const msg = JSON.parse(buf.toString());
 
         switch (msg.type) {
-          case 'ToggleReady': {
-            // Obtener estado actual
-            const current = await fastify.db.get(
-              `SELECT ready FROM tournament_players 
-               WHERE tournament_id = ? AND user_id = ?`,
-              [tournamentId, user.id]
-            );
-
-            if (!current) break;
-
-            const newReady = current.ready ? 0 : 1;
-
-            // Actualizar en DB
-            await fastify.db.run(
-              `UPDATE tournament_players SET ready = ? 
-               WHERE tournament_id = ? AND user_id = ?`,
-              [newReady, tournamentId, user.id]
-            );
-
-            // Notificar a todos
-            broadcast(tournamentId, {
-              type: newReady ? 'PlayerReady' : 'PlayerUnready',
-              userId: user.id
-            });
-
-            // Enviar estado actualizado
-            const updatedState = await getTournamentState(tournamentId);
-            if (updatedState) {
-              broadcast(tournamentId, {
-                type: 'TournamentState',
-                ...updatedState
-              });
-            }
-
-            // Verificar si todos están ready
-            const allPlayers = await fastify.db.all(
-              `SELECT ready FROM tournament_players WHERE tournament_id = ?`,
-              [tournamentId]
-            );
-
-            const allReady = allPlayers.length === 8 && 
-                           allPlayers.every(p => p.ready === 1);
-
-            if (allReady) {
-              broadcast(tournamentId, { type: 'TournamentStarting' });
-              
-              // TODO: Generar bracket y crear salas (siguiente paso)
-            }
+          case 'ToggleReady':
+            await handleToggleReady(tournamentId, user.id);
             break;
-          }
 
           default:
             socket.send(JSON.stringify({ 
@@ -251,88 +426,7 @@ async function tournamentWebsocket(fastify) {
       const s = connections.get(tournamentId);
       if (s) s.delete(conn);
 
-      // Obtener estado del torneo
-      const tournament = await fastify.db.get(
-        `SELECT status FROM tournaments WHERE id = ?`,
-        [tournamentId]
-      );
-
-      if (!tournament) return;
-
-      // Solo limpiar si el torneo está en waiting (no ha empezado)
-      if (tournament.status === 'waiting') {
-        // Quitar jugador del torneo
-        const result = await fastify.db.run(
-          `DELETE FROM tournament_players 
-           WHERE tournament_id = ? AND user_id = ?`,
-          [tournamentId, user.id]
-        );
-
-        if (result.changes > 0) {
-          // Notificar a otros jugadores que salió
-          broadcast(tournamentId, {
-            type: 'PlayerLeft',
-            userId: user.id
-          });
-
-          // Verificar cuántos jugadores quedan
-          const remainingPlayers = await fastify.db.get(
-            `SELECT COUNT(*) as count FROM tournament_players 
-             WHERE tournament_id = ?`,
-            [tournamentId]
-          );
-
-          if (remainingPlayers.count === 0) {
-            // Torneo vacío → Eliminarlo
-            await fastify.db.run(
-              `DELETE FROM tournaments WHERE id = ?`,
-              [tournamentId]
-            );
-            
-            // Limpiar conexiones
-            connections.delete(tournamentId);
-          } else {
-            // Enviar estado actualizado a los que quedan
-            const updatedState = await getTournamentState(tournamentId);
-            if (updatedState) {
-              broadcast(tournamentId, {
-                type: 'TournamentState',
-                ...updatedState
-              });
-            }
-
-            // Si el que salió era el host, asignar nuevo host
-            const wasHost = await fastify.db.get(
-              `SELECT COUNT(*) as count FROM tournament_players 
-               WHERE tournament_id = ? AND is_host = 1`,
-              [tournamentId]
-            );
-
-            if (wasHost.count === 0) {
-              // No hay host, asignar al primer jugador
-              const firstPlayer = await fastify.db.get(
-                `SELECT user_id FROM tournament_players 
-                 WHERE tournament_id = ? 
-                 ORDER BY joined_at ASC LIMIT 1`,
-                [tournamentId]
-              );
-
-              if (firstPlayer) {
-                await fastify.db.run(
-                  `UPDATE tournament_players SET is_host = 1 
-                   WHERE tournament_id = ? AND user_id = ?`,
-                  [tournamentId, firstPlayer.user_id]
-                );
-
-                broadcast(tournamentId, {
-                  type: 'NewHost',
-                  userId: firstPlayer.user_id
-                });
-              }
-            }
-          }
-        }
-      }
+      await handlePlayerDisconnect(tournamentId, user.id);
     });
   });
 

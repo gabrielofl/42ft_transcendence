@@ -23,8 +23,20 @@ export class ClientGameSocket {
 		//try { if (ClientGameSocket.socket && ClientGameSocket.socket.readyState <= 1) ClientGameSocket.socket.close(1000, 're-render'); } catch {}
 		//socket = new WebSocket(`${API_BASE_URL.replace('https', 'wss')}/game-ws`);
 		const connect = () => {
-			const gameCode = "ABC123";
-			const userID = 42;
+			let gameCode = "ABC123";
+			let userID = 42;
+
+			try {
+				const tournamentInfo = sessionStorage.getItem('tournamentMatchInfo');
+				if (tournamentInfo) {
+					const info = JSON.parse(tournamentInfo);
+					gameCode = info.roomId;
+					userID = info.userId;
+					console.log(`🏆 Torneo - Conectando a sala ${gameCode} como usuario ${userID}`);
+				}
+			} catch (e) {
+				console.log('Partida normal (no torneo)');
+			}
 
 			const ws = new WebSocket(`wss://localhost:443/gamews?room=${gameCode}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
