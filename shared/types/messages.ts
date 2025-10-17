@@ -183,7 +183,13 @@ export type WaitMsgTypes =
   | "LeaveRoom"        // client → server
   | "ToggleReady"      // client → server
   | "SetMapConfig"     // client → server (selected map, powerups)
-  | "InviteAI";        // client → server (if you support bots)
+  | "InviteAI"        // client → server (if you support bots)
+  | "TournamentMatchAssigned"
+  | "TournamentGameStart"
+  | "TournamentScore"
+  | "TournamentMatchFinished"
+  | "TournamentNextRound"
+  | "TournamentFinished";
 
 export type PlayerLite = {
   userId: number;
@@ -218,6 +224,60 @@ export type WaitPayloads = {
   ToggleReady: { roomCode: string; userId: number };
   SetMapConfig: { roomCode: string; mapKey: string; powerUpAmount: number; enabledPowerUps: string[] };
   InviteAI: { roomCode: string };
+  
+  TournamentMatchAssigned: {
+    tournamentId?: string | number;
+    roundIndex: number;        // 0-based
+    matchIndex: number;        // 0-based
+    roomCode: string;
+    player1: number | null;    // userId (nullable for byes)
+    player2: number | null;    // userId
+  };
+
+  TournamentGameStart: {
+    tournamentId?: string | number;
+    roomCode: string;
+  };
+
+  //Live scoring
+  TournamentScore: {
+    tournamentId?: string | number;
+    roomCode: string;
+    scores: TournamentScores;
+  };
+
+  TournamentMatchFinished: {
+    tournamentId?: string | number;
+    roomCode: string;
+    winner?: number | null;    // userId
+    loser?: number | null;     // userId
+    scores?: TournamentScores;
+  };
+
+  TournamentNextRound: {
+    tournamentId?: string | number;
+    roundIndex: number;        // 0-based
+    matches: TournamentMatchTuple[]; // [{roomCode, player1, player2}, ...]
+  };
+
+  TournamentFinished: {
+    tournamentId?: string | number;
+    winner?: number | null;    // userId of champion
+  };
+};
+
+export type TournamentMatchTuple = {
+  roomCode: string;
+  player1: number | null;
+  player2: number | null;
+};
+
+export type TournamentScores = {
+  // {player1, player2} or {p1, p2} ???
+  player1?: number;
+  player2?: number;
+  p1?: number;
+  p2?: number;
 };
 
 export type WaitMessage = { type: WaitMsgTypes } & (WaitPayloads[keyof WaitPayloads]);

@@ -34,6 +34,20 @@ async function waitroomWebsocket(fastify) {
     }
   }
 
+  function broadcastMany(codes, msg) {
+    const seen = new Set();
+    for (const code of (codes || [])) {
+      const set = roomSockets.get(code);
+      if (!set) continue;
+      const payload = JSON.stringify(msg);
+      for (const c of set) {
+        if (seen.has(c)) continue;
+        try { c.socket.send(payload); } catch {}
+        seen.add(c);
+      }
+    }
+  }
+
   async function requireUserFromCookie(req) {
     const token = req.cookies?.accessToken;
     if (!token) throw new Error('Unauthorized');
@@ -152,6 +166,10 @@ async function waitroomWebsocket(fastify) {
       const nArray = playersToNArrayFromCombined(combined);
       broadcast(code, { type: 'AllReady', players: combined, nArray });
       await startGame(code, combined);
+      try {
+        const tournamentId = room.tournament_id ?? undefined; // optional column
+        broadcast(code, { type: 'TournamentGameStart', roomCode: code, tournamentId });
+      } catch {}
       return { room, players: combined };
     }
     return null;
@@ -258,11 +276,75 @@ async function waitroomWebsocket(fastify) {
         LIMIT 1`,
       [userId]
     );
-    console.log('getUsersCurrentRoom', row);
     return row || null;
   }
 
-  // --- REST: GET /rooms/mine
+  // Tournament ---------------------------------
+  fastify.decorate('tournament', {
+    matchAssigned: ({ tournamentId, roundIndex, matchIndex, roomCode, player1, player2 }) => {
+      if (!roomCode) return;
+      broadcast(roomCode, {
+        type: 'TournamentMatchAssigned',
+        tournamentId,
+        roundIndex,
+        matchIndex,
+        roomCode,
+        player1: (Number.isFinite(player1) ? Number(player1) : null),
+        player2: (Number.isFinite(player2) ? Number(player2) : null),
+      });
+    },
+
+    gameStart: ({ tournamentId, roomCode }) => {
+      if (!roomCode) return;
+      broadcast(roomCode, { type: 'TournamentGameStart', roomCode, tournamentId });
+    },
+
+    score: ({ tournamentId, roomCode, scores }) => {
+      if (!roomCode) return;
+      const s = scores || {};
+      broadcast(roomCode, { type: 'TournamentScore', tournamentId, roomCode, scores: s });
+    },
+
+    matchFinished: ({ tournamentId, roomCode, winner, loser, scores }) => {
+      if (!roomCode) return;
+      broadcast(roomCode, {
+        type: 'TournamentMatchFinished',
+        tournamentId,
+        roomCode,
+        winner: Number.isFinite(winner) ? Number(winner) : null,
+        loser: Number.isFinite(loser) ? Number(loser) : null,
+        scores: scores || undefined,
+      });
+    },
+
+    nextRound: ({ tournamentId, roundIndex, matches }) => {
+      const roomCodes = (Array.isArray(matches) ? matches : []).map(m => m?.roomCode).filter(Boolean);
+      if (!roomCodes.length) return;
+      broadcastMany(roomCodes, {
+        type: 'TournamentNextRound',
+        tournamentId,
+        roundIndex,
+        matches: (matches || []).map(m => ({
+          roomCode: m?.roomCode || '',
+          player1: Number.isFinite(m?.player1) ? Number(m.player1) : null,
+          player2: Number.isFinite(m?.player2) ? Number(m.player2) : null,
+        })),
+      });
+    },
+
+    finished: ({ tournamentId, winner, roomCodes }) => {
+      const payload = {
+        type: 'TournamentFinished',
+        tournamentId,
+        winner: Number.isFinite(winner) ? Number(winner) : null,
+      };
+      const codes = (Array.isArray(roomCodes) && roomCodes.length)
+        ? roomCodes
+        : Array.from(roomSockets.keys());
+      broadcastMany(codes, payload);
+    },
+  });
+	
   fastify.get('/rooms/mine', async (req, reply) => {
     const token = req.cookies?.accessToken;
     if (!token) return reply.code(401).send({ error: 'Unauthorized' });

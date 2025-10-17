@@ -45,7 +45,14 @@ export class ClientWaitRoomSocket {
       SetHost: (m) => this.UIBroker.Publish("SetHost", m),
       SetRoomCode: (m) => this.UIBroker.Publish("SetRoomCode", m),
       AllReady: (m) => this.UIBroker.Publish("AllReady", m),
-      Error: (m) => this.UIBroker.Publish("Error", m),
+	  Error: (m) => this.UIBroker.Publish("Error", m),
+	  
+	  TournamentMatchAssigned: (m) => (this.UIBroker).Publish("TournamentMatchAssigned", m),
+  	  TournamentGameStart:     (m) => (this.UIBroker).Publish("TournamentGameStart", m),
+  	  TournamentScore:         (m) => (this.UIBroker).Publish("TournamentScore", m),
+  	  TournamentMatchFinished: (m) => (this.UIBroker).Publish("TournamentMatchFinished", m),
+  	  TournamentNextRound:     (m) => (this.UIBroker).Publish("TournamentNextRound", m),
+  	  TournamentFinished:      (m) => (this.UIBroker).Publish("TournamentFinished", m),
 
       JoinRoom: undefined,
       LeaveRoom: undefined,
