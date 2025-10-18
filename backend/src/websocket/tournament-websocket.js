@@ -3,6 +3,7 @@
 
 import fp from 'fastify-plugin';
 import { generateBracket, updateBracketWithWinner, advanceRoundIfReady } from './tournament-brackets.js';
+import { addVirtualAI } from './virtual-players.js';
 
 async function tournamentWebsocket(fastify) {
   // Conexiones por torneo: tournamentId -> Set<{ userId, socket }>
@@ -266,6 +267,94 @@ async function tournamentWebsocket(fastify) {
     }
   }
 
+  // Handler: Invitar AI al torneo
+  async function handleInviteAI(tournamentId, userId) {
+    // Verificar que el usuario sea el host
+    const user = await fastify.db.get(
+      `SELECT is_host FROM tournament_players 
+       WHERE tournament_id = ? AND user_id = ?`,
+      [tournamentId, userId]
+    );
+
+    if (!user || !user.is_host) {
+      const conn = Array.from(connections.get(tournamentId) || [])
+        .find(c => c.userId === userId);
+      if (conn) {
+        conn.socket.send(JSON.stringify({
+          type: 'Error',
+          message: 'Only host can invite AI players'
+        }));
+      }
+      return;
+    }
+
+    // Verificar que no esté lleno
+    const playerCount = await fastify.db.get(
+      `SELECT COUNT(*) as count FROM tournament_players 
+       WHERE tournament_id = ?`,
+      [tournamentId]
+    );
+
+    if (playerCount.count >= 8) {
+      const conn = Array.from(connections.get(tournamentId) || [])
+        .find(c => c.userId === userId);
+      if (conn) {
+        conn.socket.send(JSON.stringify({
+          type: 'Error',
+          message: 'Tournament is full (8/8)'
+        }));
+      }
+      return;
+    }
+
+    // Crear jugador AI virtual (ID negativo)
+    const aiPlayer = addVirtualAI(`tournament-${tournamentId}`);
+
+    // Agregar AI a la base de datos (con ID negativo)
+    await fastify.db.run(
+      `INSERT INTO tournament_players (tournament_id, user_id, username, is_host, ready)
+       VALUES (?, ?, ?, 0, 1)`,
+      [tournamentId, aiPlayer.userId, aiPlayer.username]
+    );
+
+    // Notificar a todos
+    broadcast(tournamentId, {
+      type: 'PlayerJoined',
+      userId: aiPlayer.userId,
+      username: aiPlayer.username,
+      isHost: false,
+      ready: true
+    });
+
+    broadcast(tournamentId, {
+      type: 'PlayerReady',
+      userId: aiPlayer.userId
+    });
+
+    // Enviar estado actualizado
+    const updatedState = await getTournamentState(tournamentId);
+    if (updatedState) {
+      broadcast(tournamentId, {
+        type: 'TournamentState',
+        ...updatedState
+      });
+    }
+
+    // Verificar si ahora todos están ready
+    const allPlayers = await fastify.db.all(
+      `SELECT ready FROM tournament_players WHERE tournament_id = ?`,
+      [tournamentId]
+    );
+
+    const allReady = allPlayers.length === 8 && 
+                     allPlayers.every(p => p.ready === 1);
+
+    if (allReady) {
+      broadcast(tournamentId, { type: 'TournamentStarting' });
+      await startTournament(tournamentId, fastify);
+    }
+  }
+
   // Handler: Reasignar host si el actual se fue
   async function handleHostReassignment(tournamentId) {
     const wasHost = await fastify.db.get(
@@ -405,6 +494,10 @@ async function tournamentWebsocket(fastify) {
         switch (msg.type) {
           case 'ToggleReady':
             await handleToggleReady(tournamentId, user.id);
+            break;
+
+          case 'InviteAI':
+            await handleInviteAI(tournamentId, user.id);
             break;
 
           default:

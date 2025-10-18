@@ -282,9 +282,10 @@ function buildSlots(n: number) {
 
   for (let i = 0; i < n; i++) {
     const card = createAddPlayerCard({
-      onAddLocal: () => {},  // No hace nada en torneos
+      onAddLocal: () => {},
       onAddAI: () => {
-        alert("AI players coming soon!");
+        const socket = ClientTournamentSocket.GetInstance();
+        socket.InviteAI();
       },
     });
 
@@ -315,7 +316,8 @@ function buildSlots(n: number) {
         const newCard = createAddPlayerCard({
           onAddLocal: () => {},
           onAddAI: () => {
-            alert("AI players coming soon!");
+            const socket = ClientTournamentSocket.GetInstance();
+            socket.InviteAI();
           }
         });
         

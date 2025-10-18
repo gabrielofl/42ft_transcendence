@@ -64,6 +64,17 @@ export class ClientTournamentSocket {
     }));
   }
 
+  InviteAI() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('WebSocket not connected');
+      return;
+    }
+
+    this.ws.send(JSON.stringify({
+      type: 'InviteAI'
+    }));
+  }
+
   Disconnect() {
     if (this.ws) {
       this.ws.close();
