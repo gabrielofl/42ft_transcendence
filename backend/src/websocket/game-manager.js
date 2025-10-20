@@ -2,6 +2,7 @@
 import { ServerGameSocket } from '../game/Game/ServerGameSocket.js';
 import { AIPlayer } from '../game/Player/AIPlayer.js';
 import { ServerSocketPlayer } from '../game/Player/ServerSocketPlayer.js';
+import * as MAPS from '../game/Maps.js';
 
 /**
  * @description Mapa para almacenar las instancias de juego activas.
@@ -30,8 +31,9 @@ export function addGame(roomCode, gameSocket) {
  * Inicia una nueva partida, la registra y crea los jugadores.
  * @param {string} roomCode - El código de la sala.
  * @param {Array<{userId: number, username: string}>} combined - La lista de jugadores.
+ * @param {object} config - La configuración de la sala, incluyendo el mapa.
  */
-export async function startGame(roomCode, combined) {
+export async function startGame(roomCode, combined, config) {
   // Prevenimos la condición de carrera: si ya está activa o se está creando, no hacemos nada.
   if (isGameActive(roomCode) || startingGames.has(roomCode)) {
     console.warn(`[GameManager] La partida para la sala ${roomCode} ya existe o se está iniciando. Se omite la creación.`);
@@ -57,6 +59,9 @@ export async function startGame(roomCode, combined) {
       }
     });
 
+    gameSocket.game.Map = MAPS[config.mapKey] || MAPS.MultiplayerMap;
+    console.log("Game Map");
+    console.log(gameSocket.game.Map);
     gameSocket.game.CreateGame(players);
   } finally {
     startingGames.delete(roomCode); // "Liberamos" el bloqueo, haya funcionado o no.
