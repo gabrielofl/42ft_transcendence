@@ -47,9 +47,13 @@ export async function startGame(roomCode, combined) {
 
     const players = combined.map(p => {
       if (p.userId < 0) { // Jugador IA
-        return new AIPlayer(gameSocket.game, p.username);
+        let player = new AIPlayer(gameSocket.game, p.username);
+        player.id = p.userId;
+        return player;
       } else { // Jugador real
-        return new ServerSocketPlayer(gameSocket.game, p.username);
+        let player = new ServerSocketPlayer(gameSocket.game, p.username);
+        player.id = p.userId;
+        return player;
       }
     });
 

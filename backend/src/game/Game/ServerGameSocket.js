@@ -127,7 +127,7 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("GamePause", enqueueMessage);
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
-        // this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
+        this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
     }
 
@@ -138,9 +138,9 @@ export class ServerGameSocket {
      */
     RecieveSocketMessage(msg, user) {
         try {
-            console.log("Handling message from WebSocket");
+            // console.log("Handling message from WebSocket");
             const message = JSON.parse(msg.toString());
-            console.log(message);
+            // console.log(message);
             const handler = this.handlers[message.type];
             if (handler) {
                 handler(message, user);
@@ -157,7 +157,9 @@ export class ServerGameSocket {
      * @param {any} msg El mensaje con la información del movimiento.
      */
 	HandlePreMoveMessage(msg) {
-		let player = this.game.GetPlayers().find(p => p.GetName() === msg.id);
+		let player = this.game.GetPlayers().find(p => p.id === msg.id);
+        this.game.GetPlayers().forEach(p => console.log(p.id));
+        console.log(player);
 		if (player)
 		{
 			player.GetPaddle().Move(msg.dir);

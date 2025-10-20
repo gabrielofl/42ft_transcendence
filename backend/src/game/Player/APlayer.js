@@ -12,6 +12,7 @@ export class APlayer {
     OnPaddleCreated = new Event();
 
     // Propiedades
+    id;
     name;
     paddle;
     ScoreZone; //Zone;

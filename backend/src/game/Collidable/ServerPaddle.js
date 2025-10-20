@@ -64,7 +64,7 @@ export class ServerPaddle extends DisposableImpostor {
             this.mesh.position = previousPos;
 		this.game.MessageBroker.Publish("PaddlePosition", {
 			type: "PaddlePosition",
-			username: this.owner.GetName(),
+			id: this.owner.id,
 			x: this.mesh.position.x,
 			z: this.mesh.position.z,
 		});

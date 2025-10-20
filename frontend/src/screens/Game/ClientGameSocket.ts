@@ -255,11 +255,9 @@ export class ClientGameSocket {
 	 * @param {PaddlePositionMessage} msg - El mensaje con el nombre de usuario y la nueva posición.
 	 */
 	HandlePaddlePosition(msg: PaddlePositionMessage): void {
-		let player = this.game?.GetPlayers().find(p => p.GetName() === msg.username);
+		let player = this.game?.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
-			ClientGameSocket.socket?.send(JSON.stringify(msg));
-			console.log(JSON.stringify(msg));
 			player.GetPaddle().GetMesh().position = new BABYLON.Vector3(msg.x, 0.5, msg.z);
 		}
 	}
