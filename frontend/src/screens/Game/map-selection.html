@@ -33,6 +33,38 @@
       </div>
     </div>
 
+    <hr class="border-gray-600">
+
+    <div>
+      <h3 class="text-xl text-[--primary-color] mb-4">3. Wind speed</h3>
+
+        <!-- Wind Amount Slider -->
+        <div class="mb-6">
+          <label for="wind-amount" class="block text-sm text-white mb-2">
+            Wind Amount:
+            <span id="wind-amount-value" class="font-bold text-yellow-400">5</span>
+          </label>
+          <input id="wind-amount" type="range" min="0" max="100" value="50"
+                 class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+        </div>
+    </div>
+
+    <hr class="border-gray-600">
+
+    <div>
+      <h3 class="text-xl text-[--primary-color] mb-4">4. Points to win</h3>
+
+        <!-- Point to win Amount Slider -->
+        <div class="mb-6">
+          <label for="point-to-win-amount" class="block text-sm text-white mb-2">
+            Points to win:
+            <span id="point-to-win-amount-value" class="font-bold text-yellow-400">5</span>
+          </label>
+          <input id="point-to-win-amount" type="range" min="3" max="10" value="7"
+                 class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+        </div>
+    </div>
+
     <div class="mt-auto pt-6">
       <!-- Removed the Save button -->
       <button id="create-game-btn" class="btn-primary w-full">Create Match</button>
