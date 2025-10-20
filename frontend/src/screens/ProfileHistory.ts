@@ -65,9 +65,9 @@ export async function renderHistoryTab() {
 export async function setupHistoryTab(userId: number) {
 	
 	// Load first page
-	await loadMatches(userId, currentPage); 
-	initProfileModal(); 
-    setupProfileLinks(); 
+	await loadMatches(userId, currentPage);
+	initProfileModal();
+    setupProfileLinks();
 }
 
 async function loadMatches(userId: number, page: number) {

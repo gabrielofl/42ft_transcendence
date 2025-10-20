@@ -221,7 +221,7 @@ async function getUserFriendsRequests(page = 1, perPage = 5) {
   return res.json();
 }
 
-function setupPagination(btnPrev: HTMLButtonElement | null, btnNext: HTMLButtonElement | null, page: number, totalPages: number, onChange: (newPage: number) => void) {
+export function setupPagination(btnPrev: HTMLButtonElement | null, btnNext: HTMLButtonElement | null, page: number, totalPages: number, onChange: (newPage: number) => void) {
   if (btnPrev) {
     const isDisabled = page <= 1;
     btnPrev.disabled = isDisabled;

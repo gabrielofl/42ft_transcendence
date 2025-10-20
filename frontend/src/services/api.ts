@@ -205,7 +205,8 @@ export class ApiService {
   // Profile methods
   async getProfile(): Promise<any> {
     try {
-      const response = await this.makeRequest('/profile');
+      // const response = await this.makeRequest('/profile');
+      const response = await this.makeRequest('/users/me');
       return await response.json();
     } catch (error) {
       console.error('Get profile error:', error);
@@ -261,6 +262,27 @@ export class ApiService {
       return await response.json();
     } catch (error) {
       console.error('Upload avatar error:', error);
+      throw error;
+    }
+  }
+
+  // Leaderboard methods
+  async getLeaderboard(limit?: number, offset?: number): Promise<{ users: any[], total: number, page: number, totalPages: number, perPage: number }> {
+    try {
+      let url = '/users/leaderboard';
+      const params = new URLSearchParams();
+      
+      if (limit !== undefined) params.append('limit', limit.toString());
+      if (offset !== undefined) params.append('offset', offset.toString());
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await this.makeRequest(url);
+      return await response.json();
+    } catch (error) {
+      console.error('Get leaderboard error:', error);
       throw error;
     }
   }
