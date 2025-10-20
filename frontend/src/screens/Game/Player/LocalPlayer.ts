@@ -7,7 +7,6 @@ export class LocalPlayer extends APlayer {
 	private leftKey: string;
 	private rightKey: string;
 	private inventoryKeys: [string, string, string] | undefined;
-	private id: number;
 
 	constructor(game: ClientGame, id: number, name: string, leftKey: string, rightKey: string, skills?: [string, string, string]) {
 		super(game, name);
