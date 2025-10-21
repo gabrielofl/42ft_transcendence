@@ -10,6 +10,7 @@ import { SelectedMap } from "./map-selection";
 import { API_BASE_URL } from "../config";
 import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
+import { getCurrentUser } from "../ProfileHistory"
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -52,8 +53,8 @@ export class ClientGameSocket {
 
 	private Connect(code: string) {
 		console.log(`Connecting to: ${code}`);
-		const connect = () => {
-			const userID = 42;
+		const connect = async () => {
+			const userID = (await getCurrentUser()).id;
 
 			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);

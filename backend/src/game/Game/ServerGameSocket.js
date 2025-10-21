@@ -34,6 +34,7 @@ export class ServerGameSocket {
         this.handlers = {
 			"PlayerPreMove": (m, u) => this.HandlePreMoveMessage(m, u),
             "GameDispose": (m, u) => this.HandleGameDispose(m, u),
+            "AddPlayer": (m, u) => this.BroadcastPlayersData(m, u),
 		};
     }
 
@@ -101,6 +102,28 @@ export class ServerGameSocket {
     }
 
     /**
+     * Envía información de todos los jugadores a los clientes conectados.
+     * Incluye datos del jugador, posición y dirección de mirada.
+     */
+    BroadcastPlayersData() {
+        const players = this.game.GetPlayers();
+        players.forEach(player => {
+            const behavior = player.GetBehavior();
+            if (!behavior) {
+                console.warn(`El jugador ${player.GetName()} no tiene 'behavior' configurado. No se puede enviar AddPlayer.`);
+                return;
+            }
+
+            this.Broadcast({
+                type: "AddPlayer",
+                playerData: player.ToPlayerData(),
+                position: { x: behavior.position.x, y: behavior.position.y, z: behavior.position.z },
+                lookAt: { x: behavior.lookAt.x, y: behavior.lookAt.y, z: behavior.lookAt.z }
+            });
+        });
+    }
+
+    /**
      * Configura los event listeners para el juego
      */
     setupGameEventListeners() {
@@ -126,8 +149,8 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("GameEnded", enqueueMessage);
         this.game.MessageBroker.Subscribe("GamePause", enqueueMessage);
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
-        // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
-        // this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
+        this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
+        this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
     }
 

@@ -58,7 +58,6 @@ function addPlayer(msg: AddPlayerMessage): void {
 	const container = document.getElementById("player-cards-client");
 	if (!container)
 		return;
-
 	// Añadir la tarjeta del jugador a la UI
 	container.insertAdjacentHTML("beforeend", createPlayerCard(msg));
 }
