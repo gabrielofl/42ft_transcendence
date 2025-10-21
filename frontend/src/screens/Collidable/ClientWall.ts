@@ -15,13 +15,6 @@ export class ClientWall extends DisposableMesh {
             this.game = game;
             this.PositionMesh(this.mesh, center, rotation);
             this.mesh.material = game.GetMaterial("Wall");
-            this.mesh.material = game.GetMaterial("Transparent");
-    
-            if (this.mesh.physicsImpostor != undefined)
-            {
-                this.mesh.physicsImpostor.physicsBody.collisionFilterGroup = ClientWall.GROUP;
-                this.mesh.physicsImpostor.physicsBody.collisionFilterMask = ClientBall.GROUP;
-            }
         }
     
         private PositionMesh(mesh: BABYLON.Mesh, center: BABYLON.Vector2, rotation: number): void {

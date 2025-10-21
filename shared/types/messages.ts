@@ -123,7 +123,7 @@ export interface PlayerPosition {
 }
 
 export interface PaddlePositionMessage extends Message {
-	username: string;
+	id: number;
     x: number;
     z: number;
 }

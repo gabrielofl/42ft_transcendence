@@ -10,6 +10,7 @@ import { SelectedMap } from "./map-selection";
 import { API_BASE_URL } from "../config";
 import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
+import { navigateTo } from "src/navigation";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -133,7 +134,7 @@ export class ClientGameSocket {
 		if (this.disposed)
 			return;
 		
-		console.log("Sending message:", msg);
+		// console.log("Sending message:", msg);
 		if (ClientGameSocket.socket?.readyState === WebSocket.OPEN) {
 			ClientGameSocket.socket.send(JSON.stringify(msg));
 		} else {
@@ -157,6 +158,10 @@ export class ClientGameSocket {
 				: payload.data;
 
 			const msg = data as Message;
+
+			if (msg.type != "BallMove" && msg.type != "PaddlePosition")
+				console.log("Received message from server:", msg);
+
 			const handler = this.handlers[msg.type];
 			if (handler) {
 				handler(msg as any); // TS asegura narrow, pero aquí necesitamos el cast
@@ -213,13 +218,17 @@ export class ClientGameSocket {
 	public HandleGamePause(msg: GamePauseMessage): void {
 
 	}
+
 	/**
 	 * Maneja el mensaje de fin de juego.
 	 * @param {ScoreMessage} msg - El mensaje con los resultados finales.
 	 */
 	public HandleGameEnded(msg: ScoreMessage): void {
-
+		console.log("HandleGameEnded");
+		this.UIBroker.Publish("GameEnded", msg);
+		// navigateTo("results");
 	}
+
 	/** Maneja el mensaje para reiniciar el juego. */
 	public HandleGameRestart(): void {
 
@@ -265,11 +274,9 @@ export class ClientGameSocket {
 	 * @param {PaddlePositionMessage} msg - El mensaje con el nombre de usuario y la nueva posición.
 	 */
 	HandlePaddlePosition(msg: PaddlePositionMessage): void {
-		let player = this.game?.GetPlayers().find(p => p.GetName() === msg.username);
+		let player = this.game?.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
-			ClientGameSocket.socket?.send(JSON.stringify(msg));
-			console.log(JSON.stringify(msg));
 			player.GetPaddle().GetMesh().position = new BABYLON.Vector3(msg.x, 0.5, msg.z);
 		}
 	}

@@ -123,12 +123,12 @@ export class ServerGameSocket {
         // Suscribirse a eventos del juego
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
-        this.game.MessageBroker.Subscribe("PointMade", enqueueMessage);
-        this.game.MessageBroker.Subscribe("GameEnded", enqueueMessage);
-        this.game.MessageBroker.Subscribe("GamePause", enqueueMessage);
+        this.game.MessageBroker.Subscribe("PointMade", (msg) => { enqueueMessage(msg); console.log("PointMade"); });
+        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { this.handleGameEnded(msg); enqueueMessage(msg); console.log("GameEnded"); });
+        this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
-        // this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
+        this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
     }
 
@@ -139,9 +139,7 @@ export class ServerGameSocket {
      */
     RecieveSocketMessage(msg, user) {
         try {
-            console.log("Handling message from WebSocket");
             const message = JSON.parse(msg.toString());
-            console.log(message);
             const handler = this.handlers[message.type];
             if (handler) {
                 handler(message, user);
@@ -158,32 +156,11 @@ export class ServerGameSocket {
      * @param {any} msg El mensaje con la información del movimiento.
      */
 	HandlePreMoveMessage(msg) {
-		let player = this.game.GetPlayers().find(p => p.GetName() === msg.id);
+		let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
 			player.GetPaddle().Move(msg.dir);
 		}
-    }
-
-    /**
-     * Conecta al WebSocket usando el nuevo sistema
-     */
-    async connectWebSocket(userId) {
-        try {
-            // await this.wsManager.connect(userId);
-            console.log('🔌 WebSocket conectado exitosamente');
-        } catch (error) {
-            console.error('❌ Error conectando WebSocket:', error);
-        }
-    }
-
-    /**
-     * Handler para cuando se une a una sala
-     */
-    handleRoomJoined(payload) {
-        this.roomId = payload.roomId;
-        // this.mySlot = payload.slot;
-        console.log(`🎮 Conectado a sala ${payload.roomId} como ${payload.slot}`);
     }
 
     /**
@@ -202,17 +179,6 @@ export class ServerGameSocket {
     }
 
     /**
-     * Handler para cuando un jugador anota
-     */
-    handlePlayerScored(payload) {
-        console.log(`🎯 ${payload.player} anotó! ${payload.scores.player1}-${payload.scores.player2}`);
-        this.game.GetPlayers().forEach(p => {
-            // p.Socket.Send({});
-        });
-        // Aquí puedes actualizar UI del marcador inmediatamente
-    }
-
-    /**
      * Handler para cuando el juego se pausa
      */
     handleGamePaused(payload) {
@@ -224,7 +190,7 @@ export class ServerGameSocket {
      * Handler para cuando el juego termina
      */
     handleGameEnded(payload) {
-        
+        console.log("🏁 Partida terminada.");
         // Verificar si es un match de torneo
         const tournamentInfo = this.parseTournamentRoomId(this.roomId);
         if (tournamentInfo) {
@@ -242,14 +208,6 @@ export class ServerGameSocket {
                 });
             }
         }
-    }
-
-    /**
-     * Handler para cambios en el estado del WebSocket
-     */
-    handleWebSocketStatus(status) {
-        console.log('🔌 Estado del WebSocket:', status);
-        // Aquí puedes mostrar UI de estado de conexión
     }
 
     applyGameState(state) {

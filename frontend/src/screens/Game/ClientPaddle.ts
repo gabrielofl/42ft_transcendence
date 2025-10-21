@@ -17,8 +17,7 @@ export class ClientPaddle extends DisposableMesh {
         super(game, fMeshBuilder);
         this.game = game;
         this.owner = player;
-   /*      if (game instanceof ClientGame)
-            this.mesh.material = game.GetMaterial("Paddle"); */
+        this.mesh.material = game.GetMaterial("Paddle");
         this.mesh.position.x = 0;
         this.mesh.position.y = 0;
         this.mesh.position.z = 0;

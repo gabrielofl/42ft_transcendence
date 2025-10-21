@@ -15,6 +15,7 @@ export abstract class APlayer {
     public OnPaddleCreatedEvent: Event<APlayer> = new Event();
 
     // Propiedades
+    public id: number;
     protected name: string;
     protected paddle: ClientPaddle;
     protected score: number = 0;
@@ -27,6 +28,7 @@ export abstract class APlayer {
     protected game: ClientGame;
 
     constructor(game: ClientGame, name: string) {
+        this.id = -1;
         this.game = game;
         this.name = name;
         this.Inventory = new Inventory(game, this);
