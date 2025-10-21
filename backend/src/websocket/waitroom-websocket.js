@@ -151,7 +151,12 @@ async function waitroomWebsocket(fastify) {
       await fastify.db.run(`UPDATE rooms SET status = 'active' WHERE id = ?`, [room.id]);
       const nArray = playersToNArrayFromCombined(combined);
       broadcast(code, { type: 'AllReady', players: combined, nArray });
-      await startGame(code, combined);
+      const config = {
+        mapKey: room.map_key,
+        powerUpAmount: room.powerup_amount,
+        enabledPowerUps: JSON.parse(room.enabled_powerups || '[]'),
+      };
+      await startGame(code, combined, config);
       return { room, players: combined };
     }
     return null;

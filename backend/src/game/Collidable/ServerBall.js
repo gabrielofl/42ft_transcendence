@@ -102,6 +102,9 @@ export class ServerBall extends DisposableImpostor {
 		if (log) logToFile(JSON.stringify(v));
 		v = v.add(this.game.Wind);
 
+		if (log) logToFile("Wind");
+		if (log) logToFile(this.game.Wind);
+
 		impostor.setLinearVelocity(new BABYLON.Vector3(v?.x, 0, v?.z));
         const currentSpeed = v.length();
 
