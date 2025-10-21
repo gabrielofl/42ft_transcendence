@@ -2,21 +2,31 @@ import * as BABYLON from "@babylonjs/core";
 import { ServerBall } from "../Collidable/ServerBall.js";
 import { ServerPowerUpBox } from "../PowerUps/ServerPowerUpBox.js";
 import { ServerWall } from "../Collidable/ServerWall.js";
-import { APongTable } from "../abstract/APongTable.js";
+import { DisposableMesh } from "../Utils/DisposableMesh.js";
 import { Zone } from "../Utils/Zone.js";
+import { AGame } from "../abstract/AGame.js";
 
-export class ServerPongTable extends APongTable {
+export class ServerPongTable extends DisposableMesh {
     gameZone;
     game;
     walls;
+    // private obstacles: Obstacle[];
 
+    /**
+     * @param {AGame} game 
+     */
     constructor(game) {
-        super(game);
+        let fMeshBuilder = (scene) => BABYLON.MeshBuilder.CreateGround("table", {
+            width: game.Map.size.width, height: game.Map.size.height }, scene);
+        super (game, fMeshBuilder);
         
         this.game = game;
+        /* this.obstacles = game.Map.obstacles.map(o => 
+            new Obstacle(game, o.length, new BABYLON.Vector2(o.position[0], o.position[1]), o.rotation, o.life)
+        ); */
         // Crear PowerUps
         var i = 0;
-        while (++i <= this.MAX_POWERUPS) {
+        while (++i <= this.game.maxPowerUps) {
             this.SpawnPowerUp();
         }
         game.PowerUps.OnRemoveEvent.Subscribe((pwrUp) => this.SpawnPowerUp());
@@ -51,10 +61,21 @@ export class ServerPongTable extends APongTable {
         setTimeout(() => new ServerPowerUpBox(this.game, x, z), 2000);
     }
 
+    /**
+     * Disposes TableGround, Walls and obstacles.
+     */
     Dispose() {
+        /*         this.obstacles.forEach(o => o.Dispose());
+        this.obstacles = []; */
         this.walls.forEach(w => w.Dispose());
         this.walls = [];
         this.gameZone.Dispose();
+        let pwrUps = this.game.PowerUps.GetAll();//: IPowerUpBox[]
+        this.game.PowerUps.OnRemoveEvent.Clear();
+        pwrUps.forEach(p => {
+            p.Dispose();
+            this.game.PowerUps.Remove(p);
+        });
         super.Dispose();
     }
 }

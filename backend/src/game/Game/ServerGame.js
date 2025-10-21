@@ -23,7 +23,7 @@ export class ServerGame extends AGame {
     gui;
 	Wind = new BABYLON.Vector3();
 	isLateralView = false;
-
+    maxPowerUps = 0;
 	// ---Instances ---
 	Zones = new ObservableList();
     PongTable;
