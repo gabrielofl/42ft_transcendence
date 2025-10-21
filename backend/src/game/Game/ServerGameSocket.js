@@ -123,7 +123,7 @@ export class ServerGameSocket {
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
         this.game.MessageBroker.Subscribe("PointMade", (msg) => { enqueueMessage(msg); console.log("PointMade"); });
-        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { enqueueMessage(msg); console.log("GameEnded"); });
+        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { this.handleGameEnded(msg); enqueueMessage(msg); console.log("GameEnded"); });
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
@@ -189,8 +189,8 @@ export class ServerGameSocket {
      * Handler para cuando el juego termina
      */
     handleGameEnded(payload) {
-        console.log(`🏁 Partida terminada. Ganador: ${payload.winner?.name}`);
-        this.game
+        console.log("🏁 Partida terminada.");
+        // console.log(`🏁 Partida terminada. Ganador: ${payload.winner?.name}`);
         // Aquí puedes mostrar pantalla de fin de juego
     }
 

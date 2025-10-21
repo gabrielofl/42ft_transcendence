@@ -5,7 +5,7 @@ import { MessageBroker } from "../Utils/MessageBroker.js";
 import { ObservableList } from "../Utils/ObservableList.js";
 
 export class AGame {
-    WIN_POINTS = 50;
+    WIN_POINTS = 5;
 	ID = "";
 	
     // --- Utils ---

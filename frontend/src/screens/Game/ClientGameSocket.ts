@@ -10,6 +10,7 @@ import { SelectedMap } from "./map-selection";
 import { API_BASE_URL } from "../config";
 import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
+import { navigateTo } from "src/navigation";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -207,13 +208,17 @@ export class ClientGameSocket {
 	public HandleGamePause(msg: GamePauseMessage): void {
 
 	}
+
 	/**
 	 * Maneja el mensaje de fin de juego.
 	 * @param {ScoreMessage} msg - El mensaje con los resultados finales.
 	 */
 	public HandleGameEnded(msg: ScoreMessage): void {
-
+		console.log("HandleGameEnded");
+		this.UIBroker.Publish("GameEnded", msg);
+		// navigateTo("results");
 	}
+
 	/** Maneja el mensaje para reiniciar el juego. */
 	public HandleGameRestart(): void {
 

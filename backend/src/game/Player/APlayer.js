@@ -48,7 +48,7 @@ export class APlayer {
 
         // TODO pasar a server Subscripción a mensajería global.
         // this.game.MessageBroker.Subscribe("MassEffect", this.OnMassEffect.bind(this));
-        // this.game.MessageBroker.Subscribe("SelfEffect", this.OnSelfEffect.bind(this));
+        this.game.MessageBroker.Subscribe("SelfEffect", this.OnSelfEffect.bind(this));
     }
 
     /**
@@ -56,7 +56,7 @@ export class APlayer {
      * @param {PlayerEffectMessage} msg 
      */
     OnSelfEffect(msg) {
-/*         if (this.game instanceof ServerGame)
+        if (this.game instanceof ServerGame)
         {
             let effect = this.game.CreatePlayerEffect(msg.effect);
             if (msg.origin === this.name)
@@ -64,7 +64,7 @@ export class APlayer {
                 effect.Execute(this);
                 this.Effects.Add(effect);
             }
-        } */
+        }
     }
 
     /**

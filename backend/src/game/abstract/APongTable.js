@@ -4,7 +4,7 @@ import { DisposableMesh } from "../Utils/DisposableMesh.js";
 import { AGame } from "./AGame.js";
 
 export class APongTable extends DisposableMesh {
-    MAX_POWERUPS = 5;
+    MAX_POWERUPS = 0;
     OnDisposeEvent = new Event();//: Event<void>
 
 	//private obstacles: Obstacle[];
