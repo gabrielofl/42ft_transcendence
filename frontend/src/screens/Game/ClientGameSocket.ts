@@ -123,7 +123,7 @@ export class ClientGameSocket {
 		if (this.disposed)
 			return;
 		
-		console.log("Sending message:", msg);
+		// console.log("Sending message:", msg);
 		if (ClientGameSocket.socket?.readyState === WebSocket.OPEN) {
 			ClientGameSocket.socket.send(JSON.stringify(msg));
 		} else {
@@ -147,6 +147,10 @@ export class ClientGameSocket {
 				: payload.data;
 
 			const msg = data as Message;
+
+			if (msg.type != "BallMove" && msg.type != "PaddlePosition")
+				console.log("Received message from server:", msg);
+
 			const handler = this.handlers[msg.type];
 			if (handler) {
 				handler(msg as any); // TS asegura narrow, pero aquí necesitamos el cast

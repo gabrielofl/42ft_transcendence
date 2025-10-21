@@ -108,7 +108,7 @@ export class ServerGame extends AGame {
         });
 
 		setInterval(() => {
-			this.Wind = this.RandomWind();
+			this.Wind = this.RandomWind(0.5);
 		}, 10000);
 
 		let lastLog = Date.now();
@@ -154,9 +154,12 @@ export class ServerGame extends AGame {
 	}
 
 	RandomWind(strength) {
+		logToFile("ServerGame RandomWind Start");
 		const angle = Math.random() * Math.PI * 2;
 		const dir = new BABYLON.Vector3(Math.cos(angle), 0, Math.sin(angle));
 		const magnitude = (0.8 + Math.random() * 0.2) * strength;
+		logToFile(`angle: ${angle}, dir: ${JSON.stringify(dir)}, magnitude: ${magnitude}`);
+		logToFile("ServerGame RandomWind End");
 		return dir.scale(magnitude);
 	}
 
@@ -196,12 +199,13 @@ export class ServerGame extends AGame {
 			type: "PointMade",
 			results: results,
 		});
+		console.log(`Disposing ball: ${ball.ID}`)
 		ball.Dispose();
 		logToFile("ServerGame BallEnterScoreZone End");
 	}
 
 	// Resetear posición y velocidad con física
-    Start() {
+	Start() {
 		logToFile("ServerGame Start Start");
         let ball = new ServerBall(this);
         const ballMesh = ball.GetMesh();
