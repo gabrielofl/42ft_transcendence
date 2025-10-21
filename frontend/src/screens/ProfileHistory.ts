@@ -20,7 +20,7 @@ export type UsersMap = Record<string, {
 
 
 // Add to utils?
-async function getCurrentUser() {
+export async function getCurrentUser() {
   const res = await fetch(`${API_BASE_URL}/users/me`, {
     credentials: 'include',
     headers: {

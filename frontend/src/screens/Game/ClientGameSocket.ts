@@ -50,11 +50,21 @@ export class ClientGameSocket {
 		return ClientGameSocket.Instance;
 	}
 
-	private Connect(code: string) {
+	public Connect(code: string) {
 		console.log(`Connecting to: ${code}`);
 		const connect = () => {
 			const userID = 42;
 
+			try {
+				const tournamentInfo = sessionStorage.getItem('tournamentMatchInfo');
+				if (tournamentInfo) {
+					const info = JSON.parse(tournamentInfo);
+					code = info.roomId;
+					//userID = info.userId;
+				}
+			} catch (e) {
+			}
+			
 			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
 			

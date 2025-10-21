@@ -3,6 +3,7 @@ import * as BABYLON from "@babylonjs/core";
 import { ServerGame } from "./ServerGame.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
 import { logToFile } from "./logger.js";
+import { tournamentEventBus } from "../../websocket/event-bus.js";
 
 /**
  * Gestiona la lógica de una sala de juego en el servidor, incluyendo las conexiones
@@ -223,9 +224,24 @@ export class ServerGameSocket {
      * Handler para cuando el juego termina
      */
     handleGameEnded(payload) {
-        console.log(`🏁 Partida terminada. Ganador: ${payload.winner?.name}`);
-        this.game
-        // Aquí puedes mostrar pantalla de fin de juego
+        
+        // Verificar si es un match de torneo
+        const tournamentInfo = this.parseTournamentRoomId(this.roomId);
+        if (tournamentInfo) {
+            
+            // Determinar el ganador basado en los resultados
+            const winner = this.determineWinner(payload.results);
+            if (winner) {
+                // Emitir evento al sistema de torneos
+                tournamentEventBus.emit('matchResult', {
+                    tournamentId: tournamentInfo.tournamentId,
+                    matchId: tournamentInfo.matchId,
+                    winner: winner,
+                    results: payload.results,
+                    roomId: this.roomId
+                });
+            }
+        }
     }
 
     /**
@@ -263,5 +279,52 @@ export class ServerGameSocket {
         });
         
         this.lastMoveSentAt = now; */
+    }
+
+    /**
+     * Parsea el roomId para extraer información del torneo
+     * @param {string} roomId - ID de la sala (formato: tournament-{id}-match-{matchId})
+     * @returns {Object|null} - { tournamentId, matchId } o null si no es un match de torneo
+     */
+    parseTournamentRoomId(roomId) {
+        if (!roomId || typeof roomId !== 'string') return null;
+        
+        // Formato esperado: tournament-123-match-1
+        const match = roomId.match(/^tournament-(\d+)-match-(\d+)$/);
+        if (match) {
+            return {
+                tournamentId: parseInt(match[1]),
+                matchId: parseInt(match[2])
+            };
+        }
+        
+        return null;
+    }
+
+    /**
+     * Determina el ganador basado en los resultados del juego
+     * @param {Array} results - Array de resultados [{username, score}, ...]
+     * @returns {Object|null} - {userId, username} del ganador o null si no se puede determinar
+     */
+    determineWinner(results) {
+        if (!results || !Array.isArray(results) || results.length < 2) {
+            return null;
+        }
+
+        // Ordenar por puntuación (mayor a menor)
+        const sortedResults = results.sort((a, b) => b.score - a.score);
+        const winner = sortedResults[0];
+        
+        if (!winner || !winner.username) {
+            return null;
+        }
+
+        // Para matches de torneo, necesitamos el userId, no solo el username
+        // Esto requerirá una consulta a la base de datos o pasar el userId en el payload
+        // Por ahora, retornamos el username y el tournament system deberá hacer la conversión
+        return {
+            username: winner.username,
+            score: winner.score
+        };
     }
 }

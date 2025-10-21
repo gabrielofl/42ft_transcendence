@@ -8,6 +8,7 @@ import { ClientGame } from "./ClientGame";
 import { LocalPlayer } from "./Player/LocalPlayer";
 import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
 import { APlayer } from "./Player/APlayer";
+import { Maps } from "./Maps";
 const API_BASE_URL = 'https://localhost:443';
 
 export type PlayerType = "Local" | "AI" | "Remote";
@@ -33,15 +34,56 @@ export async function renderGame() {
 	// const rendered = replaceTemplatePlaceholders(gameTemplate, { playerName, opponentName, mode });
 	main.innerHTML = gameTemplate; 
 
-	setupGameEvents();
+	// Verificar si es un torneo
+	const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+	if (tournamentMatchInfo) {
+		await setupTournamentGame(JSON.parse(tournamentMatchInfo));
+	} else {
+		setupGameEvents();
+	}
 	//setupGameEndedListener();
 	//setupPointMadeListener();
+}
+
+async function setupTournamentGame(matchInfo: any): Promise<void> {
+	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
+	if (!canvas) {
+		console.error('❌ Canvas no encontrado');
+		return;
+	}
+
+
+	try {
+		// Crear el juego con el mapa del torneo
+		const game = new ClientGame(canvas, Maps[matchInfo.mapKey || 'ObstacleMap']);
+		
+		// Configurar jugadores
+		const players: [number, string][] = [
+			[matchInfo.userId, matchInfo.username], // Jugador local
+			[matchInfo.opponent.userId, matchInfo.opponent.username] // Oponente
+		];
+
+		await game.AddPlayers({ type: 'AllReady', nArray: players });
+
+		// Conectar al WebSocket del juego directamente (sin usar ClientGameSocket.StartGame)
+		const gameSocket = ClientGameSocket.GetInstance();
+		// Conectar directamente al WebSocket del juego
+		gameSocket.Connect(matchInfo.roomId);
+
+		// Configurar eventos del juego
+		setupGameEndedListener(game);
+		setupPointMadeListener(game);
+
+
+	} catch (error) {
+		console.error('❌ Error configurando juego de torneo:', error);
+		alert('Error iniciando el juego del torneo. Inténtalo de nuevo.');
+	}
 }
 
 function setupGameEvents(): void { 
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
-		console.log("Iniciando Pong local");
 
 		const container = document.getElementById("player-cards-client");
 		if (!container)

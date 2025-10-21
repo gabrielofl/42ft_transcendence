@@ -5,7 +5,9 @@ export type Screen =
   | "waiting"
   | "join"
   | "create"
-  | "tournament"
+  | "tournament-selection"
+  | "tournament-lobby"
+  | "tournament-waiting"
   | "profile"
   | "leaderboard"
   | "contact";

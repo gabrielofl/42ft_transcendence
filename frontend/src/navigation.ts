@@ -12,6 +12,10 @@ import { ClientGameSocket } from "./screens/Game/ClientGameSocket.js";
 import { renderMapSelection } from "./screens/Game/map-selection.js";
 import { renderWaitingRoom } from "./screens/waiting_room.js";
 import { renderJoinGame } from "./screens/join-game.js";
+import { renderTournamentSelection } from "./screens/Game/tournament-selection.js";
+import { renderTournamentLobby } from "./screens/tournament-lobby.js";
+import { renderWaitingRoom as renderTournamentWaitingRoom } from "./screens/tournament_waiting_room.js";
+import { ClientTournamentSocket } from "./services/tournament-socket";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -46,6 +50,12 @@ export function initNavigation() {
   onScreenLeave("game", () => {
     console.log("Saliendo de game");
     ClientGameSocket.GetInstance()?.DisposeGame();
+  });
+
+  onScreenLeave("tournament-waiting", () => {
+    console.log("Saliendo de tournament-waiting");
+    const tournamentSocket = ClientTournamentSocket.GetInstance();
+    tournamentSocket.Disconnect();
   });
 
   // Render inicial
@@ -98,7 +108,13 @@ async function renderScreen(screen: Screen) {
       renderHome();
       break;
     case "game":
-      renderGame().then(() => ClientGameSocket.GetInstance().StartGame());
+      renderGame().then(() => {
+        // Solo llamar StartGame si NO es un torneo
+        const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+        if (!tournamentMatchInfo) {
+          ClientGameSocket.GetInstance().StartGame();
+        }
+      });
       break;
     case "create":
       renderMapSelection();
@@ -109,8 +125,14 @@ async function renderScreen(screen: Screen) {
 	case "join":
       renderJoinGame();
       break;
-    case "tournament":
-      // renderTournament();
+    case "tournament-selection":
+      renderTournamentSelection();
+      break;
+    case "tournament-lobby":
+      renderTournamentLobby();
+      break;
+    case "tournament-waiting":
+      renderTournamentWaitingRoom();
       break;
     case "profile":
       renderProfile();
