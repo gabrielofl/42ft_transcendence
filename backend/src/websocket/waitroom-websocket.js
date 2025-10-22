@@ -155,6 +155,8 @@ async function waitroomWebsocket(fastify) {
         mapKey: room.map_key,
         powerUpAmount: room.powerup_amount,
         enabledPowerUps: JSON.parse(room.enabled_powerups || '[]'),
+        windAmount: room.wind_amount,
+        pointToWinAmount: room.point_to_win_amount,
       };
       await startGame(code, combined, config);
       return { room, players: combined };

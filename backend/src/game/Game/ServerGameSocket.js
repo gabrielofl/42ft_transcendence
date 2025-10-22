@@ -34,9 +34,11 @@ export class ServerGameSocket {
      */
     constructor(roomId, config) {
         this.roomId = roomId;
+        logToFile(`Creating ServerGameSocket for room ${roomId} with config: ${JSON.stringify(config)}`);
         this.game = new ServerGame();
         this.game.WIN_POINTS = config.pointToWinAmount || 5;
         this.game.SetEnabledPowerUps(config.enabledPowerUps);
+        this.game.SetWind(config.windAmount || 0);
         this.setupGameEventListeners();
         this.people = new Map();
         this.handlers = {

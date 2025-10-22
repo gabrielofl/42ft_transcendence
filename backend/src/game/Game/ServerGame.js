@@ -32,6 +32,8 @@ export class ServerGame {
     // --- Visual ---
     gui;
 	Wind = new BABYLON.Vector3();
+	WindForce = 0.5;
+	_windInterval = null;
 	isLateralView = false;
     maxPowerUps = 0;
 
@@ -100,6 +102,28 @@ export class ServerGame {
             }
         }
         logToFile(`Enabled power-ups: ${Object.keys(this.PowerUpFactory).join(', ')}`);
+    }
+
+    /**
+     * Configura la fuerza del viento y activa/desactiva su cambio periódico.
+     * @param {number} windForce - La fuerza del viento. Si es 0, el viento se desactiva.
+     */
+    SetWind(windForce) {
+        this.WindForce = (windForce || 0) * 0.01;
+		logToFile(`Setting WindForce to: ${this.WindForce}`);
+
+        if (this._windInterval) {
+            clearInterval(this._windInterval);
+            this._windInterval = null;
+        }
+
+        if (this.WindForce > 0) {
+            this._windInterval = setInterval(() => {
+                this.Wind = this.RandomWind(this.WindForce);
+            }, 10000);
+        } else {
+            this.Wind = new BABYLON.Vector3(0, 0, 0);
+        }
     }
 
     BallRemoved() {
@@ -179,10 +203,6 @@ export class ServerGame {
             p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0), maxDistance: 10});
 			p.ScoreZone.OnEnterEvent.Subscribe((iMesh) => this.BallEnterScoreZone(p, iMesh));
         });
-
-		setInterval(() => {
-			this.Wind = this.RandomWind(0.5);
-		}, 10000);
 
 		let lastLog = Date.now();
 
