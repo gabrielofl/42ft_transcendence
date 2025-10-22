@@ -1,16 +1,16 @@
+import { ServerGame } from "./Game/ServerGame.js";
 import { APlayer } from "./Player/APlayer.js";
 import { Event } from "./Utils/Event.js";
-import { AGame } from "./abstract/AGame.js";
 
 export class Inventory {
   OnDisposeEvent = new Event();// Event<void>
   powerUps = new Map();// Map<number, IPowerUp | undefined>
   owner;// APlayer
-  game;// AGame
+  game;// ServerGame
 
   /**
    * 
-   * @param {AGame} game 
+   * @param {ServerGame} game 
    * @param {APlayer} owner 
    */
   constructor(game, owner) {

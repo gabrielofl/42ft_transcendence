@@ -4,7 +4,7 @@ import { ServerPowerUpBox } from "../PowerUps/ServerPowerUpBox.js";
 import { ServerWall } from "../Collidable/ServerWall.js";
 import { DisposableMesh } from "../Utils/DisposableMesh.js";
 import { Zone } from "../Utils/Zone.js";
-import { AGame } from "../abstract/AGame.js";
+import { ServerGame } from "./ServerGame.js";
 
 export class ServerPongTable extends DisposableMesh {
     gameZone;
@@ -13,7 +13,7 @@ export class ServerPongTable extends DisposableMesh {
     // private obstacles: Obstacle[];
 
     /**
-     * @param {AGame} game 
+     * @param {ServerGame} game 
      */
     constructor(game) {
         let fMeshBuilder = (scene) => BABYLON.MeshBuilder.CreateGround("table", {

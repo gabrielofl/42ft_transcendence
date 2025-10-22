@@ -36,6 +36,7 @@ export class ServerGameSocket {
         this.roomId = roomId;
         this.game = new ServerGame();
         this.game.WIN_POINTS = config.pointToWinAmount || 5;
+        this.game.SetEnabledPowerUps(config.enabledPowerUps);
         this.setupGameEventListeners();
         this.people = new Map();
         this.handlers = {
