@@ -147,6 +147,8 @@ function setupTournamentSelectionControls(): void {
     // 4) Store tournament ID for the waiting room
     try {
       sessionStorage.setItem("currentTournamentId", String(tournamentId));
+      // Limpiar información de torneos anteriores
+      sessionStorage.removeItem('tournamentMatchInfo');
     } catch (e) {
       console.error('Failed to store in sessionStorage:', e);
     }

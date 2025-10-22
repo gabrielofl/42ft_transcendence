@@ -50,12 +50,28 @@ export function initNavigation() {
   onScreenLeave("game", () => {
     console.log("Saliendo de game");
     ClientGameSocket.GetInstance()?.DisposeGame();
+    
+    // Si volvemos de un match de torneo, reconectar al tournament socket
+    const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+    if (tournamentMatchInfo) {
+      // El socket ya debería estar conectado, no hacer nada
+      console.log("🏆 Volviendo de match de torneo, manteniendo conexión");
+    }
+  });
+
+  onScreenLeave("waiting", () => {
+    console.log("Saliendo de waiting room normal");
+    sessionStorage.removeItem('tournamentMatchInfo');
   });
 
   onScreenLeave("tournament-waiting", () => {
     console.log("Saliendo de tournament-waiting");
-    const tournamentSocket = ClientTournamentSocket.GetInstance();
-    tournamentSocket.Disconnect();
+    // NO desconectar si vamos a game (necesitamos el socket para enviar señales)
+    const nextScreen = AppStore.NavigoStore.GetState();
+    if (nextScreen !== 'game') {
+      const tournamentSocket = ClientTournamentSocket.GetInstance();
+      tournamentSocket.Disconnect();
+    }
   });
 
   // Render inicial
@@ -109,11 +125,15 @@ async function renderScreen(screen: Screen) {
       break;
     case "game":
       renderGame().then(() => {
-        // Solo llamar StartGame si NO es un torneo
+        // Verificar si es un torneo DESPUÉS de renderizar
         const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+        
         if (!tournamentMatchInfo) {
+          // Sala normal: limpiar sessionStorage y llamar StartGame
+          sessionStorage.removeItem('tournamentMatchInfo');
           ClientGameSocket.GetInstance().StartGame();
         }
+        // Para torneos: GameScreen.ts ya maneja todo internamente
       });
       break;
     case "create":

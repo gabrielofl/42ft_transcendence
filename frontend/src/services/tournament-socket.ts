@@ -107,6 +107,15 @@ export class ClientTournamentSocket {
     }));
   }
 
+  Send(message: any) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('WebSocket not connected');
+      return;
+    }
+
+    this.ws.send(JSON.stringify(message));
+  }
+
   Disconnect() {
     if (this.ws) {
       this.ws.close();
@@ -136,6 +145,9 @@ export class ClientTournamentSocket {
       case 'BracketGenerated':
         this.handleBracketGenerated(msg);
         break;
+      case 'BracketUpdated':
+        this.handleBracketUpdated(msg);
+        break;
     }
   }
 
@@ -143,8 +155,6 @@ export class ClientTournamentSocket {
    * Maneja cuando se completa un match individual
    */
   private handleMatchCompleted(event: MatchCompletedEvent) {
-    
-    // Emitir evento interno para actualizar UI
     this.UIBroker.Publish('BracketMatchCompleted', {
       matchId: event.matchId,
       winner: event.winner,
@@ -156,8 +166,6 @@ export class ClientTournamentSocket {
    * Maneja cuando avanza una ronda (cuartos → semifinales → final)
    */
   private handleRoundAdvanced(event: RoundAdvancedEvent) {
-    
-    // Emitir evento interno para actualizar bracket
     this.UIBroker.Publish('BracketRoundAdvanced', {
       roundNumber: event.roundNumber,
       roundName: event.roundName,
@@ -170,8 +178,6 @@ export class ClientTournamentSocket {
    * Maneja cuando el torneo termina
    */
   private handleTournamentFinished(event: TournamentFinishedEvent) {
-    
-    // Emitir evento interno para mostrar pantalla de ganador
     this.UIBroker.Publish('BracketTournamentFinished', {
       winner: event.winner,
       tournamentId: event.tournamentId
@@ -182,9 +188,17 @@ export class ClientTournamentSocket {
    * Maneja cuando se genera el bracket inicial
    */
   private handleBracketGenerated(msg: any) {
-    
-    // Emitir evento interno para mostrar bracket inicial
     this.UIBroker.Publish('BracketGenerated', {
+      bracket: msg.bracket,
+      tournamentId: msg.tournamentId
+    });
+  }
+
+  /**
+   * Maneja cuando se actualiza el bracket completo
+   */
+  private handleBracketUpdated(msg: any) {
+    this.UIBroker.Publish('BracketUpdated', {
       bracket: msg.bracket,
       tournamentId: msg.tournamentId
     });

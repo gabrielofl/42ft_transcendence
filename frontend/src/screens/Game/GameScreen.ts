@@ -9,6 +9,7 @@ import { LocalPlayer } from "./Player/LocalPlayer";
 import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
 import { APlayer } from "./Player/APlayer";
 import { Maps } from "./Maps";
+import { navigateTo } from "../../navigation";
 const API_BASE_URL = 'https://localhost:443';
 
 export type PlayerType = "Local" | "AI" | "Remote";
@@ -52,28 +53,34 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 		return;
 	}
 
-
 	try {
 		// Crear el juego con el mapa del torneo
 		const game = new ClientGame(canvas, Maps[matchInfo.mapKey || 'ObstacleMap']);
 		
-		// Configurar jugadores
+		// Configurar jugadores EN EL MISMO ORDEN que el backend (player1, player2 del bracket)
+		// Esto es crítico para que las paletas se asignen correctamente
 		const players: [number, string][] = [
-			[matchInfo.userId, matchInfo.username], // Jugador local
-			[matchInfo.opponent.userId, matchInfo.opponent.username] // Oponente
+			[matchInfo.player1.userId, matchInfo.player1.username],
+			[matchInfo.player2.userId, matchInfo.player2.username]
 		];
 
 		await game.AddPlayers({ type: 'AllReady', nArray: players });
 
-		// Conectar al WebSocket del juego directamente (sin usar ClientGameSocket.StartGame)
+		// Configurar WebSocket y eventos ANTES de conectar
 		const gameSocket = ClientGameSocket.GetInstance();
-		// Conectar directamente al WebSocket del juego
+		
+		// Guardar referencia del juego en el socket
+		gameSocket.game = game;
+		
+		// Suscribir movimientos del jugador para enviarlos al servidor
+		game.MessageBroker.Subscribe("PlayerPreMove", (msg) => gameSocket.Send(msg));
+		
+		// Conectar directamente al WebSocket del juego usando el roomId del torneo
 		gameSocket.Connect(matchInfo.roomId);
 
 		// Configurar eventos del juego
 		setupGameEndedListener(game);
 		setupPointMadeListener(game);
-
 
 	} catch (error) {
 		console.error('❌ Error configurando juego de torneo:', error);
@@ -108,30 +115,53 @@ function addPlayer(msg: AddPlayerMessage): void {
 // Subscripción al evento GameEnded.
 function setupGameEndedListener(game: ClientGame): void {
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
-        const winner = msg.results.sort((a, b) => a.score - b.score)[0];
-		const container = document.querySelector(".relative.w-full") as HTMLDivElement;
-		if (!container) 
-			return;
+		// Verificar si es un match de torneo
+		const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+		
+		if (tournamentMatchInfo) {
+			// Es un match de torneo: mostrar resultado brevemente y volver al waiting room
+			const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+			const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+			if (!container) return;
 
-		// Inyectar panel
-		container.insertAdjacentHTML("beforeend", gameEndedTemplate);
+			// Mostrar panel temporal con resultado
+			container.insertAdjacentHTML("beforeend", gameEndedTemplate);
+			const winnerNameSpan = document.getElementById("winner-name");
+			if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
 
-		// Actualizar nombre del ganador
-		const winnerNameSpan = document.getElementById("winner-name");
-		if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+			// Ocultar botón "Play Again" en torneos
+			const playAgainBtn = document.getElementById("play-again-btn");
+			if (playAgainBtn) playAgainBtn.style.display = 'none';
 
-		// Configurar botón
-		const playAgainBtn = document.getElementById("play-again-btn");
-		if (playAgainBtn) {
-			playAgainBtn.addEventListener("click", () => {
-				const panel = document.getElementById("game-ended-panel");
-				if (panel)
-					panel.remove();
-				game.MessageBroker.Publish("GameRestart", { type:"GameRestart" });
-				msg.results.forEach(result => 
-					setPlayerPoints(result.username, 0)
-				);
-			});
+			// Navegar de vuelta al tournament waiting room después de 3 segundos
+			setTimeout(() => {
+				navigateTo('tournament-waiting');
+			}, 3000);
+		} else {
+			// Es una sala normal: mostrar panel de Game Ended normal
+			const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+			const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+			if (!container) return;
+
+			// Inyectar panel
+			container.insertAdjacentHTML("beforeend", gameEndedTemplate);
+
+			// Actualizar nombre del ganador
+			const winnerNameSpan = document.getElementById("winner-name");
+			if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+
+			// Configurar botón Play Again
+			const playAgainBtn = document.getElementById("play-again-btn");
+			if (playAgainBtn) {
+				playAgainBtn.addEventListener("click", () => {
+					const panel = document.getElementById("game-ended-panel");
+					if (panel) panel.remove();
+					game.MessageBroker.Publish("GameRestart", { type:"GameRestart" });
+					msg.results.forEach(result => 
+						setPlayerPoints(result.username, 0)
+					);
+				});
+			}
 		}
 	});
 }

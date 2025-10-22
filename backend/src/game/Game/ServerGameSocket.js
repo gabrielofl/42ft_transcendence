@@ -123,9 +123,19 @@ export class ServerGameSocket {
         // Suscribirse a eventos del juego
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
-        this.game.MessageBroker.Subscribe("PointMade", (msg) => { enqueueMessage(msg); console.log("PointMade"); });
-        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { this.handleGameEnded(msg); enqueueMessage(msg); console.log("GameEnded"); });
-        this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
+        this.game.MessageBroker.Subscribe("PointMade", (msg) => { 
+            const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+            console.log(`⚽ ${roomInfo} GOL! ${msg.results[0]?.username}: ${msg.results[0]?.score} - ${msg.results[1]?.username}: ${msg.results[1]?.score}`);
+            enqueueMessage(msg); 
+        });
+        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { 
+            const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+            const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+            console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
+            this.handleGameEnded(msg); 
+            enqueueMessage(msg); 
+        });
+        this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); });
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
         this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);

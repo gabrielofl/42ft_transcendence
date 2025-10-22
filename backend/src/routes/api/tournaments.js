@@ -152,7 +152,7 @@ export default async function (fastify, opts) {
       const tournament = await fastify.db.get(
         `SELECT 
           id, name, status, map_key, powerup_amount, enabled_powerups, 
-          wind_amount, match_time_limit, created_at, started_at, finished_at
+          wind_amount, match_time_limit, bracket, created_at, started_at, finished_at
          FROM tournaments WHERE id = ?`,
         [id]
       );
@@ -180,6 +180,7 @@ export default async function (fastify, opts) {
         enabled_powerups: JSON.parse(tournament.enabled_powerups || '[]'),
         wind_amount: tournament.wind_amount,
         match_time_limit: tournament.match_time_limit,
+        bracket: tournament.bracket || null, // Devolver bracket como string JSON
         created_at: tournament.created_at,
         started_at: tournament.started_at,
         finished_at: tournament.finished_at,

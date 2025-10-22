@@ -88,6 +88,47 @@ function replaceTournamentIdInURL(id: number | null) {
 }
 
 // ---------- bracket and notifications ----------
+
+// Helper: Guardar info del match en sessionStorage
+async function saveMatchInfo(tournamentId: number, match: any, roundName: string) {
+  try {
+    const tournamentConfig = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
+      credentials: 'include'
+    });
+    const config = await tournamentConfig.json();
+    
+    sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
+      tournamentId,
+      matchId: match.matchId,
+      roomId: match.roomId,
+      userId: userId,
+      username: username,
+      opponent: match.player1.userId === userId ? match.player2 : match.player1,
+      player1: match.player1,
+      player2: match.player2,
+      round: roundName,
+      mapKey: config.map_key || 'ObstacleMap',
+      isTournament: true
+    }));
+  } catch (error) {
+    console.error('Error obteniendo configuración del torneo:', error);
+    // Fallback con configuración por defecto
+    sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
+      tournamentId,
+      matchId: match.matchId,
+      roomId: match.roomId,
+      userId: userId,
+      username: username,
+      opponent: match.player1.userId === userId ? match.player2 : match.player1,
+      player1: match.player1,
+      player2: match.player2,
+      round: roundName,
+      mapKey: 'ObstacleMap',
+      isTournament: true
+    }));
+  }
+}
+
 function showBracket() {
   const waitingSection = document.getElementById("waiting-room-section");
   const bracketSection = document.getElementById("bracket-section");
@@ -143,6 +184,10 @@ function initializeBracketViewer() {
     bracketViewer?.messageBroker.Publish("BracketGenerated", data);
   });
   
+  tournamentSocket.UIBroker.Subscribe("BracketUpdated", (data) => {
+    bracketViewer?.messageBroker.Publish("BracketUpdated", data);
+  });
+  
   tournamentSocket.UIBroker.Subscribe("BracketMatchCompleted", (data) => {
     bracketViewer?.messageBroker.Publish("BracketMatchCompleted", data);
   });
@@ -158,9 +203,8 @@ function initializeBracketViewer() {
 
 function updateMatchInfo() {
   const matchInfoEl = document.getElementById('match-info');
-  const playBtn = document.getElementById('play-match-btn');
   
-  if (!matchInfoEl || !playBtn) return;
+  if (!matchInfoEl) return;
   
   if (myCurrentMatch) {
     const opponentName = myCurrentMatch.player1.userId === userId 
@@ -168,26 +212,64 @@ function updateMatchInfo() {
       : myCurrentMatch.player1.username;
     
     matchInfoEl.innerHTML = `
-      <div class="text-lg font-bold text-[--primary-color]">Your Match</div>
+      <div class="text-lg font-bold text-[--primary-color]">Your Next Match</div>
       <div class="text-sm text-gray-300">vs ${opponentName}</div>
       <div class="text-xs text-gray-400">Match ${myCurrentMatch.matchId}</div>
     `;
-    
-    playBtn.classList.remove('hidden');
-    
-    // Setup click handler
-    playBtn.onclick = () => {
-      const tournamentSocket = ClientTournamentSocket.GetInstance();
-      tournamentSocket.Disconnect();
-      navigateTo('game');
-    };
   } else {
     matchInfoEl.innerHTML = `
       <div class="text-lg font-bold text-[--primary-color]">Tournament Bracket</div>
-      <div class="text-sm text-gray-300">Waiting for your match...</div>
+      <div class="text-sm text-gray-300">Waiting for next round...</div>
     `;
-    playBtn.classList.add('hidden');
   }
+}
+
+// Nueva función para la cuenta atrás
+let countdownInterval: number | null = null;
+let lastProcessedEvent: string | null = null; // Para evitar eventos duplicados
+
+function startCountdown(seconds: number, onComplete: () => void) {
+  const countdownSection = document.getElementById('countdown-section');
+  const countdownTimer = document.getElementById('countdown-timer');
+  const waitingMessage = document.getElementById('waiting-message');
+  
+  if (!countdownSection || !countdownTimer) {
+    console.error('Error: Countdown elements not found in DOM');
+    return;
+  }
+  
+  // Ocultar mensaje de espera
+  if (waitingMessage) waitingMessage.classList.add('hidden');
+  
+  // Mostrar countdown
+  countdownSection.classList.remove('hidden');
+  
+  let remaining = seconds;
+  countdownTimer.textContent = remaining.toString();
+  
+  // Limpiar interval anterior si existe
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+  
+  countdownInterval = window.setInterval(() => {
+    remaining--;
+    countdownTimer.textContent = remaining.toString();
+    
+    if (remaining <= 0) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownSection.classList.add('hidden');
+      onComplete();
+    }
+  }, 1000);
+}
+
+function showWaitingMessage() {
+  const countdownSection = document.getElementById('countdown-section');
+  const waitingMessage = document.getElementById('waiting-message');
+  
+  if (countdownSection) countdownSection.classList.add('hidden');
+  if (waitingMessage) waitingMessage.classList.remove('hidden');
 }
 
 // ---------- main render ----------
@@ -337,11 +419,6 @@ export async function renderWaitingRoom(): Promise<void> {
     }
     renderPlayers();
   });
-  
-  // tournamentSocket.UIBroker.Subscribe("TournamentStarting", () => {
-  //   showNotification('🚀 Tournament starting...', 'info');
-  // });
-  
   tournamentSocket.UIBroker.Subscribe("BracketGenerated", async (data) => {
     
     // Encontrar mi match en el bracket
@@ -351,126 +428,123 @@ export async function renderWaitingRoom(): Promise<void> {
 
     if (myMatch) {
       myCurrentMatch = myMatch;
-      const opponentName = myMatch.player1.userId === userId 
-        ? myMatch.player2.username 
-        : myMatch.player1.username;
+      await saveMatchInfo(data.tournamentId, myMatch, data.bracket.roundName);
 
-      // Obtener configuración del torneo del backend
-      try {
-        const tournamentConfig = await fetch(`${API_BASE_URL}/tournaments/${data.tournamentId}`, {
-          credentials: 'include'
-        });
-        const config = await tournamentConfig.json();
-        
-        // Guardar info del match para el ClientGameSocket
-        sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
-          tournamentId: data.tournamentId,
-          matchId: myMatch.matchId,
-          roomId: myMatch.roomId,
-          userId: userId,
-          username: username,
-          opponent: myMatch.player1.userId === userId ? myMatch.player2 : myMatch.player1,
-          round: data.bracket.roundName,
-          mapKey: config.map_key || 'ObstacleMap',
-          isTournament: true
-        }));
-      } catch (error) {
-        console.error('❌ Error obteniendo configuración del torneo:', error);
-        // Fallback con configuración por defecto
-        sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
-          tournamentId: data.tournamentId,
-          matchId: myMatch.matchId,
-          roomId: myMatch.roomId,
-          userId: userId,
-          username: username,
-          opponent: myMatch.player1.userId === userId ? myMatch.player2 : myMatch.player1,
-          round: data.bracket.roundName,
-          mapKey: 'ObstacleMap',
-          isTournament: true
-        }));
-      }
-
-      // Mostrar notificación
-      // showNotification(`🏆 Tournament started! Your opponent: ${opponentName}`, 'success');
-      
-      // Mostrar bracket en lugar de navegar directamente
+      // Mostrar bracket
       showBracket();
       updateMatchInfo();
+      
+      // Iniciar cuenta atrás de 10 segundos para el primer match
+      startCountdown(10, async () => {
+        // 1. Primero navegar al juego (se conecta a /gamews)
+        navigateTo('game');
+        
+        // 2. Esperar un momento para que se conecte
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 3. LUEGO enviar señal para iniciar el match
+        const tournamentSocket = ClientTournamentSocket.GetInstance();
+        tournamentSocket.Send({ 
+          type: 'TournamentMatchStart', 
+          roomId: myMatch.roomId 
+        });
+        console.log(`🎬 Señal de inicio enviada para ${myMatch.roomId}`);
+      });
     } else {
       console.error('No se encontró match para este jugador en el bracket');
-      // showNotification('❌ Error: No match found for you in the bracket', 'warning');
     }
   });
 
   // Listeners para eventos de bracket
+
   tournamentSocket.UIBroker.Subscribe("BracketMatchCompleted", (data) => {
-    // showNotification(`Match ${data.matchId} completed! Winner: ${data.winner.username}`, 'info');
+    // El BracketViewer ya actualiza visualmente el bracket
+    // Solo necesitamos verificar si era nuestro match
+    if (myCurrentMatch && myCurrentMatch.matchId === data.matchId) {
+      // Mostrar mensaje de espera
+      showWaitingMessage();
+      // Resetear myCurrentMatch para esperar el siguiente
+      myCurrentMatch = null;
+    }
   });
 
   tournamentSocket.UIBroker.Subscribe("BracketRoundAdvanced", async (data) => {
-    // showNotification(`🎯 Round advanced to ${data.roundName}!`, 'success');
+    // Crear un ID único para este evento
+    const eventId = `${data.tournamentId}-${data.roundNumber}-${data.matches.length}`;
     
-    // Verificar si tengo un nuevo match
+    // Evitar procesar eventos duplicados
+    if (lastProcessedEvent === eventId) {
+      return;
+    }
+    
+    lastProcessedEvent = eventId;
+    
+    // Verificar si tengo un nuevo match en esta ronda
     const myNewMatch = data.matches.find((m: any) =>
       m.player1.userId === userId || m.player2.userId === userId
     );
 
     if (myNewMatch) {
       myCurrentMatch = myNewMatch;
-      const opponentName = myNewMatch.player1.userId === userId 
-        ? myNewMatch.player2.username 
-        : myNewMatch.player1.username;
+      await saveMatchInfo(data.tournamentId, myNewMatch, data.roundName);
 
-      // Obtener configuración del torneo del backend
-      try {
-        const tournamentConfig = await fetch(`${API_BASE_URL}/tournaments/${data.tournamentId}`, {
-          credentials: 'include'
-        });
-        const config = await tournamentConfig.json();
-        
-        // Actualizar info del match
-        sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
-          tournamentId: data.tournamentId,
-          matchId: myNewMatch.matchId,
-          roomId: myNewMatch.roomId,
-          userId: userId,
-          username: username,
-          opponent: myNewMatch.player1.userId === userId ? myNewMatch.player2 : myNewMatch.player1,
-          round: data.roundName,
-          mapKey: config.map_key || 'ObstacleMap',
-          isTournament: true
-        }));
-      } catch (error) {
-        console.error('❌ Error obteniendo configuración del torneo:', error);
-        // Fallback con configuración por defecto
-        sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
-          tournamentId: data.tournamentId,
-          matchId: myNewMatch.matchId,
-          roomId: myNewMatch.roomId,
-          userId: userId,
-          username: username,
-          opponent: myNewMatch.player1.userId === userId ? myNewMatch.player2 : myNewMatch.player1,
-          round: data.roundName,
-          mapKey: 'ObstacleMap',
-          isTournament: true
-        }));
-      }
-
-      // showNotification(`🎮 Your next match: ${opponentName}`, 'success');
+      // Actualizar UI para mostrar el nuevo match
       updateMatchInfo();
+      
+      // Asegurar que el bracket esté visible
+      showBracket();
+      
+      // Verificar si ya estamos en tournament-waiting antes de iniciar countdown
+      // Si estamos en otra pantalla (ej: game), esperar a que volvamos
+      const currentScreen = window.location.hash.replace('#', '');
+      
+      if (currentScreen === 'tournament-waiting') {
+        startCountdown(10, async () => {
+          navigateTo('game');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const tournamentSocket = ClientTournamentSocket.GetInstance();
+          tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: myNewMatch.roomId });
+        });
+      } else {
+        // Guardar que hay un countdown pendiente
+        sessionStorage.setItem('pendingCountdown', 'true');
+      }
+    } else {
+      // Mostrar mensaje de espera
+      showWaitingMessage();
     }
   });
 
   tournamentSocket.UIBroker.Subscribe("BracketTournamentFinished", (data) => {
-    // showNotification(`🏆 Tournament finished! Winner: ${data.winner.username}`, 'success');
+    // Ocultar countdown si está activo
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+    }
+    const countdownSection = document.getElementById('countdown-section');
+    if (countdownSection) countdownSection.classList.add('hidden');
     
-    // Desconectar del WebSocket
-    tournamentSocket.Disconnect();
+    // Mostrar mensaje de torneo terminado en el match info
+    const matchInfoEl = document.getElementById('match-info');
+    if (matchInfoEl) {
+      const isWinner = data.winner.userId === userId;
+      matchInfoEl.innerHTML = `
+        <div class="text-2xl font-bold ${isWinner ? 'text-yellow-400' : 'text-[--primary-color]'}">
+          ${isWinner ? '🏆 ¡Ganaste el Torneo!' : '🏆 Torneo Terminado'}
+        </div>
+        <div class="text-lg text-white mt-2">
+          Ganador: ${data.winner.username}
+        </div>
+        <div class="text-sm text-gray-400 mt-1">
+          Regresando al lobby en 5 segundos...
+        </div>
+      `;
+    }
     
-    // Navegar de vuelta al lobby después de un delay
+    // Desconectar del WebSocket después de un delay
     setTimeout(() => {
+      tournamentSocket.Disconnect();
       navigateTo('tournament-lobby');
-    }, 3000);
+    }, 5000);
   });
   
   // Conectar DESPUÉS de suscribir
@@ -480,6 +554,82 @@ export async function renderWaitingRoom(): Promise<void> {
   if (cardsContainer) cardsContainer.style.visibility = "visible";
   const loadingNode = document.getElementById("wait-loading-banner");
   if (loadingNode) loadingNode.remove();
+  
+  // Si hay información de match en sessionStorage, mostrar el bracket
+  // (solo existe si el torneo ya empezó)
+  const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+  if (tournamentMatchInfo) {
+    showBracket();
+    
+    // Verificar si hay un countdown pendiente de iniciar
+    const hasPendingCountdown = sessionStorage.getItem('pendingCountdown');
+    if (hasPendingCountdown === 'true') {
+      sessionStorage.removeItem('pendingCountdown');
+      const matchInfo = JSON.parse(tournamentMatchInfo);
+      
+      // Usar setTimeout para asegurar que el DOM esté listo
+      setTimeout(() => {
+        startCountdown(10, async () => {
+          navigateTo('game');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const tournamentSocket = ClientTournamentSocket.GetInstance();
+          tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: matchInfo.roomId });
+        });
+      }, 100);
+    }
+    
+    // Obtener el bracket actualizado del backend
+    try {
+      const response = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
+        credentials: 'include'
+      });
+      const tournamentData = await response.json();
+      
+      if (tournamentData.status === 'in_progress') {
+        // El backend devuelve bracket como string JSON en la columna bracket
+        // Necesitamos hacer otra query o modificar el endpoint para que devuelva el bracket parseado
+        const bracketResponse = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
+          credentials: 'include'
+        });
+        const fullTournamentData = await bracketResponse.json();
+        
+        // Si el backend ya tiene el bracket almacenado, reconstruir la vista
+        if (fullTournamentData.bracket) {
+          const bracket = typeof fullTournamentData.bracket === 'string' 
+            ? JSON.parse(fullTournamentData.bracket) 
+            : fullTournamentData.bracket;
+          
+          // Convertir TODAS las rondas del bracket
+          const allRounds = bracket.rounds.map((round: any, index: number) => ({
+            name: round.name,
+            matches: round.matches.map((match: any) => ({
+              matchId: match.matchId,
+              roomId: `tournament-${tournamentId}-match-${match.matchId}`,
+              player1: match.player1,
+              player2: match.player2,
+              winner: match.winner || null,
+              status: match.status || 'pending'
+            }))
+          }));
+          
+          // Publicar TODAS las rondas al BracketViewer
+          bracketViewer?.messageBroker.Publish("BracketFullState", {
+            tournamentId: tournamentId,
+            currentRound: bracket.currentRound || 0,
+            rounds: allRounds,
+            status: 'in_progress'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo bracket del backend:', error);
+    }
+    
+    // Si ya terminó el match, mostrar mensaje de espera
+    if (!myCurrentMatch || myCurrentMatch.matchId === JSON.parse(tournamentMatchInfo).matchId) {
+      showWaitingMessage();
+    }
+  }
 }
 
 // ---------- UI construction (cards driven by tournamentPlayers) ----------

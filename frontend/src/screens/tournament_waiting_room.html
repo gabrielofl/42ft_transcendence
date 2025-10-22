@@ -31,9 +31,19 @@
       <div id="match-info" class="text-center text-white">
         <!-- Match info will be shown here -->
       </div>
-      <button id="play-match-btn" class="btn-primary bg-green-600 hover:bg-green-700 px-6 py-3 text-lg font-bold hidden">
-        🎮 PLAY YOUR MATCH
-      </button>
+      <!-- Countdown section -->
+      <div id="countdown-section" class="hidden">
+        <div class="text-4xl font-bold text-[--secondary-color] animate-pulse">
+          <span id="countdown-timer">10</span>
+        </div>
+        <div class="text-sm text-gray-400 mt-2">
+          Match starting...
+        </div>
+      </div>
+      <!-- Waiting message -->
+      <div id="waiting-message" class="text-gray-400 text-sm hidden">
+        ⏳ Waiting for other matches to finish...
+      </div>
     </div>
     <div id="tournament-bracket-container" class="w-full h-full">
       <!-- Bracket will be rendered here -->

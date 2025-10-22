@@ -25,6 +25,7 @@ interface BracketRound {
 }
 
 interface BracketState {
+  tournamentId?: number;
   currentRound: number;
   rounds: BracketRound[];
   status: 'waiting' | 'in_progress' | 'finished';
@@ -67,6 +68,20 @@ export class BracketViewer {
     };
     this.messageBroker.Subscribe('BracketGenerated', onBracketGenerated);
     this.unsubscribeFunctions.push(() => this.messageBroker.Unsubscribe('BracketGenerated', onBracketGenerated));
+
+    // Listener para bracket completo (todas las rondas)
+    const onBracketFullState = (data: any) => {
+      this.handleBracketFullState(data);
+    };
+    this.messageBroker.Subscribe('BracketFullState', onBracketFullState);
+    this.unsubscribeFunctions.push(() => this.messageBroker.Unsubscribe('BracketFullState', onBracketFullState));
+
+    // Listener para bracket actualizado desde el backend
+    const onBracketUpdated = (data: any) => {
+      this.handleBracketUpdated(data);
+    };
+    this.messageBroker.Subscribe('BracketUpdated', onBracketUpdated);
+    this.unsubscribeFunctions.push(() => this.messageBroker.Unsubscribe('BracketUpdated', onBracketUpdated));
 
     // Listener para match completado
     const onMatchCompleted = (data: any) => {
@@ -118,6 +133,49 @@ export class BracketViewer {
   }
 
   /**
+   * Maneja cuando se recibe el estado completo del bracket (todas las rondas)
+   */
+  private handleBracketFullState(data: any) {
+    this.bracketState = {
+      tournamentId: data.tournamentId,
+      currentRound: data.currentRound,
+      rounds: data.rounds,
+      status: data.status || 'in_progress',
+      winner: null
+    };
+
+    this.render();
+  }
+
+  /**
+   * Maneja cuando se actualiza el bracket desde el backend
+   */
+  private handleBracketUpdated(data: any) {
+    const bracket = data.bracket;
+    
+    // Convertir el bracket del backend al formato interno
+    this.bracketState = {
+      tournamentId: data.tournamentId,
+      currentRound: bracket.currentRound || 0,
+      rounds: bracket.rounds.map((round: any) => ({
+        name: round.name,
+        matches: round.matches.map((match: any) => ({
+          matchId: match.matchId,
+          roomId: match.roomId || `tournament-${data.tournamentId}-match-${match.matchId}`,
+          player1: match.player1,
+          player2: match.player2,
+          winner: match.winner || null,
+          status: match.status || 'pending'
+        }))
+      })),
+      status: bracket.status || 'in_progress',
+      winner: bracket.winner || null
+    };
+
+    this.render();
+  }
+
+  /**
    * Maneja cuando se completa un match
    */
   private handleMatchCompleted(data: any) {
@@ -140,26 +198,8 @@ export class BracketViewer {
    * Maneja cuando avanza una ronda
    */
   private handleRoundAdvanced(data: any) {
-    const { roundNumber, roundName, matches } = data;
-    
-    // Crear nueva ronda
-    const newRound: BracketRound = {
-      name: roundName,
-      matches: matches.map((match: any) => ({
-        matchId: match.matchId,
-        roomId: match.roomId,
-        player1: match.player1,
-        player2: match.player2,
-        winner: null,
-        status: 'pending' as const
-      }))
-    };
-
-    // Agregar ronda al estado
-    this.bracketState.rounds.push(newRound);
-    this.bracketState.currentRound = roundNumber;
-
-    this.render();
+    // Este método se mantiene por compatibilidad pero BracketUpdated maneja las actualizaciones
+    // No hacer nada - BracketUpdated ya actualiza todo el bracket
   }
 
   /**

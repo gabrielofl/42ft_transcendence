@@ -132,9 +132,20 @@ async function tournamentWebsocket(fastify) {
         [JSON.stringify(bracket), tournamentId]
       );
 
-      // 4. Preparar info de salas (no pre-crear, /gamews las crea cuando jugadores conectan)
+      // 4. Preparar TODAS las salas (crear ServerGameSocket para cada una)
       const quarterfinals = bracket.rounds[0].matches;
       const roomIds = [];
+
+      // Obtener configuración del torneo
+      const tournamentConfig = await fastify.db.get(
+        `SELECT map_key, powerup_amount, enabled_powerups FROM tournaments WHERE id = ?`,
+        [tournamentId]
+      );
+
+      // Importar lo necesario
+      const { ServerGameSocket } = await import('../game/Game/ServerGameSocket.js');
+      const { addGame, startGame: startGameManager } = await import('./game-manager.js');
+      const { startTournamentMatch } = await import('./index.js');
 
       for (let i = 0; i < quarterfinals.length; i++) {
         const match = quarterfinals[i];
@@ -146,6 +157,27 @@ async function tournamentWebsocket(fastify) {
           player1: match.player1,
           player2: match.player2
         });
+        
+        // Crear la sala para este match
+        const gameSocket = new ServerGameSocket(roomId);
+        addGame(roomId, gameSocket);
+        
+        const matchPlayers = [match.player1, match.player2];
+        const config = {
+          mapKey: tournamentConfig?.map_key || 'ObstacleMap',
+          powerUpAmount: tournamentConfig?.powerup_amount || 3,
+          enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]')
+        };
+        
+        // Guardar en pendientes
+        if (!global.pendingTournamentMatches) global.pendingTournamentMatches = new Map();
+        global.pendingTournamentMatches.set(roomId, { gameSocket, players: matchPlayers, config });
+        
+        // Si es IA vs IA, iniciar inmediatamente
+        const hasRealPlayer = matchPlayers.some(p => p.userId > 0);
+        if (!hasRealPlayer) {
+          await startTournamentMatch(roomId);
+        }
       }
 
       // 5. Broadcast del bracket completo a todos (incluye toda la info necesaria)
@@ -161,8 +193,10 @@ async function tournamentWebsocket(fastify) {
             player1: r.player1,
             player2: r.player2
           }))
-        }
+        },
+        countdown: 10 // Indicar que debe iniciar countdown de 10 segundos
       });
+
 
     } catch (error) {
       console.error('Error al iniciar torneo:', error);
@@ -452,6 +486,16 @@ async function tournamentWebsocket(fastify) {
     }
   }
 
+  // Handler: Iniciar match de torneo cuando el countdown termina
+  async function handleTournamentMatchStart(roomId, fastify) {
+    try {
+      const { startTournamentMatch } = await import('./index.js');
+      await startTournamentMatch(roomId);
+    } catch (error) {
+      console.error(`Error iniciando match ${roomId}:`, error);
+    }
+  }
+
   // Handler: Procesar resultado de match de torneo
   async function handleMatchResult(tournamentId, matchId, winner, results, fastify) {
     try {
@@ -497,6 +541,13 @@ async function tournamentWebsocket(fastify) {
       );
 
       // 6. Broadcast actualización a todos los jugadores conectados
+      // SIEMPRE enviar BracketUpdated primero para actualizar el bracket con el ganador
+      broadcast(tournamentId, {
+        type: 'BracketUpdated',
+        tournamentId,
+        bracket: bracket
+      });
+      
       if (advanceResult?.tournamentFinished) {
         // Torneo terminado
         await fastify.db.run(
@@ -524,24 +575,58 @@ async function tournamentWebsocket(fastify) {
           player2: match.player2
         }));
 
+        // Preparar y crear TODAS las salas de la nueva ronda
+        const tournamentConfig = await fastify.db.get(
+          `SELECT map_key, powerup_amount, enabled_powerups FROM tournaments WHERE id = ?`,
+          [tournamentId]
+        );
+
+        const { ServerGameSocket } = await import('../game/Game/ServerGameSocket.js');
+        const { addGame } = await import('./game-manager.js');
+        const { startTournamentMatch } = await import('./index.js');
+
+        for (const roomInfo of roomIds) {
+          // Crear la sala para este match
+          const gameSocket = new ServerGameSocket(roomInfo.roomId);
+          addGame(roomInfo.roomId, gameSocket);
+          
+          const matchPlayers = [roomInfo.player1, roomInfo.player2];
+          const config = {
+            mapKey: tournamentConfig?.map_key || 'ObstacleMap',
+            powerUpAmount: tournamentConfig?.powerup_amount || 3,
+            enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]')
+          };
+          
+          // Guardar en pendientes
+          if (!global.pendingTournamentMatches) global.pendingTournamentMatches = new Map();
+          global.pendingTournamentMatches.set(roomInfo.roomId, { gameSocket, players: matchPlayers, config });
+          
+          // Si es IA vs IA, iniciar inmediatamente
+          const hasRealPlayer = matchPlayers.some(p => p.userId > 0);
+          if (!hasRealPlayer) {
+            await startTournamentMatch(roomInfo.roomId);
+          }
+        }
+
         broadcast(tournamentId, {
           type: 'RoundAdvanced',
           tournamentId,
           roundNumber,
           roundName: bracket.rounds[roundNumber].name,
-          matches: roomIds
+          matches: roomIds,
+          countdown: 10 // Indicar que debe iniciar countdown de 10 segundos
         });
 
 
       } else {
         // Solo se completó un match, pero la ronda sigue en progreso
+        // BracketUpdated ya se envió arriba, solo enviar evento específico del match
         broadcast(tournamentId, {
           type: 'MatchCompleted',
           tournamentId,
           matchId,
           winner: winnerData
         });
-
       }
 
     } catch (error) {
@@ -607,6 +692,10 @@ async function tournamentWebsocket(fastify) {
 
           case 'InviteAI':
             await handleInviteAI(tournamentId, user.id);
+            break;
+
+          case 'TournamentMatchStart':
+            await handleTournamentMatchStart(msg.roomId, fastify);
             break;
 
           default:

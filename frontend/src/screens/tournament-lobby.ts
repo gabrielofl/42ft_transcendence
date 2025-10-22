@@ -113,6 +113,8 @@ function renderWaitingTournaments(tournaments: any[]) {
       // Guardar ID y navegar (el WebSocket lo unirá automáticamente)
       try {
         sessionStorage.setItem("currentTournamentId", String(id));
+        // Limpiar información de torneos anteriores
+        sessionStorage.removeItem('tournamentMatchInfo');
       } catch (e) {
         console.error('Failed to save to sessionStorage:', e);
       }
