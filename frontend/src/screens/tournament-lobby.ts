@@ -15,6 +15,16 @@ export async function renderTournamentLobby(): Promise<void> {
   
   // Limpiar sessionStorage de torneos viejos al entrar al lobby
   sessionStorage.removeItem('currentTournamentId');
+  sessionStorage.removeItem('tournamentMatchInfo');
+  sessionStorage.removeItem('pendingCountdown');
+  
+  // Limpiar completamente el socket del torneo
+  const { ClientTournamentSocket } = await import('../services/tournament-socket');
+  const tournamentSocket = ClientTournamentSocket.GetInstance();
+  tournamentSocket.Disconnect();
+  tournamentSocket.UIBroker.ClearAll();
+  // Resetear el singleton
+  (ClientTournamentSocket as any).instance = null;
 
   // Setup buttons
   document.getElementById('refresh-btn')?.addEventListener('click', loadTournaments);

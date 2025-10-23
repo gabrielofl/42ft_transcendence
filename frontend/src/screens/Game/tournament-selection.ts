@@ -109,7 +109,11 @@ function setupTournamentSelectionControls(): void {
     const chosenMapKey = selectedMapKey ?? "ObstacleMap";
     const mapDef = TournamentMaps[chosenMapKey as keyof typeof TournamentMaps] ?? TournamentMaps.ObstacleMap;
     
-    // 2) ensure session
+    // 2) Limpiar estado de torneos anteriores
+    sessionStorage.removeItem('tournamentMatchInfo');
+    sessionStorage.removeItem('pendingCountdown');
+    
+    // 3) ensure session
     const session = await fetchJSON(`${API_BASE_URL}/users/session`, { credentials: 'include' });
     if (!session?.isLoggedIn) {
       alert('Please sign in to create a tournament.');

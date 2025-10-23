@@ -120,20 +120,33 @@ function setupGameEndedListener(game: ClientGame): void {
 		const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
 		
 		if (tournamentMatchInfo) {
-			// Es un match de torneo: mostrar resultado específico para torneos
-			const winner = msg.results.sort((a, b) => b.score - a.score)[0];
-			const container = document.querySelector(".relative.w-full") as HTMLDivElement;
-			if (!container) return;
-
-			// Mostrar panel específico para torneos
-			container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
-			const winnerNameSpan = document.getElementById("tournament-winner-name");
-			if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
-
-			// Navegar de vuelta al tournament waiting room después de 3 segundos
-			setTimeout(() => {
+			// Es un match de torneo: verificar si es la final
+			const matchInfo = JSON.parse(tournamentMatchInfo);
+			const isFinal = matchInfo.round === 'Finals';
+			
+			if (isFinal) {
+				// Es la final: navegar inmediatamente sin mostrar panel intermedio
+				// La pantalla de trofeo se mostrará desde el waiting room
+				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
 				navigateTo('tournament-waiting');
-			}, 3000);
+			} else {
+				// No es la final: mostrar panel intermedio breve y luego navegar
+				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+				const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+				if (!container) return;
+
+				// Mostrar panel específico para torneos
+				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+				const winnerNameSpan = document.getElementById("tournament-winner-name");
+				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+
+				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
+				
+				// Navegar de vuelta al tournament waiting room después de 2 segundos
+				setTimeout(() => {
+					navigateTo('tournament-waiting');
+				}, 2000);
+			}
 		} else {
 			// Es una sala normal: mostrar panel de Game Ended normal
 			const winner = msg.results.sort((a, b) => b.score - a.score)[0];
