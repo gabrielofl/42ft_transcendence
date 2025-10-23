@@ -1,6 +1,7 @@
 import { renderFooter } from "./components/Footer.js";
 import { renderAuthContainer } from "./screens/AuthContainer.js";
 import { renderHome } from "./screens/Home.js";
+import { renderResult } from "./screens/Result.js";
 // import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
@@ -95,7 +96,8 @@ async function renderScreen(screen: Screen) {
 		renderAuthContainer();
 		break;
 	case "home":
-      renderHome();
+      renderResult();
+    //   renderHome();
       break;
     case "game":
       renderGame().then(() => ClientGameSocket.GetInstance().StartGame());

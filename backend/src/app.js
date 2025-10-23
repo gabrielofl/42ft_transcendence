@@ -103,6 +103,11 @@ await app.register(fastifyCors, app.config.cors);
 		root: '/app/static',     // Directory with frontend files
 		prefix: '/',             // URL prefix
 	});
+	// Serve frontend files David
+	app.register(fastifyStatic, {
+		root: path.join(__dirname, "../static"), // inside backend/static
+		prefix: "/static/",
+	});
 
 	// STEP 3: Load all routes
 	await app.register(autoLoad, {
