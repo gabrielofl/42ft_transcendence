@@ -96,8 +96,7 @@ async function renderScreen(screen: Screen) {
 		renderAuthContainer();
 		break;
 	case "home":
-      renderResult();
-    //   renderHome();
+      renderHome();
       break;
     case "game":
       renderGame().then(() => ClientGameSocket.GetInstance().StartGame());
