@@ -1,6 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import gameTemplate from "./game.html?raw";
 import gameEndedTemplate from "./game-ended.html?raw";
+import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
 import { createPlayerCard } from "./player-card";
 import { ClientGameSocket } from "./ClientGameSocket";
 import { AddPlayerMessage, ScoreMessage } from "@shared/types/messages";
@@ -119,19 +120,15 @@ function setupGameEndedListener(game: ClientGame): void {
 		const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
 		
 		if (tournamentMatchInfo) {
-			// Es un match de torneo: mostrar resultado brevemente y volver al waiting room
+			// Es un match de torneo: mostrar resultado específico para torneos
 			const winner = msg.results.sort((a, b) => b.score - a.score)[0];
 			const container = document.querySelector(".relative.w-full") as HTMLDivElement;
 			if (!container) return;
 
-			// Mostrar panel temporal con resultado
-			container.insertAdjacentHTML("beforeend", gameEndedTemplate);
-			const winnerNameSpan = document.getElementById("winner-name");
+			// Mostrar panel específico para torneos
+			container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+			const winnerNameSpan = document.getElementById("tournament-winner-name");
 			if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
-
-			// Ocultar botón "Play Again" en torneos
-			const playAgainBtn = document.getElementById("play-again-btn");
-			if (playAgainBtn) playAgainBtn.style.display = 'none';
 
 			// Navegar de vuelta al tournament waiting room después de 3 segundos
 			setTimeout(() => {

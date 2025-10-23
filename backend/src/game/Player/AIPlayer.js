@@ -6,9 +6,6 @@ import { ServerPaddle } from "../Collidable/ServerPaddle.js";
 
 export class AIPlayer extends APlayer {
     game;// ServerGame;
-    // IA desactivada temporalmente
-    lastMoveTime = 0; // Para controlar la velocidad de reacción
-    moveDelay = 100; // ms de delay entre movimientos (hace la IA más lenta)
 
     /**
      * 
@@ -74,12 +71,6 @@ export class AIPlayer extends APlayer {
         if (this.game.Paused)
             return;
 
-        // Control de velocidad de reacción - hacer la IA más lenta
-        const now = Date.now();
-        if (now - this.lastMoveTime < this.moveDelay) {
-            return;
-        }
-
         // Busca bola mas cercana
         let pMesh = this.paddle.GetMesh();
         let incoming = this.game.Balls.GetAll().filter((ball) => this.IsBallComing(ball));
@@ -96,23 +87,15 @@ export class AIPlayer extends APlayer {
                 const perp = BABYLON.Vector3.Cross(toBall, new BABYLON.Vector3(0, 1, 0));
                 const dot = BABYLON.Vector3.Dot(bSpeed, perp);
                 
-                // Aumentar umbral para hacer la IA menos precisa (era 0.5, ahora 1.2)
-                if (Math.abs(dot) > 1.2) {
-                    // Añadir error aleatorio ocasional (10% de probabilidad)
-                    if (Math.random() < 0.1) {
-                        // Moverse en dirección incorrecta ocasionalmente
-                        this.paddle.Move(-Math.sign(dot));
-                    } else {
-                        this.paddle.Move(Math.sign(dot));
-                    }
-                    this.lastMoveTime = now;
+                if (Math.abs(dot) > 0.5) {
+                    this.paddle.Move(Math.sign(dot));
                 }
             }
         }
 
-        // Reducir frecuencia de uso de powerups (era 0.99, ahora 0.995)
+        // Uso de items
         let pos = Math.random();
-        if (pos > 0.995)
+        if (pos > 0.99)
         {
             let index = Math.round(10 * Math.random()) % 3;
             this.Inventory.UsePowerUp(index);

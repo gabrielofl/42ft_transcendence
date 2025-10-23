@@ -33,7 +33,7 @@ interface BracketState {
 }
 
 export class BracketViewer {
-  private container: HTMLElement | null = null;
+  public container: HTMLElement | null = null;
   private bracketState: BracketState = {
     currentRound: 0,
     rounds: [],
@@ -208,9 +208,13 @@ export class BracketViewer {
   private handleTournamentFinished(data: any) {
     const { winner } = data;
     
+    
     this.bracketState.status = 'finished';
     this.bracketState.winner = winner;
 
+
+    // No cambiar el render - mantener el bracket visible con el resultado final
+    // Solo actualizar el estado para que los matches muestren los ganadores
     this.render();
   }
 
@@ -233,7 +237,23 @@ export class BracketViewer {
     }
 
     if (this.bracketState.status === 'finished') {
-      this.renderTournamentFinished();
+      // Mostrar el bracket con el resultado final y un mensaje sutil
+      this.container.innerHTML = `
+        <div class="w-full h-full flex flex-col">
+          <div class="text-center mb-4">
+            <h2 class="text-[--primary-color] text-xl font-bold">Tournament Bracket</h2>
+            <div class="text-sm text-gray-400">Final Results</div>
+            <div class="text-lg text-yellow-400 font-bold mt-2">
+              🏆 Winner: ${this.bracketState.winner?.username}
+            </div>
+          </div>
+          <div class="flex-1 overflow-x-auto">
+            <div class="flex items-center justify-center h-full gap-8 p-4">
+              ${this.renderBracketRounds()}
+            </div>
+          </div>
+        </div>
+      `;
       return;
     }
 
@@ -326,21 +346,10 @@ export class BracketViewer {
   }
 
   /**
-   * Renderiza la pantalla de torneo terminado
+   * Obtiene el estado actual del bracket
    */
-  private renderTournamentFinished() {
-    if (!this.container) return;
-
-    this.container.innerHTML = `
-      <div class="flex items-center justify-center h-full text-white">
-        <div class="text-center">
-          <div class="text-6xl mb-4">🏆</div>
-          <h2 class="text-3xl font-bold text-[--primary-color] mb-2">Tournament Finished!</h2>
-          <div class="text-xl mb-4">Winner: <span class="text-yellow-400 font-bold">${this.bracketState.winner?.username}</span></div>
-          <div class="text-sm text-gray-400">Congratulations to the champion!</div>
-        </div>
-      </div>
-    `;
+  public getStatus(): string {
+    return this.bracketState.status;
   }
 
   /**

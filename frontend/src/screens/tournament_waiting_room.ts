@@ -54,7 +54,23 @@ function setTournamentName(name: string) {
 
 function updateReadyButton() {
   if (readyButtonRef) {
-    readyButtonRef.textContent = myReadyState ? "NOT READY" : "READY";
+    // Verificar si el torneo está en progreso
+    const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
+    const isTournamentInProgress = tournamentMatchInfo !== null;
+    
+    if (isTournamentInProgress) {
+      // Deshabilitar el botón cuando el torneo está en progreso
+      readyButtonRef.disabled = true;
+      readyButtonRef.textContent = "TOURNAMENT IN PROGRESS";
+      readyButtonRef.style.opacity = "0.5";
+      readyButtonRef.style.cursor = "not-allowed";
+    } else {
+      // Habilitar el botón cuando el torneo está en waiting
+      readyButtonRef.disabled = false;
+      readyButtonRef.textContent = myReadyState ? "NOT READY" : "READY";
+      readyButtonRef.style.opacity = "1";
+      readyButtonRef.style.cursor = "pointer";
+    }
   }
 }
 
@@ -137,6 +153,9 @@ function showBracket() {
   if (bracketSection) bracketSection.classList.remove("hidden");
   
   isBracketVisible = true;
+  
+  // Actualizar el botón ready cuando se muestra el bracket
+  updateReadyButton();
 }
 
 function hideBracket() {
@@ -147,6 +166,9 @@ function hideBracket() {
   if (bracketSection) bracketSection.classList.add("hidden");
   
   isBracketVisible = false;
+  
+  // Actualizar el botón ready cuando se oculta el bracket
+  updateReadyButton();
 }
 
 // function showNotification(message: string, type: 'info' | 'success' | 'warning' = 'info') {
@@ -170,6 +192,12 @@ function hideBracket() {
 // }
 
 function initializeBracketViewer() {
+  // Si ya existe un bracketViewer y el torneo está terminado, no reinicializar
+  if (bracketViewer && bracketViewer.getStatus() === 'finished') {
+    return;
+  }
+  
+  // Si ya existe un bracketViewer, siempre reinicializar para nuevos torneos
   if (bracketViewer) {
     bracketViewer.dispose();
   }
@@ -379,7 +407,6 @@ export async function renderWaitingRoom(): Promise<void> {
   
   // IMPORTANTE: Suscribir ANTES de conectar para no perder mensajes
   tournamentSocket.UIBroker.Subscribe("TournamentState", (state) => {
-    console.log('📊 TournamentState recibido:', state);
     applyTournamentState(state);
   });
   
@@ -448,7 +475,6 @@ export async function renderWaitingRoom(): Promise<void> {
           type: 'TournamentMatchStart', 
           roomId: myMatch.roomId 
         });
-        console.log(`🎬 Señal de inicio enviada para ${myMatch.roomId}`);
       });
     } else {
       console.error('No se encontró match para este jugador en el bracket');
@@ -523,19 +549,23 @@ export async function renderWaitingRoom(): Promise<void> {
     const countdownSection = document.getElementById('countdown-section');
     if (countdownSection) countdownSection.classList.add('hidden');
     
-    // Mostrar mensaje de torneo terminado en el match info
+    // Ocultar mensaje de espera si está visible
+    const waitingMessage = document.getElementById('waiting-message');
+    if (waitingMessage) waitingMessage.classList.add('hidden');
+    
+    // Mostrar mensaje simple en el match info
     const matchInfoEl = document.getElementById('match-info');
     if (matchInfoEl) {
       const isWinner = data.winner.userId === userId;
       matchInfoEl.innerHTML = `
-        <div class="text-2xl font-bold ${isWinner ? 'text-yellow-400' : 'text-[--primary-color]'}">
-          ${isWinner ? '🏆 ¡Ganaste el Torneo!' : '🏆 Torneo Terminado'}
+        <div class="text-lg font-bold ${isWinner ? 'text-yellow-400' : 'text-[--primary-color]'}">
+          ${isWinner ? '🏆 ¡Ganaste!' : '🏆 Torneo Terminado'}
         </div>
-        <div class="text-lg text-white mt-2">
+        <div class="text-sm text-white mt-1">
           Ganador: ${data.winner.username}
         </div>
-        <div class="text-sm text-gray-400 mt-1">
-          Regresando al lobby en 5 segundos...
+        <div class="text-xs text-gray-400 mt-1">
+          Puedes volver al lobby cuando quieras
         </div>
       `;
     }
@@ -543,8 +573,7 @@ export async function renderWaitingRoom(): Promise<void> {
     // Desconectar del WebSocket después de un delay
     setTimeout(() => {
       tournamentSocket.Disconnect();
-      navigateTo('tournament-lobby');
-    }, 5000);
+    }, 3000);
   });
   
   // Conectar DESPUÉS de suscribir
@@ -617,7 +646,7 @@ export async function renderWaitingRoom(): Promise<void> {
             tournamentId: tournamentId,
             currentRound: bracket.currentRound || 0,
             rounds: allRounds,
-            status: 'in_progress'
+            status: bracket.status || 'in_progress'
           });
         }
       }
@@ -625,9 +654,51 @@ export async function renderWaitingRoom(): Promise<void> {
       console.error('❌ Error obteniendo bracket del backend:', error);
     }
     
-    // Si ya terminó el match, mostrar mensaje de espera
-    if (!myCurrentMatch || myCurrentMatch.matchId === JSON.parse(tournamentMatchInfo).matchId) {
+    // Verificar el estado del torneo desde el backend
+    try {
+      const tournamentStatusResponse = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
+        credentials: 'include'
+      });
+      const tournamentStatusData = await tournamentStatusResponse.json();
+      
+      // Si el torneo terminó, mostrar el bracket final
+      if (tournamentStatusData.status === 'finished') {
+        
+        // Si el BracketViewer no tiene el estado correcto, enviarle el evento manualmente
+        if (bracketViewer?.getStatus() !== 'finished') {
+          
+          // Intentar obtener el ganador del bracket si existe
+          let winner = { username: 'Unknown' };
+          if (tournamentStatusData.bracket) {
+            const bracket = typeof tournamentStatusData.bracket === 'string' 
+              ? JSON.parse(tournamentStatusData.bracket) 
+              : tournamentStatusData.bracket;
+            winner = bracket.winner || { username: 'Unknown' };
+          }
+          
+          bracketViewer?.messageBroker.Publish("BracketTournamentFinished", {
+            winner: winner,
+            tournamentId: tournamentId
+          });
+        }
+        
+        showBracket();
+        return;
+      }
+    } catch (error) {
+      console.error('Error verificando estado del torneo:', error);
+    }
+    
+    // Si ya terminó el match, mostrar mensaje de espera SOLO si el torneo no ha terminado
+    const matchInfo = JSON.parse(tournamentMatchInfo);
+    const shouldShowWaiting = (!myCurrentMatch || myCurrentMatch.matchId === matchInfo.matchId) && 
+                             bracketViewer?.getStatus() !== 'finished';
+    
+    if (shouldShowWaiting) {
       showWaitingMessage();
+    } else if (bracketViewer?.getStatus() === 'finished') {
+      // Si el torneo terminó, asegurar que el bracket esté visible
+      showBracket();
     }
   }
 }
