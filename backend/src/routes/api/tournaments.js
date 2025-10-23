@@ -1,5 +1,38 @@
 // Tournament REST API - Endpoints para torneos
 
+// Función para limpiar automáticamente torneos que solo tienen jugadores IA
+async function cleanupAITournaments(fastify) {
+  try {
+    // Encontrar torneos que solo tienen jugadores IA (user_id < 0)
+    const aiOnlyTournaments = await fastify.db.all(
+      `SELECT t.id, t.name, COUNT(tp.id) as total_players, COUNT(CASE WHEN tp.user_id > 0 THEN 1 END) as real_players
+       FROM tournaments t
+       LEFT JOIN tournament_players tp ON tp.tournament_id = t.id
+       WHERE t.status IN ('waiting', 'ready')
+       GROUP BY t.id, t.name
+       HAVING total_players > 0 AND real_players = 0`
+    );
+
+    if (aiOnlyTournaments.length > 0) {      
+      for (const tournament of aiOnlyTournaments) {
+        // Eliminar jugadores del torneo
+        await fastify.db.run(
+          `DELETE FROM tournament_players WHERE tournament_id = ?`,
+          [tournament.id]
+        );
+        
+        // Eliminar el torneo
+        await fastify.db.run(
+          `DELETE FROM tournaments WHERE id = ?`,
+          [tournament.id]
+        );
+      }
+    }
+  } catch (error) {
+    fastify.log.error('Error limpiando torneos de IA:', error);
+  }
+}
+
 export default async function (fastify, opts) {
   // Registrar rutas con prefijo explícito
   fastify.register(async function (fastify, opts) {
@@ -87,6 +120,9 @@ export default async function (fastify, opts) {
   // GET /api/tournaments - Listar torneos disponibles  
   fastify.get('/tournaments', async (req, reply) => {
     try {
+      // Primero, limpiar automáticamente torneos que solo tienen IA
+      await cleanupAITournaments(fastify);
+
       const tournaments = await fastify.db.all(
         `SELECT 
           t.id,
@@ -98,12 +134,13 @@ export default async function (fastify, opts) {
           t.enabled_powerups,
           t.wind_amount,
           t.match_time_limit,
-          COUNT(tp.id) as player_count
+          COUNT(tp.id) as player_count,
+          COUNT(CASE WHEN tp.user_id > 0 THEN 1 END) as real_player_count
          FROM tournaments t
          LEFT JOIN tournament_players tp ON tp.tournament_id = t.id
          WHERE t.status IN ('waiting', 'ready')
          GROUP BY t.id, t.name, t.status, t.created_at, t.map_key, t.powerup_amount, t.enabled_powerups, t.wind_amount, t.match_time_limit
-         HAVING player_count > 0 AND player_count < 8
+         HAVING player_count > 0 AND player_count < 8 AND real_player_count > 0
          ORDER BY t.created_at DESC
          LIMIT 20`
       );
@@ -133,14 +170,25 @@ export default async function (fastify, opts) {
         `DELETE FROM tournaments WHERE status IN ('waiting', 'ready')`
       );
 
-      return {
+      return { 
         message: 'Cleanup completed',
         playersDeleted: playersDeleted.changes,
         tournamentsDeleted: tournamentsDeleted.changes
       };
     } catch (error) {
       fastify.log.error(error);
-      return reply.code(500).send({ error: 'Cleanup failed' });
+      return reply.code(500).send({ error: 'Failed to cleanup tournaments' });
+    }
+  });
+
+  // POST /api/tournaments/cleanup-ai - Limpieza específica de torneos solo con IA
+  fastify.post('/tournaments/cleanup-ai', async (req, reply) => {
+    try {
+      await cleanupAITournaments(fastify);
+      return { message: 'AI tournaments cleanup completed' };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.code(500).send({ error: 'Failed to cleanup AI tournaments' });
     }
   });
 
@@ -196,7 +244,5 @@ export default async function (fastify, opts) {
       return reply.code(500).send({ error: 'Failed to get tournament' });
     }
   });
-  
   });
 }
-

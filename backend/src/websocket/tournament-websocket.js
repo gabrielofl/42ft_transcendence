@@ -455,15 +455,32 @@ async function tournamentWebsocket(fastify) {
       userId
     });
 
-    // Verificar cuántos jugadores quedan
+    // Verificar cuántos jugadores quedan y cuántos son reales
     const remainingPlayers = await fastify.db.get(
-      `SELECT COUNT(*) as count FROM tournament_players 
+      `SELECT 
+        COUNT(*) as total_count,
+        COUNT(CASE WHEN user_id > 0 THEN 1 END) as real_count
+       FROM tournament_players 
        WHERE tournament_id = ?`,
       [tournamentId]
     );
 
-    if (remainingPlayers.count === 0) {
+    if (remainingPlayers.total_count === 0) {
       // Torneo vacío → Eliminarlo
+      await fastify.db.run(
+        `DELETE FROM tournaments WHERE id = ?`,
+        [tournamentId]
+      );
+      
+      // Limpiar conexiones
+      connections.delete(tournamentId);
+    } else if (remainingPlayers.real_count === 0) {
+      // Solo quedan jugadores IA → Eliminar torneo y jugadores IA
+      await fastify.db.run(
+        `DELETE FROM tournament_players WHERE tournament_id = ?`,
+        [tournamentId]
+      );
+      
       await fastify.db.run(
         `DELETE FROM tournaments WHERE id = ?`,
         [tournamentId]
@@ -725,4 +742,3 @@ async function tournamentWebsocket(fastify) {
 }
 
 export default fp(tournamentWebsocket, { name: 'tournament-websocket' });
-
