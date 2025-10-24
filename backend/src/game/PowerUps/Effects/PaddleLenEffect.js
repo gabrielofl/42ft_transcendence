@@ -1,14 +1,14 @@
 import { APlayerEffect } from "../../abstract/APlayerEffect.js";
 import { APlayer } from "../../Player/APlayer.js";
-import { AGame } from "../../abstract/AGame.js";
 import { logToFile } from "../../Game/logger.js";
+import { ServerGame } from "../../Game/ServerGame.js";
 
 export class PaddleLenEffect extends APlayerEffect {
     Len;
 
     /**
      * 
-     * @param {AGame} game 
+     * @param {ServerGame} game 
      * @param {string} imgPath 
      * @param {number} len 
      * @param {number} durationMs 

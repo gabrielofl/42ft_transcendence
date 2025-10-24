@@ -5,28 +5,52 @@ import * as MAPS from "../Maps.js";
 import { ObservableList } from "../Utils/ObservableList.js";
 import { ServerBall } from "../Collidable/ServerBall.js";
 import { ServerPongTable } from "./ServerPongTable.js";
-import { APlayer } from "../Player/APlayer.js";
-import { AGame } from "../abstract/AGame.js";
 import { PowerUpMoreLength } from "../PowerUps/PowerUpMoreLength.js"
 import { PowerUpLessLength } from "../PowerUps/PowerUpLessLength.js"
 import { PowerUpSpeedUp } from "../PowerUps/PowerUpSpeedUp.js"
 import { PowerUpSpeedDown } from "../PowerUps/PowerUpSpeedDown.js"
 import { PowerUpCreateBall } from "../PowerUps/PowerUpCreateBall.js"
 import { PowerUpShield } from "../PowerUps/PowerUpShield.js"
-import { Inventory } from "../Inventory.js";
 import { logToFile } from "./logger.js";
+import { Event } from "../Utils/Event.js";
+import { MessageBroker } from "../Utils/MessageBroker.js";
 
 // import "@babylonjs/loaders/glTF";
 
-export class ServerGame extends AGame {
+export class ServerGame {
+    WIN_POINTS = 5;
+	ID = "";
+	
+    // --- Utils ---
+    Paused = false;
+
+    // --- Disposable ---
+    isDisposed = false;
+    dependents = new ObservableList();
+	OnDisposeEvent = new Event();
+
     // --- Visual ---
     gui;
 	Wind = new BABYLON.Vector3();
+	WindForce = 0.5;
+	_windInterval = null;
 	isLateralView = false;
+    maxPowerUps = 0;
 
 	// ---Instances ---
 	Zones = new ObservableList();
+    MessageBroker = new MessageBroker();
+    Balls = new ObservableList();
+    PowerUps = new ObservableList();
+    Map = MAPS.MultiplayerMap;
+
+	// --- Utils ---
+	players = [];
     PongTable;
+
+	// --- Estado principal ---
+    engine;
+    scene;
 
 	// 🔑 Factories centralizadas
     PowerUpFactory = {
@@ -41,19 +65,65 @@ export class ServerGame extends AGame {
     constructor() {
 		logToFile("ServerGame Constructor Start");
         // Inicializar motor, escena y gui
-		let engine = new BABYLON.NullEngine();
-		let scene = new BABYLON.Scene(engine);
-		super(engine, scene);
+		this.engine = new BABYLON.NullEngine();
+		this.scene = new BABYLON.Scene(this.engine);
 
 		this.camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 20, new BABYLON.Vector3(0, 0, 0));
 		this.camera.position = new BABYLON.Vector3(42, 42, 42);
         this.scene.activeCameras?.push(this.camera);
+
+        // EVENTS
+        this.scene.actionManager = new BABYLON.ActionManager(this.scene);
+        this.engine.runRenderLoop(() => this.scene.render());
 
 		// PHYSICS
 		const gravityVector = new BABYLON.Vector3(0, 0, 0); // Sin gravedad en Pong
 		const physicsPlugin = new BABYLON.CannonJSPlugin(true, 10, CANNON);
 		this.scene.enablePhysics(gravityVector, physicsPlugin);
 		logToFile("ServerGame Constructor End");
+    }
+
+    /**
+     * Filtra la PowerUpFactory para incluir solo los power-ups habilitados.
+     * Si no se proveen power-ups, la factory se vacía.
+     * @param {string[]} enabledPowerUps - Un array con los nombres de los power-ups permitidos.
+     */
+    SetEnabledPowerUps(enabledPowerUps) {
+        if (!enabledPowerUps || enabledPowerUps.length === 0) {
+            logToFile("No enabledPowerUps provided or array is empty. Disabling all power-ups.");
+            this.PowerUpFactory = {};
+            return;
+        }
+
+        const allPowerUpKeys = Object.keys(this.PowerUpFactory);
+        for (const key of allPowerUpKeys) {
+            if (!enabledPowerUps.includes(key)) {
+                delete this.PowerUpFactory[key];
+            }
+        }
+        logToFile(`Enabled power-ups: ${Object.keys(this.PowerUpFactory).join(', ')}`);
+    }
+
+    /**
+     * Configura la fuerza del viento y activa/desactiva su cambio periódico.
+     * @param {number} windForce - La fuerza del viento. Si es 0, el viento se desactiva.
+     */
+    SetWind(windForce) {
+        this.WindForce = (windForce || 0) * 0.01;
+		logToFile(`Setting WindForce to: ${this.WindForce}`);
+
+        if (this._windInterval) {
+            clearInterval(this._windInterval);
+            this._windInterval = null;
+        }
+
+        if (this.WindForce > 0) {
+            this._windInterval = setInterval(() => {
+                this.Wind = this.RandomWind(this.WindForce);
+            }, 10000);
+        } else {
+            this.Wind = new BABYLON.Vector3(0, 0, 0);
+        }
     }
 
     BallRemoved() {
@@ -73,12 +143,39 @@ export class ServerGame extends AGame {
 
 	/**
 	 * Obtain the scene and save a reference to the owner.
-	 * @param owner class using this scene.
+	 * @param {any} owner class using this scene.
 	 */
-	GetGui(owner) {
+	GetScene(owner) {
 		this.dependents.Add(owner);
-		return this.gui;
+		return this.scene;
 	}
+
+    /**
+     * Dispose this class and all the dependent elements.
+     */
+    Dispose() {
+        if(this.isDisposed)
+            return;
+
+        this.isDisposed = true;
+        this.dependents.GetAll().forEach(d => d.Dispose());
+        this.MessageBroker.ClearAll();
+    }
+
+    /**
+     * @returns {boolean} true if disposed.
+     */
+    IsDisposed() {
+        return this.isDisposed;
+    }
+
+	/**
+	 * @returns {import("../Player/APlayer.js").APlayer[]}
+	 */
+    GetPlayers() {
+		return [...this.players];
+	}
+
 
 	/**
 	 * @param players 
@@ -106,10 +203,6 @@ export class ServerGame extends AGame {
             p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0), maxDistance: 10});
 			p.ScoreZone.OnEnterEvent.Subscribe((iMesh) => this.BallEnterScoreZone(p, iMesh));
         });
-
-		setInterval(() => {
-			this.Wind = this.RandomWind(0.5);
-		}, 10000);
 
 		let lastLog = Date.now();
 

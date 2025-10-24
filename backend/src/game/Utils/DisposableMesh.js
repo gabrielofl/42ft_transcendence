@@ -1,7 +1,7 @@
 import * as BABYLON from "@babylonjs/core";
 import { Event } from "../Utils/Event.js";
 import { logToFile } from "../Game/logger.js";
-import { AGame } from "../abstract/AGame.js";
+import { ServerGame } from "../Game/ServerGame.js";
 
 // Clase para facilitar el manejo de una Mesh.
 export class DisposableMesh { //implements IMesh, IDisposable
@@ -12,7 +12,7 @@ export class DisposableMesh { //implements IMesh, IDisposable
 
     /**
      * 
-     * @param {AGame} game 
+     * @param {ServerGame} game 
      * @param {(scene: BABYLON.Scene) => BABYLON.Mesh} fMeshBuilder 
      */
     constructor(game, fMeshBuilder) {

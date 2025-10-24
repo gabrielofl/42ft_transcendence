@@ -1,6 +1,6 @@
+import { ServerGame } from "../Game/ServerGame.js";
 import { APlayer } from "../Player/APlayer.js";
 import { Event } from "../Utils/Event.js";
-import { AGame } from "../abstract/AGame.js";
 
 export class APlayerEffect { //implements IEffectCommand<APlayer>
     OnDisposeEvent = new Event();//: Event<void>
@@ -9,11 +9,11 @@ export class APlayerEffect { //implements IEffectCommand<APlayer>
     IsNegative = false;//: boolean
     disposed = false;//: boolean
     duration;//: number
-    game;//: AGame
+    game;//: ServerGame
 
     /**
      * 
-     * @param {AGame} game 
+     * @param {ServerGame} game 
      * @param {string} imgPath 
      * @param {number} duration 
      */
