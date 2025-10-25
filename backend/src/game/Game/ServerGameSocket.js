@@ -38,12 +38,13 @@ export class ServerGameSocket {
         this.game = new ServerGame();
         this.game.WIN_POINTS = config.pointToWinAmount || 5;
         this.game.SetEnabledPowerUps(config.enabledPowerUps);
-        this.game.SetWind(config.windAmount || 0);
         this.setupGameEventListeners();
+        this.game.SetWind(config.windAmount || 0);
         this.people = new Map();
         this.handlers = {
 			"PlayerPreMove": (m, u) => this.HandlePreMoveMessage(m, u),
             "GameDispose": (m, u) => this.HandleGameDispose(m, u),
+            "GameInit": (m, u) => this.HandleGameInit(m, u),
 		};
     }
 
@@ -94,14 +95,17 @@ export class ServerGameSocket {
 
     /**
      * Envía un mensaje a todos los jugadores en la sala, con la opción de excluir a uno.
+     * Si se especifica `onlyUser`, el mensaje solo se envía a ese usuario.
      * @param {any} msg El mensaje a enviar.
-     * @param {string | null} [exceptUser=null] El usuario a excluir del broadcast.
+     * @param {string | null} [onlyUser=null] El único usuario que recibirá el mensaje.
      */
-    Broadcast(msg, exceptUser = null) {
+    Broadcast(msg, onlyUser = null) {
         const data = JSON.stringify(msg);
         for (const [user, conn] of this.people.entries()) {
-            if (user === exceptUser) 
+            if (onlyUser && user !== onlyUser) {
                 continue;
+            }
+
             try {
                 conn.send(data);
             } catch (e) {
@@ -136,6 +140,7 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("GameEnded", (msg) => { this.handleGameEnded(msg); enqueueMessage(msg); console.log("GameEnded"); });
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
+        this.game.MessageBroker.Subscribe("WindChanged", enqueueMessage);
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
         this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
@@ -164,12 +169,49 @@ export class ServerGameSocket {
      * Maneja el mensaje de pre-movimiento de un jugador.
      * @param {any} msg El mensaje con la información del movimiento.
      */
-	HandlePreMoveMessage(msg) {
+	HandlePreMoveMessage(msg, u) {
 		let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
 			player.GetPaddle().Move(msg.dir);
 		}
+    }
+
+    /**
+     * Cuando se informa de que se ha iniciado una visualización, se envía el estado del juego.
+     * @param { { type: "GameInit" } } msg El mensaje de inicialización.
+     * @param {string} u El identificador del usuario que solicita el estado.
+     */
+    HandleGameInit(msg, u) {
+        console.log("HandleGameInit");
+        const messages = [
+            this.game.GetWindChangedMessage(),
+            this.game.GetScoreMessage() // Estado de las puntuaciones
+        ];
+
+        // Estado de todas las bolas
+        this.game.Balls.GetAll().forEach(ball => {
+            messages.push(ball.GetBallMoveMessage());
+        });
+
+        // Estado de todas las palas
+        this.game.GetPlayers().forEach(player => {
+            messages.push(player.GetPaddle().GetPositionMessage());
+        });
+
+        // Estado de PowerUps
+        this.game.PowerUps.GetAll().forEach(powerUp => {
+            messages.push(powerUp.GetCreateMessage());
+        });
+
+        const gameStatusMessage = {
+            type: "GameStatus",
+            messages: messages
+        };
+
+        console.log("GameStatus");
+        console.log(JSON.stringify(messages));
+        this.Broadcast(gameStatusMessage, u); // Enviar solo al usuario 'u'
     }
 
     /**

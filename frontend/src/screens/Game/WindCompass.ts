@@ -1,8 +1,8 @@
 import * as BABYLON from "@babylonjs/core";
 import * as GUI from "@babylonjs/gui";
-import { IDisposable } from "@shared/interfaces/IDisposable";
 import { Event } from "@shared/utils/Event";
 import { ClientGame } from "./ClientGame";
+import { IDisposable } from "./Interfaces/IDisposable";
 
 /**
  * Creates an arrow to point wind direction.
@@ -15,6 +15,7 @@ export class WindCompass implements IDisposable {
     protected game: ClientGame;
 
     constructor(game: ClientGame) {
+        console.log("WindCompass constructor start");
         this.game = game;
         let scene = game.GetScene(this);
 
@@ -61,6 +62,7 @@ export class WindCompass implements IDisposable {
         shaft.layerMask = 0x20000000;
         head.layerMask = 0x20000000; 
         camera.layerMask = 0x20000000;
+        console.log("WindCompass constructor end");
     }
 
     /**
