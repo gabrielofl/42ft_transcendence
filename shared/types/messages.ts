@@ -15,7 +15,10 @@ export type MessageTypes =
 "PlayerPreMove"|
 "BallRemove"|
 "PaddlePosition"|
-"InventoryChanged";
+"WindChanged"|
+"GameInit"|
+"InventoryChanged"|
+"GameStatus";
 
 export interface Message {
     type: MessageTypes
@@ -41,6 +44,9 @@ export type MessagePayloads = {
     ["PaddlePosition"]: PaddlePositionMessage;
     ["BallRemove"]: BallRemoveMessage;
     ["InventoryChanged"]: InventoryChangeMessage;
+    ["WindChanged"]: WindChangedMessage;
+    ["GameInit"]: Message;  // El servidor responde con un GameStatus
+    ["GameStatus"]: GameStatusMessage; // Contiene varios mensajes
 };
 
 export type PowerUpType = "MoreLength" | "LessLength" | "CreateBall" | "Shield" | "SpeedDown" | "SpeedUp";
@@ -102,6 +108,16 @@ export interface PlayerResult {
 export interface PreMoveMessage extends Message {
     id: number,
     dir: number, // -1 Izquierda, 1 Derecha
+}
+
+export interface WindChangedMessage extends Message {
+    type: "WindChanged";
+    wind: Vector3Data,
+}
+
+export interface GameStatusMessage extends Message {
+    type: "GameStatus";
+    messages: Message[];
 }
 
 export interface InventoryChangeMessage extends Message {

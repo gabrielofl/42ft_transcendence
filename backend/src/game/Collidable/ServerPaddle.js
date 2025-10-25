@@ -62,12 +62,20 @@ export class ServerPaddle extends DisposableImpostor {
         this.mesh.translate(BABYLON.Axis.X, delta, BABYLON.Space.LOCAL);
         if (BABYLON.Vector3.Distance(this.mesh.position, this.spawnPosition) > this.maxDistance)
             this.mesh.position = previousPos;
-		this.game.MessageBroker.Publish("PaddlePosition", {
+		this.game.MessageBroker.Publish("PaddlePosition", this.GetPositionMessage());
+    }
+
+    /**
+     * Construye un mensaje con la posición actual de la pala.
+     * @returns {PaddlePositionMessage}
+     */
+    GetPositionMessage() {
+        return {
 			type: "PaddlePosition",
 			id: this.owner.id,
 			x: this.mesh.position.x,
 			z: this.mesh.position.z,
-		});
+		};
     }
 
     BallCollision(ball) {

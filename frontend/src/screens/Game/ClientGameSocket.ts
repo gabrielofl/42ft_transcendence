@@ -1,6 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import { MessageBroker } from "@shared/utils/MessageBroker";
-import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PreMoveMessage, RoomStatePayload, ScoreMessage } from "@shared/types/messages";
+import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, GamePauseMessage, GameStatusMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PreMoveMessage, RoomStatePayload, ScoreMessage, WindChangedMessage } from "@shared/types/messages";
 import { IPowerUpBox } from "src/screens/Game/Interfaces/IPowerUpBox";
 import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
@@ -11,6 +11,7 @@ import { API_BASE_URL } from "../config";
 import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
 import { navigateTo } from "src/navigation";
+import { WindCompass } from "./WindCompass";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -37,7 +38,21 @@ export class ClientGameSocket {
 			"BallRemove": (m: MessagePayloads["BallRemove"]) => this.HandleBallRemove(m),
 			"PaddlePosition": (m: MessagePayloads["PaddlePosition"]) => this.HandlePaddlePosition(m),
 			"InventoryChanged": (m: MessagePayloads["InventoryChanged"]) => this.HandleInventoryChanged(m), 
+			"WindChanged": (m: MessagePayloads["WindChanged"]) => this.HandleWindChanged(m), 
+			"GameStatus": (m: MessagePayloads["GameStatus"]) => this.HandleGameStatus(m), 
 		};
+	}
+
+	/**
+	 * Maneja un mensaje de estado completo del juego, típicamente recibido al reconectar.
+	 * Este mensaje contiene un array de otros mensajes que, en conjunto, describen
+	 * el estado actual de la partida. El método itera sobre estos mensajes y los
+	 * procesa utilizando los manejadores (`handlers`) ya existentes para cada tipo.
+	 * @param {GameStatusMessage} m El mensaje de estado del juego que contiene un array de mensajes.
+	 */
+	private HandleGameStatus(m: GameStatusMessage): void {
+		console.log("Received GameStatus message from server:", m);
+		m.messages.forEach(msg => this.handlers[msg.type]?.(msg as any));
 	}
 
 	/**
@@ -51,7 +66,12 @@ export class ClientGameSocket {
 		return ClientGameSocket.Instance;
 	}
 
-	private Connect(code: string) {
+	/**
+	 * Establece la conexión WebSocket con el servidor del juego.
+	 * @param {string} code - El código de la sala a la que conectarse.
+	 * @param {() => void} onOpen - Callback que se ejecuta cuando la conexión se establece correctamente.
+	 */
+	private Connect(code: string, onOpen: () => void) {
 		console.log(`Connecting to: ${code}`);
 		const connect = () => {
 			const userID = 42;
@@ -66,6 +86,11 @@ export class ClientGameSocket {
 				// Intenta reconectar después de un breve retraso para no sobrecargar el servidor.
 				setTimeout(connect, 1000);
 			});
+			ws.addEventListener('open', () => {
+				console.log("[ws] Connection established.");
+				onOpen(); // Ejecutar el callback cuando la conexión esté abierta.
+			});
+
 			ClientGameSocket.socket = ws;
 		};
 
@@ -91,15 +116,16 @@ export class ClientGameSocket {
 		ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
 		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.config.mapKey]);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
-		
-		console.log('roomState', roomState.config.mapKey);
-		this.Connect(roomState.roomCode);
+		console.log('roomState', roomState);
+
 		// El backend en `waitroom-websocket.js` devuelve un `nArray` en el evento `AllReady`.
 		// Aquí lo simulamos a partir de la lista de jugadores del estado de la sala.
 		const nArray: [number, string][] = roomState.players.map((p: any) => [p.userId, p.username]);
 		await this.game.AddPlayers({ type: 'AllReady', nArray });
 
-		// this.Send({ type: "GameStart" });
+		this.Connect(roomState.roomCode, () => {
+			this.Send({ type: "GameInit" });
+		});
 		return this.game;
 	}
 
@@ -171,6 +197,20 @@ export class ClientGameSocket {
 	private HandleAddPlayer(msg: AddPlayerMessage): void {
 		console.log("Received AddPlayer message from server:", msg);
 		this.UIBroker.Publish("AddPlayer", msg);
+	}
+
+	private HandleWindChanged(m: WindChangedMessage): void {
+		if (!this.game) {
+			return;
+		}
+
+		if (!this.game.arrow) {
+			this.game.arrow = new WindCompass(this.game);
+		}
+
+		console.log("Received WindChanged message from server:", m);
+		const windVector = new BABYLON.Vector3(m.wind.x, m.wind.y, m.wind.z);
+		this.game.arrow.Update(windVector);
 	}
 
 	/**
