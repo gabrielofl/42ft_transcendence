@@ -70,6 +70,23 @@ export class ServerBall extends DisposableImpostor {
 		super.Dispose();
 	}
 	
+    /**
+     * Construye un mensaje con la posición y velocidad actual de la bola.
+     * @returns {import("../../../shared/types/messages.js").BallMoveMessage}
+     */
+    GetBallMoveMessage() {
+        const p = this.mesh.position;
+        const v = this.mesh.physicsImpostor?.getLinearVelocity() || { x: 0, z: 0 };
+        return {
+			type: "BallMove",
+			id: this.ID,
+			x: p.x,
+			z: p.z,
+			vx: v.x,
+			vz: v.z,
+		};
+    }
+
 	// Se asegura de que la velocidad de la bola se mantenga en un rango.
 	MaintainBallSpeed() {
 		/** LOG **/
@@ -115,14 +132,7 @@ export class ServerBall extends DisposableImpostor {
             const correctedVelocity = direction.scale(ServerBall.DESIRED_SPEED);
             impostor.setLinearVelocity(correctedVelocity);
         }
-		this.game.MessageBroker.Publish("BallMove", {
-			type: "BallMove",
-			id: this.ID,
-			x: p.x,
-			z: p.z,
-			vx: v.x,
-			vz: v.z,
-		});
+		this.game.MessageBroker.Publish("BallMove", this.GetBallMoveMessage());
 
 		if (log) logToFile("MaintainBallSpeed End");
     }
