@@ -1,10 +1,6 @@
 export type MessageTypes =
 "CreatePowerUp" |
 "AddPlayer" |
-"SelfEffect"|
-"MassEffect"|
-"AppliedEffect"|
-"EndedEffect"|
 "GamePause"|
 "GameEnded"|
 "GameRestart"|
@@ -18,6 +14,8 @@ export type MessageTypes =
 "WindChanged"|
 "GameInit"|
 "InventoryChanged"|
+"PowerUpBoxPicked"|
+"EffectsChanged"|
 "GameStatus";
 
 export interface Message {
@@ -29,10 +27,6 @@ export interface Message {
 export type MessagePayloads = {
     ["CreatePowerUp"]: CreatePowerUpMessage;
     ["AddPlayer"]: AddPlayerMessage;
-    ["SelfEffect"]: PlayerEffectMessage;
-    ["MassEffect"]: PlayerEffectMessage;
-    ["AppliedEffect"]: PlayerEffectMessage;
-    ["EndedEffect"]: PlayerEffectMessage;
     ["GamePause"]: GamePauseMessage;
     ["GameEnded"]: ScoreMessage;
     ["GameRestart"]: Message;
@@ -44,7 +38,9 @@ export type MessagePayloads = {
     ["PaddlePosition"]: PaddlePositionMessage;
     ["BallRemove"]: BallRemoveMessage;
     ["InventoryChanged"]: InventoryChangeMessage;
+    ["PowerUpBoxPicked"]: PowerUpBoxPickedMessage;
     ["WindChanged"]: WindChangedMessage;
+    ["EffectsChanged"]: EffectsChangedMessage;
     ["GameInit"]: Message;  // El servidor responde con un GameStatus
     ["GameStatus"]: GameStatusMessage; // Contiene varios mensajes
 };
@@ -121,10 +117,15 @@ export interface GameStatusMessage extends Message {
 }
 
 export interface InventoryChangeMessage extends Message {
-    id: number,
+    type: "InventoryChanged";
     slot: number;
     username: string;
     path: string;
+}
+
+export interface PowerUpBoxPickedMessage extends Message {
+    type: "PowerUpBoxPicked";
+    id: number;
 }
 
 export interface BallRemoveMessage extends Message {
@@ -174,6 +175,15 @@ export interface CreatePowerUpMessage extends Message {
 export interface PlayerEffectMessage extends Message {
     origin: string
     effect: EffectType
+}
+
+export interface EffectsChangedMessage extends Message {
+    type: "EffectsChanged";
+    data: {
+        [username: string]: {
+            effects: string[];
+        }
+    }
 }
 
 export interface FriendRequest {

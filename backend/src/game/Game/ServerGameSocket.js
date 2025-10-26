@@ -144,6 +144,8 @@ export class ServerGameSocket {
         // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
         this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
+        this.game.MessageBroker.Subscribe("PowerUpBoxPicked", enqueueMessage);
+        this.game.MessageBroker.Subscribe("EffectsChanged", enqueueMessage);
     }
 
     /**

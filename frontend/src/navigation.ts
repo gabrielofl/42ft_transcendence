@@ -4,7 +4,7 @@ import { renderHome } from "./screens/Home.js";
 // import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
-import { PlayerData, renderGame } from "./screens/Game/GameScreen.js";
+import { renderGame } from "./screens/Game/GameScreen.js";
 import { renderHeader } from "./components/Header.js";
 import { AppStore } from "./redux/AppStore.js";
 import { Screen } from "./redux/reducers/navigationReducer.js";
@@ -27,7 +27,7 @@ function onScreenEnter(screen: Screen, callback: () => void) {
   });
 }
 
-function onScreenLeave(screen: Screen, callback: () => void) {
+export function onScreenLeave(screen: Screen, callback: () => void) {
   return AppStore.NavigoStore.Subscribe((prev, next) => {
     if (prev === screen && next !== screen) callback();
   });
@@ -41,11 +41,6 @@ export function initNavigation() {
       console.log(`Navegando a ${next}`);
       renderScreen(next);
     }
-  });
-
-  onScreenLeave("game", () => {
-    console.log("Saliendo de game");
-    ClientGameSocket.GetInstance()?.DisposeGame();
   });
 
   // Render inicial

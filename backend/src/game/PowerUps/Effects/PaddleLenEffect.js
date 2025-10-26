@@ -30,11 +30,6 @@ export class PaddleLenEffect extends APlayerEffect {
             return;
         
         target.PaddleLen.Values.Add(this);
-        this.game.MessageBroker.Publish("AppliedEffect", {
-            type: "AppliedEffect",
-            effect: this.IsNegative ? "LessLength" : "MoreLength",
-            origin: target.GetName(),
-        });
         super.Execute(target);
         logToFile("PaddleLenEffect Execute End");
     }
