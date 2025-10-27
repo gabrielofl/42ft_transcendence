@@ -47,7 +47,7 @@ export class APlayer {
         });
 
         // TODO pasar a server Subscripción a mensajería global.
-        // this.game.MessageBroker.Subscribe("MassEffect", this.OnMassEffect.bind(this));
+        this.game.MessageBroker.Subscribe("MassEffect", this.OnMassEffect.bind(this));
         this.game.MessageBroker.Subscribe("SelfEffect", this.OnSelfEffect.bind(this));
     }
 
@@ -63,6 +63,7 @@ export class APlayer {
             {
                 effect.Execute(this);
                 this.Effects.Add(effect);
+                this.game.MessageBroker.Publish("EffectsChanged", this.GetEffectsChangedMessage());
             }
         }
     }
@@ -72,15 +73,31 @@ export class APlayer {
      * @param {PlayerEffectMessage} msg 
      */
     OnMassEffect(msg) {
-/*         if (this.game instanceof ServerGame)
+        if (this.game instanceof ServerGame)
         {
             let effect = this.game.CreatePlayerEffect(msg.effect);
             if (msg.origin != this.name && effect.CanExecute(this))
             {
                 effect.Execute(this);
                 this.Effects.Add(effect);
+                this.game.MessageBroker.Publish("EffectsChanged", this.GetEffectsChangedMessage());
             }
-        } */
+        }
+    }
+
+    /**
+     * Crea un mensaje con la lista de efectos del jugador.
+     * @returns Mensaje.
+     */
+    GetEffectsChangedMessage() {
+        return {
+            type: "EffectsChanged",
+            data: {
+                [this.name]: {
+                    effects: this.Effects.GetAll().map(e => e.ImgPath)
+                }
+            }
+        }
     }
     
     // Reubica la paleta y limita sus movimientos.

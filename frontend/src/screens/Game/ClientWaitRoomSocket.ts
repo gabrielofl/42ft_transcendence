@@ -89,7 +89,7 @@ export class ClientWaitRoomSocket {
         this.Send({ type: "JoinRoom", roomCode: this._roomCode, userId: this._userId, username: this._username });
       });
 
-      ws.addEventListener("message", (e) => { try { console.log("MESSAGE raw:", typeof e.data === "string" ? e.data : e); } catch {}; this.Receive(e); });
+      ws.addEventListener("message", (e) => { this.Receive(e); });
       ws.addEventListener("error", (e) => console.log("ERROR", e));
       ws.addEventListener("close", (e) => {
         this._connected = false;

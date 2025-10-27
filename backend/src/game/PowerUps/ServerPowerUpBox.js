@@ -81,11 +81,9 @@ export class ServerPowerUpBox extends Zone {
             return;
 
         player.Inventory.PickUpPwrUp(this.PowerUp);
-        this.game.MessageBroker.Publish("InventoryChanged", {
-            type: "InventoryChanged",
-            username: player.GetName(),
+        this.game.MessageBroker.Publish("PowerUpBoxPicked", {
+            type: "PowerUpBoxPicked",
             id: this.ID,
-            path: this.PowerUp.ImgPath,
         });
         this.Dispose();
         logToFile("ServerPowerUpBox PickUp End");

@@ -11,6 +11,9 @@ import { PowerUpSpeedUp } from "../PowerUps/PowerUpSpeedUp.js"
 import { PowerUpSpeedDown } from "../PowerUps/PowerUpSpeedDown.js"
 import { PowerUpCreateBall } from "../PowerUps/PowerUpCreateBall.js"
 import { PowerUpShield } from "../PowerUps/PowerUpShield.js"
+import { PaddleSpeedEffect } from "../PowerUps/Effects/PaddleSpeedEffect.js"
+import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect.js"
+import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect.js"
 import { logToFile } from "./logger.js";
 import { Event } from "../Utils/Event.js";
 import { MessageBroker } from "../Utils/MessageBroker.js";

@@ -173,8 +173,7 @@ protected readonly WIN_POINTS = 50;
      * @param players 
      */
     public async AddPlayers(msg: AllReadyMessage): Promise<void> {
-        console.log("AddPlayers");
-        console.log(msg);
+        // console.log(msg);
         this.players = [];
 
         if (!msg.nArray)
@@ -182,16 +181,16 @@ protected readonly WIN_POINTS = 50;
 
         const me = (await this.GetMe()).username;
 
-        console.log(me);
+        // console.log(me);
 
         msg.nArray.forEach(d => {
             let player: APlayer;
             const isLocal = d[1] === me;
             if (isLocal) {
-                console.log("LocalPlayer", d);
+                // console.log("LocalPlayer", d);
                 player = new LocalPlayer(this, d[0], d[1], "d", "a");
             } else {
-                console.log("ClientSocketPlayer");
+                // console.log("ClientSocketPlayer");
                 player = new ClientSocketPlayer(this, d[1]);
             }
             this.players.push(player);
@@ -217,7 +216,7 @@ protected readonly WIN_POINTS = 50;
                     : cameraFrontView;
                 this.camera.setTarget(BABYLON.Vector3.Zero());
             } else if (evt.sourceEvent.key === "p") {
-                console.log("Pause: " + !this.Paused);
+                // console.log("Pause: " + !this.Paused);
                 this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: !this.Paused});
             }
         }));

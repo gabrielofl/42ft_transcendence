@@ -22,11 +22,6 @@ export class PaddleSpeedEffect extends APlayerEffect {
             return;
 
         target.GetPaddle().Speed = this.speed;
-        this.game.MessageBroker.Publish("AppliedEffect", {
-            type: "AppliedEffect",
-            effect: this.IsNegative ? "SpeedDown" : "SpeedUp",
-            origin: target.GetName()
-        });
         super.Execute(target);
         logToFile("PaddleSpeedEffect Execute End");
     }
