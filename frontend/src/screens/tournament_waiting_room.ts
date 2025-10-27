@@ -656,7 +656,9 @@ export async function renderWaitingRoom(): Promise<void> {
             player1: match.player1,
             player2: match.player2,
             winner: match.winner || null,
-            status: match.status || 'pending'
+            status: match.status || 'pending',
+            score1: match.score1,
+            score2: match.score2
           }))
         }));
         

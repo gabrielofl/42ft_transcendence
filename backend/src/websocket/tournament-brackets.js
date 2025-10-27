@@ -20,28 +20,36 @@ export function generateBracket(players) {
       player1: shuffled[0],
       player2: shuffled[1],
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     },
     {
       matchId: 2,
       player1: shuffled[2],
       player2: shuffled[3],
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     },
     {
       matchId: 3,
       player1: shuffled[4],
       player2: shuffled[5],
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     },
     {
       matchId: 4,
       player1: shuffled[6],
       player2: shuffled[7],
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     }
   ];
 
@@ -52,14 +60,18 @@ export function generateBracket(players) {
       player1: null,
       player2: null,
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     },
     {
       matchId: 6,
       player1: null,
       player2: null,
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     }
   ];
 
@@ -70,7 +82,9 @@ export function generateBracket(players) {
       player1: null,
       player2: null,
       winner: null,
-      status: 'pending'
+      status: 'pending',
+      score1: null,
+      score2: null
     }
   ];
 
@@ -90,9 +104,11 @@ export function generateBracket(players) {
  * @param {Object} bracket - El bracket actual
  * @param {number} matchId - ID del match que terminó
  * @param {Object} winner - Jugador ganador {userId, username}
+ * @param {number} score1 - Score del player1
+ * @param {number} score2 - Score del player2
  * @returns {Object} - Bracket actualizado
  */
-export function updateBracketWithWinner(bracket, matchId, winner) {
+export function updateBracketWithWinner(bracket, matchId, winner, score1, score2) {
   const currentRound = bracket.rounds[bracket.currentRound];
   
   // Encontrar el match
@@ -101,9 +117,11 @@ export function updateBracketWithWinner(bracket, matchId, winner) {
     throw new Error(`Match ${matchId} no encontrado en ronda actual`);
   }
 
-  // Registrar ganador
+  // Registrar ganador y scores
   match.winner = winner;
   match.status = 'completed';
+  match.score1 = score1;
+  match.score2 = score2;
 
   return bracket;
 }

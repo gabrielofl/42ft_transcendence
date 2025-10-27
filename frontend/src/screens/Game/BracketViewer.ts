@@ -16,7 +16,8 @@ interface Match {
   player2: Player | null;
   winner: Player | null;
   status: 'pending' | 'in_progress' | 'completed';
-  scores?: { player1: number; player2: number };
+  score1?: number;
+  score2?: number;
 }
 
 interface BracketRound {
@@ -122,7 +123,9 @@ export class BracketViewer {
           player1: match.player1,
           player2: match.player2,
           winner: null,
-          status: 'pending' as const
+          status: 'pending' as const,
+          score1: match.score1,
+          score2: match.score2
         }))
       }],
       status: 'in_progress',
@@ -165,7 +168,9 @@ export class BracketViewer {
           player1: match.player1,
           player2: match.player2,
           winner: match.winner || null,
-          status: match.status || 'pending'
+          status: match.status || 'pending',
+          score1: match.score1,
+          score2: match.score2
         }))
       })),
       status: bracket.status || 'in_progress',
@@ -319,19 +324,13 @@ export class BracketViewer {
           <div class="text-xs">${getStatusIcon()}</div>
           <div class="flex-1">
             <div class="text-sm text-center px-3 py-2 rounded ${getPlayerClass(match.player1, isWinner1)}">
-              ${match.player1?.username || 'TBD'}
+              ${match.player1?.username || 'TBD'}${match.score1 !== undefined && match.score1 !== null ? ` (${match.score1})` : ''}
             </div>
             <div class="text-sm text-center px-3 py-2 rounded ${getPlayerClass(match.player2, isWinner2)}">
-              ${match.player2?.username || 'TBD'}
+              ${match.player2?.username || 'TBD'}${match.score2 !== undefined && match.score2 !== null ? ` (${match.score2})` : ''}
             </div>
           </div>
         </div>
-
-        ${match.scores ? `
-          <div class="text-xs text-center text-gray-400">
-            ${match.scores.player1} - ${match.scores.player2}
-          </div>
-        ` : ''}
 
         ${roundIndex < this.bracketState.rounds.length - 1 ? `
           <div class="absolute right-[-20px] top-1/2 transform -translate-y-1/2">
@@ -361,3 +360,4 @@ export class BracketViewer {
     this.container = null;
   }
 }
+

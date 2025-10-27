@@ -545,8 +545,12 @@ async function tournamentWebsocket(fastify) {
         username: winnerPlayer.username
       };
 
-      // 3. Actualizar bracket con el ganador
-      updateBracketWithWinner(bracket, matchId, winnerData);
+      // 3. Actualizar bracket con el ganador y scores
+      // Extraer scores de los resultados
+      const player1Score = results.find(r => r.username === bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player1?.username)?.score || 0;
+      const player2Score = results.find(r => r.username === bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username)?.score || 0;
+      
+      updateBracketWithWinner(bracket, matchId, winnerData, player1Score, player2Score);
 
       // 4. Verificar si la ronda está completa y avanzar si es necesario
       const advanceResult = advanceRoundIfReady(bracket);
