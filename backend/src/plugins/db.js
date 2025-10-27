@@ -207,6 +207,25 @@ async function databasePlugin(fastify, opts) {
 
 	`);
 
+	// --- MIGRATION LOGIC ---
+	// Función para añadir columnas a una tabla si no existen, sin borrar datos.
+	const migrateTable = async (tableName, columnName, columnDefinition) => {
+		try {
+			const columns = await db.all(`PRAGMA table_info(${tableName});`);
+			const columnExists = columns.some(c => c.name === columnName);
+			if (!columnExists) {
+				fastify.log.info(`Migrating '${tableName}' table: adding '${columnName}' column.`);
+				await db.run(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition};`);
+			}
+		} catch (error) {
+			// Esto puede fallar si la tabla aún no existe, lo cual es normal en la primera ejecución.
+			fastify.log.warn(`Could not check/migrate table '${tableName}'. It might not exist yet. Error: ${error.message}`);
+		}
+	};
+
+	// await migrateTable('rooms', 'wind_amount', 'INTEGER DEFAULT 50');
+	// await migrateTable('rooms', 'point_to_win_amount', 'INTEGER DEFAULT 7');
+
 	// Add database to fastify instance
 	fastify.decorate('db', db);
 

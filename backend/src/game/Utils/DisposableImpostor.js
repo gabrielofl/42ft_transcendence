@@ -1,13 +1,13 @@
 import * as BABYLON from "@babylonjs/core";
-import { AGame } from "../abstract/AGame.js";
 import { DisposableMesh } from "./DisposableMesh.js";
+import { ServerGame } from "../Game/ServerGame.js";
 
 export class DisposableImpostor extends DisposableMesh {
     impostor;// BABYLON.PhysicsImpostor;
 
     /**
      * 
-     * @param {AGame} game 
+     * @param {ServerGame} game 
      * @param {(scene: BABYLON.Scene) => BABYLON.Mesh} fMeshBuilder 
      * @param {number} mass 
      */

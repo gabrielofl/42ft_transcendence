@@ -100,10 +100,17 @@ await app.register(fastifyCors, app.config.cors);
 	await app.register(fastifyFormbody);
 
 	// Serve frontend files
-	await app.register(fastifyStatic, {
-		root: '/app/static',     // Directory with frontend files
-		prefix: '/',             // URL prefix
+	// await app.register(fastifyStatic, {
+	// 	root: '/app/static',     // Directory with frontend files
+	// 	prefix: '/',             // URL prefix
+	// });
+	
+	// Serve frontend files David
+	app.register(fastifyStatic, {
+		root: join(__dirname, "../static"), // inside backend/static
+		prefix: "/api/static/",
 	});
+
 
 	// STEP 3: Load all routes
 	await app.register(autoLoad, {

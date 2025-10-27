@@ -24,12 +24,12 @@ services:
       ports:
         - '443:443'
         - "9229:9229" # puerto de depuración
-        # - '4444:4444' #Work on cluster
       volumes:
         - frontend-dist:/app/static
         - ./shared:/app/src/shared
         - ./backend/db:/app/db
         - ./backend/uploads/avatars:/app/uploads/avatars
+        - ./backend/static:/app/static
       env_file:
         - ./backend/.env
       networks:

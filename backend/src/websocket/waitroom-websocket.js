@@ -113,6 +113,8 @@ async function waitroomWebsocket(fastify) {
         mapKey: room.map_key,
         powerUpAmount: room.powerup_amount,
         enabledPowerUps: JSON.parse(room.enabled_powerups || '[]'),
+        windAmount: room.wind_amount,
+        pointToWinAmount: room.point_to_win_amount,
       },
       maxPlayers: room.max_players,
       players: combined.map(p => ({
@@ -161,6 +163,8 @@ async function waitroomWebsocket(fastify) {
         mapKey: room.map_key,
         powerUpAmount: room.powerup_amount,
         enabledPowerUps: JSON.parse(room.enabled_powerups || '[]'),
+        windAmount: room.wind_amount,
+        pointToWinAmount: room.point_to_win_amount,
       };
       await startGame(code, combined, config);
       return { room, players: combined };
@@ -237,7 +241,7 @@ async function waitroomWebsocket(fastify) {
       const err = new Error('Only host can change config'); err.code = 403; throw err;
     }
 
-    const { mapKey, powerUpAmount, enabledPowerUps, maxPlayers } = cfg;
+    const { mapKey, powerUpAmount, enabledPowerUps, maxPlayers, windAmount, pointToWinAmount } = cfg;
     const upd = [];
     const vals = [];
 
@@ -245,6 +249,8 @@ async function waitroomWebsocket(fastify) {
     if (typeof powerUpAmount === 'number') { upd.push('powerup_amount = ?'); vals.push(powerUpAmount); }
     if (enabledPowerUps) { upd.push('enabled_powerups = ?'); vals.push(JSON.stringify(enabledPowerUps)); }
     if (typeof maxPlayers === 'number' && maxPlayers > 0) { upd.push('max_players = ?'); vals.push(maxPlayers); }
+    if (typeof windAmount === 'number') { upd.push('wind_amount = ?'); vals.push(windAmount); }
+    if (typeof pointToWinAmount === 'number') { upd.push('point_to_win_amount = ?'); vals.push(pointToWinAmount); }
 
     if (upd.length) {
       vals.push(room.id);
@@ -424,6 +430,8 @@ async function waitroomWebsocket(fastify) {
                 powerUpAmount: msg.powerUpAmount,
                 enabledPowerUps: msg.enabledPowerUps,
                 maxPlayers: msg.maxPlayers,
+                windAmount: msg.windAmount,
+                pointToWinAmount: msg.pointToWinAmount,
               };
               await setConfig(roomCode, userId, cfg);
               const pub = await publicCombinedRoomState(roomCode);
