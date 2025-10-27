@@ -279,7 +279,6 @@ export class ServerGameSocket {
             return null;
         }
 
-        // Ordenar por puntuación (mayor a menor)
         const sortedResults = results.sort((a, b) => b.score - a.score);
         const winner = sortedResults[0];
         
@@ -287,9 +286,7 @@ export class ServerGameSocket {
             return null;
         }
 
-        // Para matches de torneo, necesitamos el userId, no solo el username
-        // Esto requerirá una consulta a la base de datos o pasar el userId en el payload
-        // Por ahora, retornamos el username y el tournament system deberá hacer la conversión
+        // retornamos el username y el tournament system deberá hacer la conversión userId -> username
         return {
             username: winner.username,
             score: winner.score

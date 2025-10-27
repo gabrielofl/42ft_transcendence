@@ -106,7 +106,7 @@ function replaceTournamentIdInURL(id: number | null) {
 
 // ---------- bracket and notifications ----------
 
-// Helper: Guardar info del match en sessionStorage
+// Guardar info del match en sessionStorage
 async function saveMatchInfo(tournamentId: number, match: any, roundName: string) {
   try {
     const tournamentConfig = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
@@ -172,26 +172,6 @@ function hideBracket() {
   updateReadyButton();
 }
 
-// function showNotification(message: string, type: 'info' | 'success' | 'warning' = 'info') {
-//   // Crear notificación temporal
-//   const notification = document.createElement('div');
-//   notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-//     type === 'success' ? 'bg-green-600 text-white' :
-//     type === 'warning' ? 'bg-yellow-600 text-white' :
-//     'bg-blue-600 text-white'
-//   }`;
-//   notification.textContent = message;
-  
-//   document.body.appendChild(notification);
-  
-//   // Auto-remover después de 5 segundos
-//   setTimeout(() => {
-//     if (notification.parentNode) {
-//       notification.parentNode.removeChild(notification);
-//     }
-//   }, 5000);
-// }
-
 function initializeBracketViewer() {
   // SIEMPRE limpiar el bracketViewer anterior para evitar estado residual
   if (bracketViewer) {
@@ -251,16 +231,6 @@ function cleanupTournamentState() {
   // Limpiar MessageBroker del socket para evitar eventos residuales
   const tournamentSocket = ClientTournamentSocket.GetInstance();
   tournamentSocket.UIBroker.ClearAll();
-}
-
-function resetTournamentSocket() {
-  // Reiniciar completamente el singleton del socket
-  const tournamentSocket = ClientTournamentSocket.GetInstance();
-  tournamentSocket.Disconnect();
-  tournamentSocket.UIBroker.ClearAll();
-  
-  // Resetear el singleton usando reflection
-  (ClientTournamentSocket as any).instance = null;
 }
 
 function updateMatchInfo() {
@@ -433,13 +403,9 @@ export async function renderWaitingRoom(): Promise<void> {
     alert("Tournament link copied!");
   });
 
-  // 5) Initialize Bracket Viewer
+  // Initialize Bracket Viewer and WebSocket
   initializeBracketViewer();
-
-  // 6) WebSocket connection
   const tournamentSocket = ClientTournamentSocket.GetInstance();
-  
-  // IMPORTANTE: Suscribir ANTES de conectar para no perder mensajes
   tournamentSocket.UIBroker.Subscribe("TournamentState", (state) => {
     applyTournamentState(state);
   });
@@ -455,7 +421,6 @@ export async function renderWaitingRoom(): Promise<void> {
   });
   
   tournamentSocket.UIBroker.Subscribe("NewHost", ({ userId: uid }) => {
-    // Actualizar quién es el host
     tournamentPlayers.forEach(p => {
       p.isHost = p.userId === uid;
     });
@@ -495,15 +460,9 @@ export async function renderWaitingRoom(): Promise<void> {
       showBracket();
       updateMatchInfo();
       
-      // Iniciar cuenta atrás de 10 segundos para el primer match
       startCountdown(10, async () => {
-        // 1. Primero navegar al juego (se conecta a /gamews)
         navigateTo('game');
-        
-        // 2. Esperar un momento para que se conecte
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // 3. LUEGO enviar señal para iniciar el match
         const tournamentSocket = ClientTournamentSocket.GetInstance();
         tournamentSocket.Send({ 
           type: 'TournamentMatchStart', 
@@ -515,31 +474,21 @@ export async function renderWaitingRoom(): Promise<void> {
     }
   });
 
-  // Listeners para eventos de bracket
-
   tournamentSocket.UIBroker.Subscribe("BracketMatchCompleted", (data) => {
-    // El BracketViewer ya actualiza visualmente el bracket
-    // Solo necesitamos verificar si era nuestro match
     if (myCurrentMatch && myCurrentMatch.matchId === data.matchId) {
-      // Mostrar mensaje de espera
       showWaitingMessage();
-      // Resetear myCurrentMatch para esperar el siguiente
       myCurrentMatch = null;
     }
   });
 
   tournamentSocket.UIBroker.Subscribe("BracketRoundAdvanced", async (data) => {
-    // Crear un ID único para este evento
     const eventId = `${data.tournamentId}-${data.roundNumber}-${data.matches.length}`;
     
-    // Evitar procesar eventos duplicados
     if (lastProcessedEvent === eventId) {
       return;
     }
     
     lastProcessedEvent = eventId;
-    
-    // Verificar si tengo un nuevo match en esta ronda
     const myNewMatch = data.matches.find((m: any) =>
       m.player1.userId === userId || m.player2.userId === userId
     );
@@ -547,15 +496,9 @@ export async function renderWaitingRoom(): Promise<void> {
     if (myNewMatch) {
       myCurrentMatch = myNewMatch;
       await saveMatchInfo(data.tournamentId, myNewMatch, data.roundName);
-
-      // Actualizar UI para mostrar el nuevo match
       updateMatchInfo();
-      
-      // Asegurar que el bracket esté visible
       showBracket();
       
-      // Verificar si ya estamos en tournament-waiting antes de iniciar countdown
-      // Si estamos en otra pantalla (ej: game), esperar a que volvamos
       const currentScreen = window.location.hash.replace('#', '');
       
       if (currentScreen === 'tournament-waiting') {
@@ -576,18 +519,15 @@ export async function renderWaitingRoom(): Promise<void> {
   });
 
   tournamentSocket.UIBroker.Subscribe("BracketTournamentFinished", (data) => {
-    // Ocultar countdown si está activo
     if (countdownInterval) {
       clearInterval(countdownInterval);
     }
     const countdownSection = document.getElementById('countdown-section');
     if (countdownSection) countdownSection.classList.add('hidden');
     
-    // Ocultar mensaje de espera si está visible
     const waitingMessage = document.getElementById('waiting-message');
     if (waitingMessage) waitingMessage.classList.add('hidden');
     
-    // Mostrar pantalla de resultado con trofeo grande
     const isWinner = data.winner.userId === userId;
     
     showResultOverlay({
@@ -597,23 +537,18 @@ export async function renderWaitingRoom(): Promise<void> {
       frameLabel: 'Champion',
       winnerName: data.winner.username,
       onContinue: () => {
-        // SOLUCIÓN SIMPLE: Navegar directamente al lobby sin limpiar nada
-        // El lobby se encargará de limpiar todo
         navigateTo('tournament-lobby');
       }
     });
   });
   
-  // Conectar DESPUÉS de suscribir
   tournamentSocket.ConnectToTournament(tournamentId, userId, username);
-
-  // reveal UI
+  
   if (cardsContainer) cardsContainer.style.visibility = "visible";
   const loadingNode = document.getElementById("wait-loading-banner");
   if (loadingNode) loadingNode.remove();
   
-  // Si hay información de match en sessionStorage, mostrar el bracket
-  // Si hay información de match en sessionStorage, mostrar el bracket
+  // Mostrar bracket si hay información de match en sessionStorage
   const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
   if (tournamentMatchInfo) {
     showBracket();
@@ -624,7 +559,6 @@ export async function renderWaitingRoom(): Promise<void> {
       sessionStorage.removeItem('pendingCountdown');
       const matchInfo = JSON.parse(tournamentMatchInfo);
       
-      // Usar setTimeout para asegurar que el DOM esté listo
       setTimeout(() => {
         startCountdown(10, async () => {
           navigateTo('game');
@@ -646,8 +580,6 @@ export async function renderWaitingRoom(): Promise<void> {
         const bracket = typeof tournamentData.bracket === 'string' 
           ? JSON.parse(tournamentData.bracket) 
           : tournamentData.bracket;
-        
-        // Convertir TODAS las rondas del bracket
         const allRounds = bracket.rounds.map((round: any, index: number) => ({
           name: round.name,
           matches: round.matches.map((match: any) => ({
@@ -661,8 +593,6 @@ export async function renderWaitingRoom(): Promise<void> {
             score2: match.score2
           }))
         }));
-        
-        // Publicar TODAS las rondas al BracketViewer
         bracketViewer?.messageBroker.Publish("BracketFullState", {
           tournamentId: tournamentId,
           currentRound: bracket.currentRound || 0,

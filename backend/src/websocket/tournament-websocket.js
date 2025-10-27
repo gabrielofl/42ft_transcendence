@@ -1,6 +1,3 @@
-// Tournament WebSocket - Sistema de torneos en tiempo real
-// Inspirado en waitroom-websocket.js pero simplificado para torneos
-
 import fp from 'fastify-plugin';
 import { generateBracket, updateBracketWithWinner, advanceRoundIfReady } from './tournament-brackets.js';
 import { addVirtualAI } from './virtual-players.js';
