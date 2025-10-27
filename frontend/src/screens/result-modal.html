@@ -1,0 +1,47 @@
+<!-- Add hidden to #result-modal to start hidden -->
+<div id="result-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-hidden ">
+  <div class="retro-modal w-3/5 max-h-[90vh] overflow-y-auto p-6 border-2 border-[--primary-color] rounded-lg bg-[--bg-color] text-center">
+    
+		<p id="result-title" class="txt-subtitle color-primary p-2"></p>
+		<p id="result-subtitle" class="txt-subheading color-secondary pb-6"></p>
+	
+		
+	<div class="flex flex-col md:flex-row justify-center items-center w-full gap-6">
+		
+		<!-- Left animation -->
+		<div class="flex justify-center items-center p-4">
+			<img
+			id="result-animation-img"
+			class="w-[75px] h-[75px] object-contain"
+			src=""
+			alt="animation frame"
+			>
+		</div>
+
+		<!-- Center content -->
+		<div class="flex flex-col items-center text-center gap-4">
+			<img
+			id="result-img"
+			class="w-[250px] h-[250px] object-cover bg-gray-300 my-4"
+			src=""
+			alt="result image"
+			>
+			<p id="result-message" class="txt-subheading color-secundary"></p>
+			<p id="result-score" class="txt-subheading color-success"></p>
+			<button id="result-btn" class="btn-primary w-2/3">Continue</button>
+		</div>
+
+		<!-- Right animation -->
+		<div class="flex justify-center items-center p-4">
+			<img
+			id="result-animation-img-bis"
+			class="w-[75px] h-[75px] object-contain"
+			src=""
+			alt="animation frame"
+			>
+		</div>
+
+		</div>
+
+	</div>
+</div>
