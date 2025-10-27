@@ -24,11 +24,21 @@ export class ServerGameSocket {
 
     /**
      * Crea una instancia de ServerGameSocket para una sala específica.
-     * @param {string} roomId El identificador único de la sala.
+     * @param {string} roomId - El identificador único de la sala.
+     * @param {object} config - La configuración de la partida.
+     * @param {string} config.mapKey - La clave del mapa a utilizar.
+     * @param {number} config.powerUpAmount - La cantidad de power-ups.
+     * @param {string[]} config.enabledPowerUps - Los tipos de power-ups habilitados.
+     * @param {number} [config.windAmount] - La intensidad del viento (opcional).
+     * @param {number} [config.pointToWinAmount] - Los puntos para ganar (opcional).
      */
-    constructor(roomId) {
+    constructor(roomId, config) {
         this.roomId = roomId;
+        logToFile(`Creating ServerGameSocket for room ${roomId} with config: ${JSON.stringify(config)}`);
         this.game = new ServerGame();
+        this.game.WIN_POINTS = config.pointToWinAmount || 5;
+        this.game.SetEnabledPowerUps(config.enabledPowerUps);
+        this.game.SetWind(config.windAmount || 0);
         this.setupGameEventListeners();
         this.people = new Map();
         this.handlers = {

@@ -4,9 +4,9 @@ import { ObservableList } from "../Utils/ObservableList.js";
 import { DependentValue } from "../Utils/DependentValue.js";
 import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect.js";
 import "../Utils/array.extensions.js";
-import { AGame } from "../abstract/AGame.js";
 import { Event } from "../Utils/Event.js";
 import { Zone } from "../Utils/Zone.js";
+import { ServerGame } from "../Game/ServerGame.js";
 
 export class APlayer {
     OnPaddleCreated = new Event();
@@ -27,7 +27,7 @@ export class APlayer {
 
     /**
      * 
-     * @param {AGame} game 
+     * @param {ServerGame} game 
      * @param {string} name 
      */
     constructor(game, name) {
@@ -130,7 +130,7 @@ export class APlayer {
 
     /**
      * 
-     * @returns {AGame}
+     * @returns {ServerGame}
      */
     GetGame() {
         return this.game;
