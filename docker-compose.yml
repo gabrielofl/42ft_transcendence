@@ -23,7 +23,8 @@ services:
         context: ./backend
       ports:
         - '443:443'
-        - "9229:9229" # puerto de depuración
+        # - "9229:9229" # puerto de depuración
+        # - '4444:4444' #Work on cluster
       volumes:
         - frontend-dist:/app/static
         - ./shared:/app/src/shared

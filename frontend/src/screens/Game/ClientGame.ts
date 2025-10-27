@@ -4,10 +4,6 @@ import * as MAPS from "./Maps";
 import { MaterialFactory } from "./MaterialFactory";
 import { ClientPongTable } from "./ClientPongTable";
 import { WindCompass } from "./WindCompass";
-import { PowerUpLessLength } from "./PowerUps/PowerUpLessLength";
-import { PowerUpSpeedUp } from "./PowerUps/PowerUpSpeedUp";
-import { PowerUpSpeedDown } from "./PowerUps/PowerUpSpeedDown";
-import { PowerUpShield } from "./PowerUps/PowerUpShield";
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { ObservableList } from "@shared/utils/ObservableList";
 import { Event } from "@shared/utils/Event";
@@ -50,8 +46,7 @@ protected readonly WIN_POINTS = 50;
     private gui: GUI.AdvancedDynamicTexture;
     private camera: BABYLON.ArcRotateCamera;
     private glow: BABYLON.GlowLayer;
-    private arrow: WindCompass | null = null;
-    public Wind: BABYLON.Vector3 = new BABYLON.Vector3();
+    public arrow: WindCompass | null = null;
     private isLateralView: boolean = false;
     private materialFact: MaterialFactory;
 
@@ -199,7 +194,6 @@ protected readonly WIN_POINTS = 50;
                 console.log("ClientSocketPlayer");
                 player = new ClientSocketPlayer(this, d[1]);
             }
-
             this.players.push(player);
         });
 
@@ -232,7 +226,6 @@ protected readonly WIN_POINTS = 50;
             inputMap[evt.sourceEvent.key] = false;
         }));
         
-        this.arrow = new WindCompass(this);
         this.dependents.Add(this.PongTable);
     }
 
