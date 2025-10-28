@@ -11,6 +11,9 @@ import { PowerUpSpeedUp } from "../PowerUps/PowerUpSpeedUp.js"
 import { PowerUpSpeedDown } from "../PowerUps/PowerUpSpeedDown.js"
 import { PowerUpCreateBall } from "../PowerUps/PowerUpCreateBall.js"
 import { PowerUpShield } from "../PowerUps/PowerUpShield.js"
+import { PaddleSpeedEffect } from "../PowerUps/Effects/PaddleSpeedEffect.js"
+import { PaddleLenEffect } from "../PowerUps/Effects/PaddleLenEffect.js"
+import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect.js"
 import { logToFile } from "./logger.js";
 import { Event } from "../Utils/Event.js";
 import { MessageBroker } from "../Utils/MessageBroker.js";
@@ -104,6 +107,31 @@ export class ServerGame {
         logToFile(`Enabled power-ups: ${Object.keys(this.PowerUpFactory).join(', ')}`);
     }
 
+	/**
+	 * Construye un mensaje con el estado actual del viento.
+	 */
+	GetWindChangedMessage() {
+		return {
+			type: "WindChanged",
+			wind: { x: this.Wind.x, y: this.Wind.y, z: this.Wind.z },
+		}
+	}
+
+	/**
+	 * Construye un mensaje con el estado actual de las puntuaciones de todos los jugadores.
+	 * @param {"PointMade" | "GameEnded"} type - El tipo de mensaje a crear.
+	 * @returns {import("../../shared/types/messages.js").ScoreMessage}
+	 */
+	GetScoreMessage(type = "PointMade") {
+		return {
+			type: type,
+			results: this.GetPlayers().map(p => ({
+				username: p.GetName(),
+				score: p.GetScore()
+			}))
+		};
+	}
+
     /**
      * Configura la fuerza del viento y activa/desactiva su cambio periódico.
      * @param {number} windForce - La fuerza del viento. Si es 0, el viento se desactiva.
@@ -120,6 +148,7 @@ export class ServerGame {
         if (this.WindForce > 0) {
             this._windInterval = setInterval(() => {
                 this.Wind = this.RandomWind(this.WindForce);
+				this.MessageBroker.Publish("WindChanged", this.GetWindChangedMessage());
             }, 10000);
         } else {
             this.Wind = new BABYLON.Vector3(0, 0, 0);
@@ -263,9 +292,7 @@ export class ServerGame {
 
 		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: true});
 		this.Balls.GetAll().forEach(ball => ball.Dispose());
-		let results = [];
-		this.players.forEach(p => results.push({username: p.GetName(), score: p.GetScore()}));
-		this.MessageBroker.Publish("GameEnded", {type: "GameEnded", results: results});
+		this.MessageBroker.Publish("GameEnded", this.GetScoreMessage("GameEnded"));
 		logToFile("ServerGame GameEnded End");
 	}
 
@@ -285,13 +312,7 @@ export class ServerGame {
 	BallEnterScoreZone(player, ball) {
 		logToFile("ServerGame BallEnterScoreZone Start");
 		this.players.filter(p => p != player).forEach(p => p.IncreaseScore());
-
-		let results = [];
-		this.players.forEach(p => results.push({username: p.GetName(), score: p.GetScore()}));
-		this.MessageBroker.Publish("PointMade", {
-			type: "PointMade",
-			results: results,
-		});
+		this.MessageBroker.Publish("PointMade", this.GetScoreMessage());
 		console.log(`Disposing ball: ${ball.ID}`)
 		ball.Dispose();
 		logToFile("ServerGame BallEnterScoreZone End");

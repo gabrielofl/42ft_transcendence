@@ -1,17 +1,45 @@
+<!-- Template de efecto -->
+<template id="effects-template">
+  <div class="w-5 h-5" data-bind-image="${key}"></div>
+</template>
+
+<!-- Template de tarjeta de jugador -->
+<template id="player-card-template">
+  <div class="group flex flex-col items-center bg-[#1a1d26] rounded-xl px-4 py-3 shadow-md relative">
+    <div class="text-base font-semibold">${key}</div>
+    <div data-bind-text="${key}.score" class="text-3xl font-extrabold animate-none transition-transform">0</div>
+
+    <!-- Inventario -->
+    <div class="mt-2 flex gap-2">
+      <div data-bind-image="${key}.inventory.0.path" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-md"></div>
+      <div data-bind-image="${key}.inventory.1.path" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-md"></div>
+      <div data-bind-image="${key}.inventory.2.path" class="w-8 h-8 bg-gray-800 border border-gray-600 rounded-md"></div>
+    </div>
+
+    <!-- Efectos -->
+    <div class="mt-2 flex gap-1 flex-wrap justify-center"
+         data-bind-list="${key}.effects"
+         data-template="#effects-template">
+      <!-- Aquí se van apilando dinámicamente los efectos -->
+    </div>
+  </div>
+</template>
+
 <div class="flex gap-8 w-full mt-4 px-8 max-w-screen-2xl mx-auto">
-  
   <!-- Vista Cliente -->
   <div class="flex flex-col items-center flex-1">
     <!-- Score Center Cliente -->
     <div class="justify-self-center flex items-center gap-6 mb-4">
-      <div id="player-cards-client" class="flex items-center gap-6">
-        <!-- Las tarjetas de CLIENTE se insertarán aquí dinámicamente -->
+      <!-- Tarjetas de jugadores -->
+      <div class="flex items-center gap-6"
+        id="player-cards-client"
+        data-bind-list="*"
+        data-template="#player-card-template">
       </div>
     </div>
 
     <!-- Canvas Container -->
     <div class="relative w-full">
-      <!-- Canvas Cliente -->
       <canvas id="pong-canvas" class="w-full aspect-[21/9] min-h-[300px] border border-aqua-500"></canvas>
     </div>
   </div>

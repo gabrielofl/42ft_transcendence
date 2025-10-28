@@ -4,10 +4,6 @@ import * as MAPS from "./Maps";
 import { MaterialFactory } from "./MaterialFactory";
 import { ClientPongTable } from "./ClientPongTable";
 import { WindCompass } from "./WindCompass";
-import { PowerUpLessLength } from "./PowerUps/PowerUpLessLength";
-import { PowerUpSpeedUp } from "./PowerUps/PowerUpSpeedUp";
-import { PowerUpSpeedDown } from "./PowerUps/PowerUpSpeedDown";
-import { PowerUpShield } from "./PowerUps/PowerUpShield";
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { ObservableList } from "@shared/utils/ObservableList";
 import { Event } from "@shared/utils/Event";
@@ -50,8 +46,7 @@ protected readonly WIN_POINTS = 50;
     private gui: GUI.AdvancedDynamicTexture;
     private camera: BABYLON.ArcRotateCamera;
     private glow: BABYLON.GlowLayer;
-    private arrow: WindCompass | null = null;
-    public Wind: BABYLON.Vector3 = new BABYLON.Vector3();
+    public arrow: WindCompass | null = null;
     private isLateralView: boolean = false;
     private materialFact: MaterialFactory;
 
@@ -178,8 +173,7 @@ protected readonly WIN_POINTS = 50;
      * @param players 
      */
     public async AddPlayers(msg: AllReadyMessage): Promise<void> {
-        console.log("AddPlayers");
-        console.log(msg);
+        // console.log(msg);
         this.players = [];
 
         if (!msg.nArray)
@@ -187,20 +181,19 @@ protected readonly WIN_POINTS = 50;
 
         const me = (await this.GetMe()).username;
 
-        console.log(me);
+        // console.log(me);
 
         msg.nArray.forEach(d => {
             let player: APlayer;
             const isLocal = d[1] === me;
             if (isLocal) {
-                console.log("LocalPlayer", d);
+                // console.log("LocalPlayer", d);
                 player = new LocalPlayer(this, d[0], d[1], "d", "a");
             } else {
                 console.log("ClientSocketPlayer", d);
                  // Pasar userId como tercer parámetro para poder ejecutar el movimiento de las palas de las IA en los torneos.
                 player = new ClientSocketPlayer(this, d[1], d[0]);
             }
-
             this.players.push(player);
         });
 
@@ -224,7 +217,7 @@ protected readonly WIN_POINTS = 50;
                     : cameraFrontView;
                 this.camera.setTarget(BABYLON.Vector3.Zero());
             } else if (evt.sourceEvent.key === "p") {
-                console.log("Pause: " + !this.Paused);
+                // console.log("Pause: " + !this.Paused);
                 this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: !this.Paused});
             }
         }));
@@ -233,7 +226,6 @@ protected readonly WIN_POINTS = 50;
             inputMap[evt.sourceEvent.key] = false;
         }));
         
-        this.arrow = new WindCompass(this);
         this.dependents.Add(this.PongTable);
     }
 

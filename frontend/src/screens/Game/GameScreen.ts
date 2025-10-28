@@ -1,29 +1,21 @@
-import * as BABYLON from "@babylonjs/core";
 import gameTemplate from "./game.html?raw";
-import gameEndedTemplate from "./game-ended.html?raw";
-import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
-import { createPlayerCard } from "./player-card";
 import { ClientGameSocket } from "./ClientGameSocket";
-import { AddPlayerMessage, ScoreMessage } from "@shared/types/messages";
-import { ClientGame } from "./ClientGame";
-import { LocalPlayer } from "./Player/LocalPlayer";
-import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
-import { APlayer } from "./Player/APlayer";
-import { Maps } from "./Maps";
-import { navigateTo } from "../../navigation";
+import { ReactiveViewModel } from "../../mvvm/ReactiveViewModel";
+import { DOMBinder } from "../../mvvm/DOMBinder";
+import { onScreenLeave } from "../../navigation";
 const API_BASE_URL = 'https://localhost:443';
+var unsubscribeFromGameLeave: () => void;
 
-export type PlayerType = "Local" | "AI" | "Remote";
-
-export type PlayerData =
-{
-	type: PlayerType,
-	username: string,
-	userid: number,
-	leftkey?: string,
-	rightkey?: string,
-	powerUpKey?: [string, string, string]
+interface GameViewModel {
+  [username: string]: Partial<{
+    score: number;
+    inventory: Record<number, { path: string }>;
+    effects: string[];
+  }>;
 }
+
+export const GameViewModel = new ReactiveViewModel<GameViewModel>();
+const binder = new DOMBinder(GameViewModel);
 
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
@@ -92,19 +84,8 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 function setupGameEvents(): void { 
 	const canvas = document.getElementById('pong-canvas') as HTMLCanvasElement | null;
 	if (canvas) {
+	main.innerHTML = gameTemplate;
 
-		const container = document.getElementById("player-cards-client");
-		if (!container)
-			return;
-
-		container.innerHTML = "";
-		// ClientGameSocket.GetInstance().UIBroker.Subscribe("AddPlayer", (msg) => addPlayer(msg));
-		// setupGameEndedListener(clientgame);
-		// setupPointMadeListener(clientgame);
-	}
-}
-
-function addPlayer(msg: AddPlayerMessage): void {
 	const container = document.getElementById("player-cards-client");
 	if (!container)
 		return;
@@ -173,22 +154,39 @@ function setupGameEndedListener(game: ClientGame): void {
 				});
 			}
 		}
-	});
-}
+	console.log("Registrando bindings");
+	binder.RegisterBindings(container.parentElement as HTMLElement);
 
-// Subscripción al evento PointMade
-function setupPointMadeListener(game: ClientGame) {
-	game.MessageBroker.Subscribe("PointMade", (msg: ScoreMessage) => {
-		// Buscar el elemento del marcador correspondiente al jugador
-		msg.results.forEach(result => 
-			setPlayerPoints(result.username, result.score)
-		);
-	});
-}
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("PointMade", (msg) => {
+		const obj = msg.results.reduce((acc, m) => {
+			acc[m.username] = { score: m.score };
+			return acc;
+		}, {} as Record<string, { score: number }>);
 
-function setPlayerPoints(username: string, score: number) {
-	const scoreEl = document.getElementById(`${username}-score`);
-	if (scoreEl) {
-		scoreEl.textContent = score.toString();
+		GameViewModel.UpdateFromObject(obj);
+	});
+
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("InventoryChanged", (msg) => {
+		GameViewModel.UpdateFromObject( {
+			[msg.username]: {
+				["inventory"]: {
+					[msg.slot]: {
+						["path"]: msg.path 
+					}
+				}
+			}
+		});
+	});
+
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("EffectsChanged", (msg) => {
+		GameViewModel.UpdateFromObject(msg.data);
+	});
+
+	if (!unsubscribeFromGameLeave) {
+		unsubscribeFromGameLeave = onScreenLeave("game", () => {
+			console.log("Vaciando GameViewModel, cerrando Socket y liberando ClientGame");
+			GameViewModel.data = {};
+			ClientGameSocket.GetInstance()?.DisposeGame();
+		});
 	}
 }

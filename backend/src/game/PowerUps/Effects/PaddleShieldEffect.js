@@ -26,11 +26,6 @@ export class PaddleShieldEffect extends APlayerEffect {
 
         // Limpiar efectos negativos
         target.Effects.GetAll().Where(e => e.IsNegative).forEach(e => e.Undo(target));
-        this.game.MessageBroker.Publish("AppliedEffect", {
-            type: "AppliedEffect",
-            effect: "Shield",
-            origin: target.GetName()
-        });
         super.Execute(target);
         logToFile("PaddleShieldEffect Execute End");
     }

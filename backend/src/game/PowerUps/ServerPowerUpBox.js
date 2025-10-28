@@ -9,6 +9,7 @@ export class ServerPowerUpBox extends Zone {
     Z;
     PowerUp;
     ID;
+    powerUpType;
 
     constructor(game, x, z, type) {
         logToFile("ServerPowerUpBox Constructor Start");
@@ -26,18 +27,18 @@ export class ServerPowerUpBox extends Zone {
 
         // 👉 Seleccionar power-up
         if (type) {
+            this.powerUpType = type;
             this.PowerUp = game.PowerUpFactory[type](game);
         } else {
             const types = Object.keys(game.PowerUpFactory);
             const randomType = types[Math.floor(Math.random() * types.length)];
-            type = randomType;
+            this.powerUpType = randomType;
             this.PowerUp = game.PowerUpFactory[randomType](game);
         }
 
         let id = 0;
         let powerUps = game.PowerUps.GetAll();
-        while (powerUps.Any(p => p.ID === id))
-            id++;
+        while (powerUps.find(p => p.ID === id)) id++;
         this.ID = id;
         
         // Se añade a la lista de PowerUps.
@@ -50,14 +51,22 @@ export class ServerPowerUpBox extends Zone {
         });
 
         // Notificar creación
-        game.MessageBroker.Publish("CreatePowerUp", {
-            type: "CreatePowerUp",
-            id: id,
-            x: x,
-            z: z,
-            powerUpType: type,
-        });
+        game.MessageBroker.Publish("CreatePowerUp", this.GetCreateMessage());
         logToFile("ServerPowerUpBox Constructor End");
+    }
+
+    /**
+     * Construye un mensaje con la información de creación de este PowerUp.
+     * @returns {import("../../../shared/types/messages.js").CreatePowerUpMessage}
+     */
+    GetCreateMessage() {
+        return {
+            type: "CreatePowerUp",
+            id: this.ID,
+            x: this.X,
+            z: this.Z,
+            powerUpType: this.powerUpType,
+        };
     }
 
     /**
@@ -72,11 +81,9 @@ export class ServerPowerUpBox extends Zone {
             return;
 
         player.Inventory.PickUpPwrUp(this.PowerUp);
-        this.game.MessageBroker.Publish("InventoryChanged", {
-            type: "InventoryChanged",
-            username: player.GetName(),
+        this.game.MessageBroker.Publish("PowerUpBoxPicked", {
+            type: "PowerUpBoxPicked",
             id: this.ID,
-            path: this.PowerUp.ImgPath,
         });
         this.Dispose();
         logToFile("ServerPowerUpBox PickUp End");
