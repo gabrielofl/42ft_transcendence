@@ -25,21 +25,11 @@ export class ServerGameSocket {
 
     /**
      * Crea una instancia de ServerGameSocket para una sala específica.
-     * @param {string} roomId - El identificador único de la sala.
-     * @param {object} config - La configuración de la partida.
-     * @param {string} config.mapKey - La clave del mapa a utilizar.
-     * @param {number} config.powerUpAmount - La cantidad de power-ups.
-     * @param {string[]} config.enabledPowerUps - Los tipos de power-ups habilitados.
-     * @param {number} [config.windAmount] - La intensidad del viento (opcional).
-     * @param {number} [config.pointToWinAmount] - Los puntos para ganar (opcional).
+     * @param {string} roomId El identificador único de la sala.
      */
-    constructor(roomId, config) {
+    constructor(roomId) {
         this.roomId = roomId;
-        logToFile(`Creating ServerGameSocket for room ${roomId} with config: ${JSON.stringify(config)}`);
         this.game = new ServerGame();
-        this.game.WIN_POINTS = config.pointToWinAmount || 5;
-        this.game.SetEnabledPowerUps(config.enabledPowerUps);
-        this.game.SetWind(config.windAmount || 0);
         this.setupGameEventListeners();
         this.people = new Map();
         this.handlers = {
@@ -289,6 +279,7 @@ export class ServerGameSocket {
             return null;
         }
 
+        // Ordenar por puntuación (mayor a menor)
         const sortedResults = results.sort((a, b) => b.score - a.score);
         const winner = sortedResults[0];
         
@@ -296,7 +287,6 @@ export class ServerGameSocket {
             return null;
         }
 
-        // retornamos el username y el tournament system deberá hacer la conversión userId -> username
         return {
             username: winner.username,
             score: winner.score

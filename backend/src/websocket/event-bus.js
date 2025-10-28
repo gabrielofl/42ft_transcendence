@@ -1,6 +1,3 @@
-// Tournament Event Bus - Sistema de eventos internos para comunicación entre sistemas
-// Permite comunicación desacoplada entre game manager y tournament system
-
 /**
  * Event Bus singleton para manejar eventos de torneos
  * Permite que diferentes sistemas se comuniquen sin acoplamiento directo
@@ -8,7 +5,6 @@
 class TournamentEventBus {
   constructor() {
     this.listeners = new Map();
-    console.log('🎯 Tournament Event Bus initialized');
   }
   
   /**
@@ -18,7 +14,6 @@ class TournamentEventBus {
    */
   emit(event, data) {
     const handlers = this.listeners.get(event) || [];
-    console.log(`📡 Emitting event '${event}' to ${handlers.length} listeners:`, data);
     
     handlers.forEach((handler, index) => {
       try {
@@ -39,7 +34,6 @@ class TournamentEventBus {
       this.listeners.set(event, []);
     }
     this.listeners.get(event).push(handler);
-    console.log(`👂 Registered listener for event '${event}' (total: ${this.listeners.get(event).length})`);
   }
   
   /**
@@ -52,7 +46,6 @@ class TournamentEventBus {
     const index = handlers.indexOf(handler);
     if (index > -1) {
       handlers.splice(index, 1);
-      console.log(`🔇 Removed listener for event '${event}' (remaining: ${handlers.length})`);
     }
   }
   
@@ -63,10 +56,8 @@ class TournamentEventBus {
   removeAllListeners(event) {
     if (event) {
       this.listeners.delete(event);
-      console.log(`🧹 Removed all listeners for event '${event}'`);
     } else {
       this.listeners.clear();
-      console.log('🧹 Removed all listeners from event bus');
     }
   }
   
