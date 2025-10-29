@@ -75,19 +75,3 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('[data-tab="account"]')?.dispatchEvent(new Event('click'));
   }, 0);
 });
-
-// interface PlayerStats {
-// name: string;
-// wins: number;
-// losses: number;
-// ratio: number;
-// time: string;
-// }
-// const davidStats: PlayerStats = {
-// name: "David",
-// wins: 10,
-// losses: 3,
-// ratio: 5.0,
-// time: "12:34"
-// };
-
