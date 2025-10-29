@@ -6,6 +6,7 @@ import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
 import { PlayerLite, RoomStatePayload, UserData } from "@shared/types/messages";
 import { API_BASE_URL } from "./config";
+import {  setupAlert } from "./AlertModal.js";
 import { fetchJSON } from "./utils";
 
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
@@ -108,7 +109,7 @@ export async function renderWaitingRoom(): Promise<void> {
   // 1) Session
   const me = await fetchJSON(`${API_BASE_URL}/users/session`, { credentials: "include" });
   if (!me?.isLoggedIn) {
-    alert("Please sign in to join a room.");
+    setupAlert('Whoops!', "Please sign in to join a room.", "close");
     navigateTo("create");
     return;
   }
@@ -126,7 +127,7 @@ export async function renderWaitingRoom(): Promise<void> {
       // sync URL for share
       replaceURLRoom(roomCode);
     } else {
-      alert("No room to join. Create a game first.");
+      setupAlert('Whoops!', "No room to join. Create a game first.", "close");
       navigateTo("create");
       return;
     }
@@ -146,10 +147,10 @@ export async function renderWaitingRoom(): Promise<void> {
   editBtn?.addEventListener("click", () => { navigateTo("create"); });
 
   shareBtn?.addEventListener("click", async () => {
-    if (!roomCode) { alert("Room code not assigned yet."); return; }
+    if (!roomCode) { setupAlert('Whoops!', "Room code not assigned yet.", "close");return; }
     const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(roomCode)}`;
     try { await navigator.clipboard.writeText(url); } catch {}
-    alert("Room link copied!");
+    setupAlert('Boom!', "Room link copied!", "close");
   });
 
   // 4) SUBSCRIBE BEFORE CONNECT to avoid missing the initial RoomState
@@ -178,7 +179,7 @@ export async function renderWaitingRoom(): Promise<void> {
   wait.UIBroker.Subscribe("PlayerReady", ({ userId: uid }) => { setServerReady(uid, true); renderPlayers(); });
   wait.UIBroker.Subscribe("PlayerUnready", ({ userId: uid }) => { setServerReady(uid, false); renderPlayers(); });
   wait.UIBroker.Subscribe("SetHost", ({ userId: newHost }) => { serverPlayers = serverPlayers.map(p => ({ ...p, isHost: p.userId === newHost })); renderPlayers(); });
-  wait.UIBroker.Subscribe("Error", ({ message }) => { alert(message); });
+  wait.UIBroker.Subscribe("Error", ({ message }) => { setupAlert('Whoops!', message, "close"); });
   wait.UIBroker.Subscribe("AllReady", (msg: any) => { allReady(msg as AllReadyMessage); });
 
   // 5) Connect (after subscriptions are ready)
@@ -204,7 +205,7 @@ export async function renderWaitingRoom(): Promise<void> {
   // Block UI until first RoomState
   const first = await waitForFirstRoomState(8000);
   if (!first) {
-    alert("Could not fetch room state. Please try again.");
+    setupAlert('Whoops!', "Could not fetch room state. Please try again.", "close");
     navigateTo("create");
     return;
   }

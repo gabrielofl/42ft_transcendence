@@ -1,6 +1,7 @@
 import { renderFooter } from "./components/Footer.js";
 import { renderAuthContainer } from "./screens/AuthContainer.js";
 import { renderHome } from "./screens/Home.js";
+import { initAlertModal, setupAlert } from "./screens/AlertModal.js";
 // import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
@@ -70,7 +71,7 @@ async function renderScreen(screen: Screen) {
   const header = document.getElementById("header")!;
   const footer = document.getElementById("footer")!;
   const main = document.getElementById("main")!;
-
+  initAlertModal();
   if (!app || !header || !footer || !main) {
     console.error("Missing layout containers!");
     return;

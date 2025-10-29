@@ -1,6 +1,6 @@
 import { navigateTo } from "../navigation.js";
 import { apiService, LoginRequest, RegisterRequest } from "../services/api.js";
-import { initAlertModal, setupAlert } from "./AlertModal.js";
+import { setupAlert } from "./AlertModal.js";
 
 declare global {
 interface Window {
@@ -148,7 +148,6 @@ if (!main) return;
 
 	setupAuthEvents();
 	initializeGoogleSignIn();
-	initAlertModal();
 }
 
 function renderLoginForm(): string {
