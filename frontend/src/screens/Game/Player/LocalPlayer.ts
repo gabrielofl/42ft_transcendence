@@ -1,3 +1,4 @@
+import { PreMoveMessage, UsePowerUpMessage } from "@shared/types/messages";
 import { ClientGame } from "../ClientGame";
 import { ClientPaddle } from "../ClientPaddle";
 import { APlayer } from "./APlayer";
@@ -36,19 +37,11 @@ export class LocalPlayer extends APlayer {
 
 		if (inputMap[this.leftKey]) 
 		{
-			this.game.MessageBroker.Publish("PlayerPreMove", {
-				type: "PlayerPreMove",
-				dir: -1,
-				id: this.id,
-			});
+			this.game.MessageBroker.Publish("PlayerPreMove", this.GetPreMoveMessage(-1));
 		}	
 		else if (inputMap[this.rightKey])
 		{
-			this.game.MessageBroker.Publish("PlayerPreMove", {
-				type: "PlayerPreMove",
-				dir: 1,
-				id: this.id,
-			});
+			this.game.MessageBroker.Publish("PlayerPreMove", this.GetPreMoveMessage(1));
 		}
 
 		if (this.inventoryKeys)
@@ -56,9 +49,27 @@ export class LocalPlayer extends APlayer {
 			var i = -1;
 			while (++i < 3)
 				if (inputMap[this.inventoryKeys[i]])
-					this.UsePowerUp(i);
+					this.game.MessageBroker.Publish("PlayerUsePowerUp", this.GetUsePowerUpMessage(i));
 		}
 	}
+
+	private GetPreMoveMessage(dir: number): PreMoveMessage {
+		return {
+			type: "PlayerPreMove",
+			dir: dir,
+			id: this.id,
+		};
+	}
+
+	private GetUsePowerUpMessage(index: number): UsePowerUpMessage {
+		return {
+			type: "PlayerUsePowerUp",
+			id: this.id,
+			slot: index,
+		};
+	}
+
+	// Reubica la paleta y limita sus movimientos.)
 
 	public InstancePaddle(): ClientPaddle {
 		return new ClientPaddle(this.game, this, 8);

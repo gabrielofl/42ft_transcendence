@@ -9,6 +9,7 @@ export type MessageTypes =
 "PointMade"|
 "BallMove"|
 "PlayerPreMove"|
+"PlayerUsePowerUp"|
 "BallRemove"|
 "PaddlePosition"|
 "WindChanged"|
@@ -35,6 +36,7 @@ export type MessagePayloads = {
     ["PointMade"]: ScoreMessage;
     ["BallMove"]: BallMoveMessage;
     ["PlayerPreMove"]: PreMoveMessage;
+    ["PlayerUsePowerUp"]: UsePowerUpMessage;
     ["PaddlePosition"]: PaddlePositionMessage;
     ["BallRemove"]: BallRemoveMessage;
     ["InventoryChanged"]: InventoryChangeMessage;
@@ -104,6 +106,12 @@ export interface PlayerResult {
 export interface PreMoveMessage extends Message {
     id: number,
     dir: number, // -1 Izquierda, 1 Derecha
+}
+
+export interface UsePowerUpMessage extends Message {
+    type: "PlayerUsePowerUp";
+    id: number;
+    slot: number;
 }
 
 export interface WindChangedMessage extends Message {

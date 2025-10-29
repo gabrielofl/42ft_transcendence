@@ -119,6 +119,7 @@ export class ClientGameSocket {
 		ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
 		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.config.mapKey]);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
+		this.game.MessageBroker.Subscribe("PlayerUsePowerUp", (msg) => this.Send(msg));
 		console.log('roomState', roomState);
 
 		// El backend en `waitroom-websocket.js` devuelve un `nArray` en el evento `AllReady`.
