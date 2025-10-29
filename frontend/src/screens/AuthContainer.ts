@@ -1,5 +1,6 @@
 import { navigateTo } from "../navigation.js";
 import { apiService, LoginRequest, RegisterRequest } from "../services/api.js";
+import { initAlertModal, setupAlert } from "./AlertModal.js";
 
 declare global {
 interface Window {
@@ -31,11 +32,10 @@ window.handleCredentialResponse = async (response: any) => {
 		}
 
 		// ✅ Any other error
-		alert(result.error || 'Google authentication failed');
-			alert(result.error || 'Google authentication failed');
+		setupAlert('Whoops!', result.error || 'Google authentication failed', "close");
 	} catch (error) {
 		console.error('Google authentication error:', error);
-		alert('Google authentication failed. Please try again.');
+		setupAlert('Whoops!', 'Google authentication failed. Please try again.', "close");
 	}
 };
 
@@ -148,6 +148,7 @@ if (!main) return;
 
 	setupAuthEvents();
 	initializeGoogleSignIn();
+	initAlertModal();
 }
 
 function renderLoginForm(): string {
@@ -437,7 +438,7 @@ if (googleLoginBtn) {
 			});
 		} else {
 			console.error('Google Identity Services not loaded');
-			alert('Google Sign-In is not available. Please try again later.');
+			setupAlert('Darn!', 'Google Sign-In is not available. Please try again later.', "close");
 		}
 	});
 }
@@ -450,7 +451,7 @@ if (googleLoginBtn) {
 		const password = (document.getElementById('password') as HTMLInputElement)?.value;
 		
 		if (!email || !password) {
-			alert('Please fill in all fields');
+			setupAlert('Oops!', 'Please fill in all fields', "close");
 			return;
 		}
 
@@ -469,11 +470,11 @@ if (googleLoginBtn) {
 					navigateTo('home'); // Direct login if no 2FA
 				}
 			} else {
-				alert(response.error || 'Login failed');
+				setupAlert('Oops!', response.error || 'Login failed', "close");
 			}
 		} catch (err) {
 			console.error('Login error:', err);
-			alert('Something went wrong. Try again.');
+			setupAlert('Oops!', 'Something went wrong. Try again.', "close");
 		}
 	});
 
@@ -491,12 +492,12 @@ const registerBtn = document.getElementById('submit-register-btn');
 		const confirmPassword = (document.getElementById('confirm-password') as HTMLInputElement)?.value;
 		
 		if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
-			alert('Please fill in all fields');
+			setupAlert('Oops!', 'Please fill in all fields', "close");
 			return;
 		}
 
 		if (password !== confirmPassword) {
-			alert('Passwords do not match');
+			setupAlert('Oops!', 'Passwords do not match', "close");
 			return;
 		}
 
@@ -512,15 +513,15 @@ const registerBtn = document.getElementById('submit-register-btn');
 			const response = await apiService.register(registerData);
 			
 			if (response.success) {
-				alert('Registration successful! Please log in.');
+				setupAlert('Yay!', 'Registration successful! Please log in.', "close");
 				isLogin = true; // Switch to login mode
 				renderAuthContainer(); // Re-render to show login form
 			} else {
-				alert(response.error || 'Registration failed');
+				setupAlert('Oops!', response.error || 'Registration failed', "close");
 			}
 		} catch (err) {
 			console.error('Registration error:', err);
-			alert('Something went wrong. Try again.');
+			setupAlert('Oops!', 'Something went wrong. Try again.', "close");
 		}
 	});
 	}
@@ -624,7 +625,7 @@ function show2FA(isRegistering: boolean, qrCodeData?: string): void {
 		
 		if (!code || (!isBackupMode && code.length !== 6) || (isBackupMode && code.length !== 8)) {
 			const expectedFormat = isBackupMode ? '8-character backup code' : '6-digit code';
-			alert(`Please enter a valid ${expectedFormat}`);
+			setupAlert('Whoops!', `Please enter a valid ${expectedFormat}`, "close");
 			return;
 		}
 
@@ -634,11 +635,11 @@ function show2FA(isRegistering: boolean, qrCodeData?: string): void {
 			if (verifyData.success) {
 				navigateTo('home');
 			} else {
-				alert(verifyData.error || '2FA verification failed');
+				setupAlert('Whoops!', verifyData.error || '2FA verification failed', "close");
 			}
 		} catch (err) {
 			console.error('2FA login error:', err);
-			alert('Something went wrong. Try again.');
+			setupAlert('Whoops!', 'Something went wrong. Try again.', "close");
 		}
   });
 	

@@ -64,7 +64,7 @@ export default async function (fastify, opts) {
 			if (!user || !await bcrypt.compare(password, user.password)) {
 				// Wrong username or password
 				return reply.code(401).send({ 
-					error: 'Invalid credentials' 
+					error: 'Whoops! Invalid credentials' 
 				});
 			}
 
@@ -120,7 +120,7 @@ export default async function (fastify, opts) {
 					return reply.code(202).send({ 
 						success: true,
 						requires2FA: true,
-						message: 'Two-factor authentication required'
+						message: 'Whoops! Two-factor authentication required'
 					});
 				}
 			}
@@ -146,7 +146,7 @@ export default async function (fastify, opts) {
 				const refreshToken = request.cookies.refreshToken;
 
 				if (!refreshToken) {
-					return reply.code(401).send({ error: 'No refresh token found' });
+					return reply.code(401).send({ error: 'Darn! We hit a little snag. No refresh token found' });
 				}
 
 				// Validate refresh token
@@ -158,7 +158,7 @@ export default async function (fastify, opts) {
 				);
 
 				if (!tokenRecord) {
-					return reply.code(401).send({ error: 'Invalid refresh token' });
+					return reply.code(401).send({ error: 'Darn! We hit a little snag. Invalid refresh token' });
 				}
 
 				// Generate new access token
@@ -176,10 +176,10 @@ export default async function (fastify, opts) {
 					maxAge: 3 * 60 * 60 // 3 hours
 				});
 
-				return { success: true, message: 'Token refreshed successfully' };
+				return { success: true, message: 'Boom! Token refreshed successfully' };
 			} catch (error) {
 				fastify.log.error(error);
-				return reply.code(500).send({ error: 'Failed to refresh token' });
+				return reply.code(500).send({ error: 'Darn! We hit a little snag. Failed to refresh token' });
 			}
 		});
 
@@ -294,7 +294,7 @@ export default async function (fastify, opts) {
 				// Handle duplicate username/email
 				if (error.code === 'SQLITE_CONSTRAINT') {
 					return reply.code(409).send({  // 409 = Conflict
-						error: 'Username or email already exists'
+						error: 'Oh no! Username or email already exists'
 					});
 				}
 				// Re-throw other errors
@@ -330,7 +330,7 @@ export default async function (fastify, opts) {
 
 				const payload = ticket.getPayload();
 				if (!payload) {
-					return reply.code(400).send({ error: 'Invalid Google token' });
+					return reply.code(400).send({ error: 'Oh no! Invalid Google token' });
 				}
 
 				const { sub: googleId, email, name, picture } = payload;
@@ -377,7 +377,7 @@ export default async function (fastify, opts) {
 							},
 							success: true,
 							requires2FA: true,
-							message: 'Two-factor authentication required'
+							message: 'Whoops! Two-factor authentication required'
 						});
 				}
 					
@@ -458,7 +458,7 @@ export default async function (fastify, opts) {
 			} catch (error) {
 				fastify.log.error(error);
 				return reply.code(400).send({ 
-					error: 'Google authentication failed',
+					error: 'Whoops! Google authentication failed',
 					message: error.message 
 				});
 			}
@@ -474,7 +474,7 @@ export default async function (fastify, opts) {
 			);
 
 			if (user.two_factor_enabled) {
-				return reply.code(400).send({ error: 'Two-factor authentication already enabled' });
+				return reply.code(400).send({ error: 'Whoops! Two-factor authentication already enabled' });
 			}
 
 			// Generate secret
@@ -520,7 +520,7 @@ export default async function (fastify, opts) {
 			);
 
 			if (!user.two_factor_secret) {
-				return reply.code(400).send({ error: 'Two-factor setup not initiated' });
+				return reply.code(400).send({ error: 'Whoops! Two-factor setup not initiated' });
 			}
 
 			// Verify the token
@@ -532,7 +532,7 @@ export default async function (fastify, opts) {
 			});
 
 			if (!verified) {
-				return reply.code(401).send({ error: 'Invalid verification code' });
+				return reply.code(401).send({ error: 'Oops! Invalid verification code' });
 			}
 
 			// Enable 2FA and generate backup codes
@@ -546,7 +546,7 @@ export default async function (fastify, opts) {
 			return {
 				success: true,
 				backupCodes: backupCodes,
-				message: 'Two-factor authentication enabled successfully'
+				message: 'Yay! Two-factor authentication enabled successfully'
 			};
 		});
 
@@ -575,7 +575,7 @@ export default async function (fastify, opts) {
 			{
 				// Verify password
 				if (!await bcrypt.compare(password, user.password)) {
-					return reply.code(401).send({ error: 'Invalid password' });
+					return reply.code(401).send({ error: 'Oops! Invalid password' });
 				}
 			}
 			
@@ -590,7 +590,7 @@ export default async function (fastify, opts) {
 				});
 
 				if (!verified) {
-					return reply.code(401).send({ error: 'Invalid two-factor code' });
+					return reply.code(401).send({ error: 'Oops! Invalid two-factor code' });
 				}
 			}
 
@@ -606,7 +606,7 @@ export default async function (fastify, opts) {
 				[user.id]
 			);
 
-			return { success: true, message: 'Two-factor authentication disabled' };
+			return { success: true, message: 'Boom! Two-factor authentication disabled' };
 		});
 
 		// Logout endpoint - POST /api/auth/logout
@@ -644,13 +644,13 @@ export default async function (fastify, opts) {
 
 				return { 
 					success: true, 
-					message: 'Logged out successfully' 
+					message: 'Boom! Logged out successfully' 
 				};
 				
 			} catch (err) {
 				fastify.log.error(err);
 				return reply.code(500).send({ 
-					error: 'Internal Server Error',
+					error: 'Darn! Internal Server Error',
 					message: 'Failed to logout'
 				});
 			}
@@ -666,7 +666,7 @@ export default async function (fastify, opts) {
 			);
 			
 			if (!user) {
-				return reply.code(404).send({ error: 'User not found' });
+				return reply.code(404).send({ error: 'Oops! User not found' });
 			}
 			
 			return { 
