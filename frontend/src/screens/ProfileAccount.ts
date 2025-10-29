@@ -105,7 +105,7 @@ export function setupAccountTab() {
 				// rollback UI if update failed
 				cb.checked = !cb.checked;
 				} else {
-				console.log(result.message);
+				// console.log(result.message);
 				}
 			});
 			});
@@ -186,7 +186,7 @@ export function setupAccountTab() {
 		} catch {
 		result = {};
 		}
-		if (result.success) setupAlert('Oops!',result.message, "close");
+		if (result.success) setupAlert('Success!',result.message, "close");
 		else setupAlert('Oops!',result.error || 'Oh no! Failed to update', "close");
 	});
 

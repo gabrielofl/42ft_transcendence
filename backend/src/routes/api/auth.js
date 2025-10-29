@@ -216,8 +216,11 @@ export default async function (fastify, opts) {
 				}
 			}
 		}, async (request, reply) => {
+			if (request.body?.email) {
+			request.body.email = request.body.email.toLowerCase();
+			}
 			const { firstName, lastName, username, email, password } = request.body;
-			
+
 			try {
 				// Hash password (never store plain text!)
 				const hashedPassword = await bcrypt.hash(
