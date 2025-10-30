@@ -18,14 +18,7 @@ export function renderFooter(): void {
 				
       <div class="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8">
         <!-- Logo + Socials -->
-        <div>
-          <div class="flex gap-3 text-pink-500 text-xl">
-            <a href="#" aria-label="X"><i class="fab fa-x-twitter"></i></a>
-            <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-            <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
-          </div>
-        </div>
+      
 
         <!-- Play Game -->
         <div class="text-[--text-light] text-xs">
@@ -42,9 +35,8 @@ export function renderFooter(): void {
           <h3 class="font-bold mb-2">User</h3>
           <ul class="space-y-1 text-[--secondary-color]">
             <li><a href="#" id="nav-profile" class="hover:underline">Account</a></li>
-            <li><a href="#" id="nav-friends" class="hover:underline">Friends</a></li>
-            <li><a href="#" id="nav-match-history" class="hover:underline">Match History</a></li>
-            <li><a href="#" id="nav-logout" class="hover:underline">Logout</a></li>
+
+            <li><a href="#" id="footer-logout" class="hover:underline">Logout</a></li>
           </ul>
         </div>
 
@@ -53,7 +45,7 @@ export function renderFooter(): void {
           <h3 class="font-bold mb-2 ">Global</h3>
           <ul class="space-y-1  text-[--secondary-color]">
             <li><a href="#" id="nav-leaderboard" class="hover:underline">Leaderboard</a></li>
-			<li><a href="#" id="nav-contact" class="hover:underline">Contact us</a></li>
+			
             <li><a href="https://github.com/gabrielofl/42ft_transcendence" target="_blank" class="hover:underline">Github</a></li>
           </ul>
         </div>
@@ -93,25 +85,13 @@ export function renderFooter(): void {
     navigateTo("profile");
   });
 
-  const friendBtn = document.getElementById("nav-friends");
-  friendBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    navigateTo("profile");
-  });
-
-  const matchHistoryBtn = document.getElementById("nav-match-history");
-  matchHistoryBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    navigateTo("profile");
-  });
-
     const leaderboardBtn = document.getElementById("nav-leaderboard");
   leaderboardBtn?.addEventListener("click", (e) => {
 	e.preventDefault();
 	navigateTo("leaderboard");
   });
   
-  const logoutBtn = document.getElementById("nav-logout");
+  const logoutBtn = document.getElementById("footer-logout");
   logoutBtn?.addEventListener("click", async (e) => {
 	  e.preventDefault();
     try {
