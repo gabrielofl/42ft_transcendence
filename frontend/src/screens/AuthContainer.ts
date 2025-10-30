@@ -516,7 +516,7 @@ const registerBtn = document.getElementById('submit-register-btn');
 				isLogin = true; // Switch to login mode
 				renderAuthContainer(); // Re-render to show login form
 			} else {
-				setupAlert('Oops!', response.error || 'Registration failed', "close");
+				setupAlert('Oops!', response.message || 'Registration failed', "close");
 			}
 		} catch (err) {
 			console.error('Registration error:', err);
