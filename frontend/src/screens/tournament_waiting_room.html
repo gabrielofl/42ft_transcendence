@@ -1,0 +1,52 @@
+<section class="text-center text-[--secondary-color] font-press px-6 pt-10 space-y-6">
+  <h1 class="text-3xl text-[--primary-color] font-bold">🏆 Tournament Lobby</h1>
+  <p id="tournament-name" class="text-[--secondary-color] font-semibold text-base">Loading tournament...</p>
+  <p id="ready-counter" class="text-xs text-[--secondary-color]">—</p>
+
+  <div class="flex justify-center gap-4 pt-4">
+    <button class="btn-primary bg-[--secondary-color] text-black hover:bg-black shadow-md px-6 py-2 rounded-md">
+      READY
+    </button>
+    
+    <div class="bg-black/40 border border-[--primary-color] text-[--primary-color] px-4 py-2 rounded-md">
+      <span class="text-xs">TOURNAMENT ID</span>
+      <span id="tournament-id" class="block text-[--secondary-color] font-bold tracking-widest">—</span>
+    </div>
+    
+    <button class="btn-primary bg-[--primary-color] hover:bg-[--primary-color] px-6 py-2 rounded-md">
+      SHARE
+    </button>
+  </div>
+
+  <!-- Waiting Room Section -->
+  <div id="waiting-room-section" class="border border-[--primary-color] mx-auto w-11/12 lg:w-2/3 mt-10 p-6 rounded-md min-h-[150px]">
+    <div id="player-cards-container" class="flex flex-col sm:flex-row justify-center items-center gap-8">
+      <!-- Player cards will be inserted here dynamically -->
+    </div>
+  </div>
+
+  <!-- Tournament Bracket Section (hidden initially) -->
+  <div id="bracket-section" class="border border-[--primary-color] mx-auto w-11/12 lg:w-4/5 mt-10 p-6 rounded-md min-h-[400px] hidden">
+    <div class="flex flex-col items-center space-y-4 mb-4">
+      <div id="match-info" class="text-center text-white">
+        <!-- Match info will be shown here -->
+      </div>
+      <!-- Countdown section -->
+      <div id="countdown-section" class="hidden">
+        <div class="text-4xl font-bold text-[--secondary-color] animate-pulse">
+          <span id="countdown-timer">10</span>
+        </div>
+        <div class="text-sm text-gray-400 mt-2">
+          Match starting...
+        </div>
+      </div>
+      <!-- Waiting message -->
+      <div id="waiting-message" class="text-gray-400 text-sm hidden">
+        ⏳ Waiting for other matches to finish...
+      </div>
+    </div>
+    <div id="tournament-bracket-container" class="w-full h-full">
+      <!-- Bracket will be rendered here -->
+    </div>
+  </div>
+</section>

@@ -59,3 +59,8 @@ export const Maps: Record<string, MapDefinition> = {
     ObstacleMap,
     BaseMap,
 };
+
+export const TournamentMaps: Record<string, MapDefinition> = {
+    ObstacleMap,
+    BaseMap,
+};

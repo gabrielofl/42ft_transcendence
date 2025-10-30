@@ -76,9 +76,20 @@ export class ClientGameSocket {
 	 */
 	private Connect(code: string, onOpen: () => void) {
 		console.log(`Connecting to: ${code}`);
-		const connect = () => {
-			const userID = 42;
+		const connect = async () => {
+			const userID = (await getCurrentUser()).id;
 
+			// Solo usar tournamentMatchInfo si el code ya tiene formato de torneo
+			try {
+				const tournamentInfo = sessionStorage.getItem('tournamentMatchInfo');
+				if (tournamentInfo && code.startsWith('tournament-')) {
+					const info = JSON.parse(tournamentInfo);
+					code = info.roomId;
+				}
+			} catch (e) {
+				console.error('Error al parsear tournamentMatchInfo:', e);
+			}
+			
 			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
 			
@@ -259,7 +270,10 @@ export class ClientGameSocket {
 	public HandleGameEnded(msg: ScoreMessage): void {
 		console.log("HandleGameEnded");
 		this.UIBroker.Publish("GameEnded", msg);
-		// navigateTo("results");
+		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
+		if (this.game) {
+			this.game.MessageBroker.Publish("GameEnded", msg);
+		}
 	}
 
 	/** Maneja el mensaje para reiniciar el juego. */

@@ -44,7 +44,7 @@ export async function startGame(roomCode, combined, config) {
     startingGames.add(roomCode); // "Bloqueamos" la creación para este roomCode.
 
     console.log(`[GameManager] Creando instancia de juego para la sala ${roomCode}`);
-    const gameSocket = new ServerGameSocket(roomCode, config);
+    const gameSocket = new ServerGameSocket(roomCode);
     addGame(roomCode, gameSocket); // La registramos en el gestor de partidas activas.
 
     const players = combined.map(p => {
@@ -61,8 +61,14 @@ export async function startGame(roomCode, combined, config) {
 
     gameSocket.game.Map = MAPS[config.mapKey] || MAPS.MultiplayerMap;
     console.log("Game Map");
-    // console.log(gameSocket.game.Map);
-    gameSocket.game.maxPowerUps = config.powerUpAmount;
+    console.log(gameSocket.game.Map);
+    
+    // Log de inicio de partida
+    const playerNames = players.map(p => p.GetName()).join(' vs ');
+    const isTournament = roomCode.startsWith('tournament-');
+    const roomInfo = isTournament ? `[Tournament ${roomCode}]` : `[Room ${roomCode}]`;
+    console.log(`🎮 ${roomInfo} PARTIDA INICIADA! ${playerNames}`);
+    
     gameSocket.game.CreateGame(players);
   } finally {
     startingGames.delete(roomCode); // "Liberamos" el bloqueo, haya funcionado o no.
@@ -108,7 +114,7 @@ export function isGameActive(roomCode) {
 export function handleGameConnection(connection, req) {
   console.log("handleGameConnection");
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const roomCode = (url.searchParams.get('room') || '').toUpperCase().trim();
+  const roomCode = (url.searchParams.get('room') || '').trim(); // No convertir a mayúsculas para soportar torneos
   const user = url.searchParams.get('user') || 'anonymous';
 
   if (!roomCode) {
@@ -137,3 +143,42 @@ export function handleGameConnection(connection, req) {
     }
   });
 }
+
+/**const { room, user } = req.query;
+
+      if (!room) {
+        connection.socket.send(JSON.stringify({ error: "Missing room parameter" }));
+        connection.socket.close();
+        return;
+      }
+
+      console.log(`🎮 Nueva conexión: sala=${room}, user=${user}`);
+
+      let roomSocket = activeRooms.get(room);
+
+      // Si la sala no existe, crear el ServerGameSocket
+      if (!roomSocket) {
+        console.log(`🆕 Creando nueva sala: ${room}`);
+        roomSocket = new ServerGameSocket(room);
+        activeRooms.set(room, roomSocket);
+      } else {
+        console.log(`✅ Reutilizando sala existente: ${room}`);
+      }
+
+      // Agregar al jugador a la sala
+      roomSocket.AddPeople(user, connection);
+
+      // Manejar cierre del socket
+      connection.on("close", () => {
+        // console.log(`❌ ${user ?? "Anónimo"} desconectado de la sala ${room}`);
+
+        // Si la sala quedó vacía, eliminarla
+        if (roomSocket.people.size === 0) {
+          console.log(`🧹 Sala ${room} vacía. Eliminando instancia de ServerGameSocket.`);
+          activeRooms.delete(room);
+          try {
+            roomSocket.Dispose?.();
+          } catch {}
+        }
+      });
+     */
