@@ -137,23 +137,19 @@ export interface PowerUpBoxPickedMessage extends Message {
 }
 
 export interface BallRemoveMessage extends Message {
+    type: "BallRemove";
     id: number,
 }
 
-// check to erase
-export interface PlayerPosition {
-    username: string;
-    x: number;
-    y: number;
-}
-
 export interface PaddlePositionMessage extends Message {
+    type: "PaddlePosition";
 	id: number;
     x: number;
     z: number;
 }
 
 export interface BallMoveMessage extends Message {
+    type: "BallMove";
     id: number,
     x: number,
     z: number,
@@ -162,10 +158,12 @@ export interface BallMoveMessage extends Message {
 }
 
 export interface GamePauseMessage extends Message {
+    type: "GamePause";
     pause: boolean;
 }
 
 export interface ScoreMessage extends Message {
+    type: "GameEnded" | "PointMade";
     results: PlayerResult[];
 }
 
@@ -189,6 +187,8 @@ export interface EffectsChangedMessage extends Message {
     type: "EffectsChanged";
     data: {
         [username: string]: {
+            hasShield: boolean;
+            paddleWidth: number;
             effects: string[];
         }
     }

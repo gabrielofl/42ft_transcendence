@@ -11,8 +11,4 @@ export class ClientSocketPlayer extends APlayer {
     }
     
     public ProcessPlayerAction(inputMap: Record<string, boolean>): void {}
-
-    public InstancePaddle(): ClientPaddle {
-        return new ClientPaddle(this.game, this, 8);
-    }
 }

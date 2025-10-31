@@ -68,10 +68,4 @@ export class LocalPlayer extends APlayer {
 			slot: index,
 		};
 	}
-
-	// Reubica la paleta y limita sus movimientos.)
-
-	public InstancePaddle(): ClientPaddle {
-		return new ClientPaddle(this.game, this, 8);
-	}
 }

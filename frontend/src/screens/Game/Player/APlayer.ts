@@ -42,35 +42,6 @@ export abstract class APlayer {
         this.Effects.OnAddEvent.Subscribe((effect) => {
             effect.OnDisposeEvent.Subscribe(() => this.Effects.Remove(effect));
         });
-
-        // TODO pasar a server Subscripción a mensajería global.
-        // this.game.MessageBroker.Subscribe("MassEffect", this.OnMassEffect.bind(this));
-        // this.game.MessageBroker.Subscribe("SelfEffect", this.OnSelfEffect.bind(this));
-    }
-
-    private OnSelfEffect(msg: PlayerEffectMessage): void {
-/*         if (this.game instanceof ServerGame)
-        {
-            let effect = this.game.CreatePlayerEffect(msg.effect);
-            if (msg.origin === this.name)
-            {
-                effect.Execute(this);
-                this.Effects.Add(effect);
-            }
-        } */
-    }
-
-    // Recibir un efecto global.
-    private OnMassEffect(msg: PlayerEffectMessage) {
-/*         if (this.game instanceof ServerGame)
-        {
-            let effect = this.game.CreatePlayerEffect(msg.effect);
-            if (msg.origin != this.name && effect.CanExecute(this))
-            {
-                effect.Execute(this);
-                this.Effects.Add(effect);
-            }
-        } */
     }
     
     public abstract ProcessPlayerAction(inputMap: Record<string, boolean>): void;
@@ -86,8 +57,6 @@ export abstract class APlayer {
         return this.behavior;
     }
 
-    public abstract InstancePaddle(): ClientPaddle;
-    
     public CreatePaddle(width: number): ClientPaddle {
         var pos = undefined;
         if (this.paddle)
@@ -95,8 +64,8 @@ export abstract class APlayer {
             pos = this.paddle.GetMesh().position;
             this.paddle.Dispose();
         }
-        // this.paddle = new ServerPaddle(this.game, this, width);
-        this.paddle = this.InstancePaddle();
+
+        this.paddle = new ClientPaddle(this.game, this, width);
         if (this.behavior)
             this.ConfigurePaddleBehavior(this.behavior);
         
