@@ -7,6 +7,7 @@ import "../Utils/array.extensions.js";
 import { Event } from "../Utils/Event.js";
 import { Zone } from "../Utils/Zone.js";
 import { ServerGame } from "../Game/ServerGame.js";
+import { ServerPaddle } from "../Collidable/ServerPaddle.js";
 
 export class APlayer {
     OnPaddleCreated = new Event();
@@ -94,6 +95,8 @@ export class APlayer {
             type: "EffectsChanged",
             data: {
                 [this.name]: {
+                    paddleWidth: this.PaddleLen.Value(),
+                    hasShield: this.Shields.GetAll().length > 0,
                     effects: this.Effects.GetAll().map(e => e.ImgPath)
                 }
             }
@@ -133,8 +136,8 @@ export class APlayer {
             pos = this.paddle.GetMesh().position;
             this.paddle.Dispose();
         }
-        // this.paddle = new ServerPaddle(this.game, this, width);
-        this.paddle = this.InstancePaddle();
+
+        this.paddle = new ServerPaddle(this.game, this, width);
         if (this.behavior)
             this.ConfigurePaddleBehavior(this.behavior);
         

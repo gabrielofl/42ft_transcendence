@@ -12,6 +12,7 @@ import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
 import { navigateTo } from "src/navigation";
 import { WindCompass } from "./WindCompass";
+import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -43,6 +44,26 @@ export class ClientGameSocket {
 
 	HandleEffectsChanged(msg: EffectsChangedMessage): void {
 		console.log("Received EffectsChanged message from server:", msg.data);
+
+		const entries = Object.entries(msg.data);
+		for (const [username, data] of entries) {
+			let player = this.game?.GetPlayers().find(p => p.GetName() === username);
+			if (player)
+			{
+				player.CreatePaddle(data.paddleWidth);
+				if (data.hasShield && player.Shields.GetAll().length === 0 && this.game)
+				{
+					let shield = new PaddleShieldEffect(this.game, "", -1);
+					shield.Execute(player);
+				}
+				else
+				{
+					let shields = player.Shields.GetAll();
+					shields.forEach(s => s.Undo(player));
+				}
+					
+			}
+		}
 		this.UIBroker.Publish("EffectsChanged", msg);
 	}
 
