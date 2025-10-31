@@ -1,5 +1,6 @@
 import { navigateTo } from "../navigation.js";
 import { apiService, LoginRequest, RegisterRequest } from "../services/api.js";
+import { setupAlert } from "./AlertModal.js";
 
 declare global {
 interface Window {

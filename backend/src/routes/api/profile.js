@@ -24,7 +24,7 @@ export default async function (fastify, opts) {
 				if (!data) {
 					return reply.code(400).send({ 
 						success: false, 
-						error: 'No file uploaded' 
+						error: 'Darn! We hit a little snag. No file uploaded' 
 					});
 				}
 
@@ -32,7 +32,7 @@ export default async function (fastify, opts) {
 				if (!data.mimetype.startsWith('image/')) {
 					return reply.code(400).send({ 
 						success: false, 
-						error: 'Only image files are allowed' 
+						error: 'Darn! We hit a little snag. Only image files are allowed' 
 					});
 				}
 
@@ -41,7 +41,7 @@ export default async function (fastify, opts) {
 				if (data.file.bytesRead > maxSize) {
 					return reply.code(400).send({ 
 						success: false, 
-						error: 'File size too large. Maximum 5MB allowed.' 
+						error: 'Darn! We hit a little snag. File size too large. Maximum 5MB allowed.' 
 					});
 				}
 
@@ -73,14 +73,14 @@ export default async function (fastify, opts) {
 				return {
 					success: true,
 					avatar: uniqueFilename,
-					message: 'Avatar updated successfully'
+					message: 'Boom! Your upload is complete.'
 				};
 
 			} catch (error) {
 				fastify.log.error('Avatar upload error:', error);
 				return reply.code(500).send({ 
 					success: false, 
-					error: 'Failed to upload avatar' 
+					error: 'Darn! We hit a little snag. Failed to upload avatar.' 
 				});
 			}
 		});
@@ -95,7 +95,7 @@ export default async function (fastify, opts) {
 				
 				// Security: only allow avatar files or default.jpg
 				if ((!filename.startsWith('avatar_') && filename !== 'default.jpg') || !filename.includes('.')) {
-					return reply.code(400).send({ error: 'Invalid filename' });
+					return reply.code(400).send({ error: 'Darn! We hit a little snag. Invalid filename' });
 				}
 
 				const avatarPath = join(__dirname, '../../../uploads/avatars', filename);
@@ -118,7 +118,7 @@ export default async function (fastify, opts) {
 				return reply.send(imageBuffer);
 
 			} catch (error) {
-				return reply.code(404).send({ error: 'Avatar not found' });
+				return reply.code(404).send({ error: 'Darn! We hit a little snag. Avatar not found' });
 			}
 		});
 
@@ -307,14 +307,14 @@ export default async function (fastify, opts) {
 		);
 
 		if (!user) {
-			return reply.code(404).send({ error: 'User not found' });
+			return reply.code(404).send({ error: 'Darn! We hit a little snag. User not found' });
 		}
 
 		if (user.google_id)
 		{
 			// Validate word typed
 			if (password !== "DELETE") {
-				return reply.code(401).send({ error: 'Invalid input. Please type DELETE.' });
+				return reply.code(401).send({ error: 'Whoops! Looks like an invalid input. Please type DELETE.' });
 			}
 		}
 		else
@@ -322,7 +322,7 @@ export default async function (fastify, opts) {
 			// Validate password
 			const validPassword = await bcrypt.compare(password, user.password);
 			if (!validPassword) {
-				return reply.code(401).send({ error: 'Invalid password' });
+				return reply.code(401).send({ error: 'Whoops! Looks like an invalid password' });
 			}
 		}
 		
@@ -341,7 +341,7 @@ export default async function (fastify, opts) {
 
 		return {
 			success: true,
-			message: 'Account deleted successfully'
+			message: 'Boom! Account deleted successfully'
 		};
 		});
 
@@ -564,7 +564,7 @@ export default async function (fastify, opts) {
 		const tokenUser = request.user?.id;
 
 		if (userId === tokenUser) {
-			return reply.code(400).send({ error: "You cannot send a request to yourself" });
+			return reply.code(400).send({ error: "Whoops! You cannot send a request to yourself" });
 		}
 
 		// Check if friendship already exists
@@ -576,7 +576,7 @@ export default async function (fastify, opts) {
 		);
 
 		if (existing) {
-			return reply.code(400).send({ error: "Friendship already exists" });
+			return reply.code(400).send({ error: "Whoops! Friendship already exists" });
 		}
 
 		// Insert new pending friendship (tokenUser sent the request)
@@ -615,15 +615,15 @@ export default async function (fastify, opts) {
 		);
 
 		if (!friendship) {
-			return reply.code(404).send({ error: "Friend request not found" });
+			return reply.code(404).send({ error: "Whoops! Friend request not found" });
 		}
 
 		if (friendship.status !== "pending") {
-			return reply.code(400).send({ error: "Request is not pending" });
+			return reply.code(400).send({ error: "Whoops! Request is not pending" });
 		}
 
 		if (friendship.requester_id === tokenUser) {
-			return reply.code(403).send({ error: "You cannot accept your own request" });
+			return reply.code(403).send({ error: "Whoops! You cannot accept your own request" });
 		}
 
 		// Update status to accepted
@@ -659,15 +659,15 @@ export default async function (fastify, opts) {
 			);
 
 			if (!friendship) {
-				return reply.code(404).send({ error: "Friend request not found" });
+				return reply.code(404).send({ error: "Whoops! Friend request not found" });
 			}
 
 			if (friendship.player1_id !== tokenUser && friendship.player2_id !== tokenUser) {
-				return reply.code(403).send({ error: "Not authorized" });
+				return reply.code(403).send({ error: "Whoops! Not authorized" });
 			}
 
 			if (friendship.status !== "pending") {
-				return reply.code(400).send({ error: "Friendship not pending" });
+				return reply.code(400).send({ error: "Whoops! Friendship not pending" });
 			}
 
 			await fastify.db.run(`DELETE FROM friends WHERE id = ?`, [friendshipId]);
@@ -701,16 +701,16 @@ export default async function (fastify, opts) {
 				);
 
 				if (!friendship) {
-					return reply.code(404).send({ error: "Friendship not found" });
+					return reply.code(404).send({ error: "Whoops! Friendship not found" });
 				}
 
 				// Ensure current user is part of this friendship
 				if (friendship.player1_id !== tokenUser && friendship.player2_id !== tokenUser) {
-					return reply.code(403).send({ error: "Not authorized" });
+					return reply.code(403).send({ error: "Whoops! Not authorized" });
 				}
 
 				if (friendship.status !== "accepted") {
-					return reply.code(400).send({ error: "Can only remove accepted friends" });
+					return reply.code(400).send({ error: "Whoops! Can only remove accepted friends" });
 				}
 
 				await fastify.db.run(`DELETE FROM friends WHERE id = ?`, [friendshipId]);

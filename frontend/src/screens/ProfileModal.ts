@@ -2,6 +2,7 @@ import profileModalHtml from "./profile-modal.html?raw";
 import { API_BASE_URL } from "./config";
 import { loadUserGameStats, loadUserStats } from "./ProfilePerformance";
 import { navigateTo } from "../navigation";
+import { initAlertModal, setupAlert } from "./AlertModal.js";
 
 
 export function initProfileModal() {
@@ -10,6 +11,7 @@ export function initProfileModal() {
   if (!document.getElementById("user-profile-modal")) {
     document.body.insertAdjacentHTML("beforeend", profileModalHtml);
   }
+  initAlertModal();
 }
 
 export function setupProfileLinks() {
@@ -218,13 +220,13 @@ async function openUserProfile(username: string | number) {
 				{
 					const data = await res.json();
 					if (!res.ok) throw new Error(data.error || "Friendship action failed");	
-					alert(`Success: ${message}`);
+						setupAlert('Yay!', `${message}`, "close");
 					window.location.reload(); // refresh the whole page
 				}
 				
 				} catch (err) {
 				console.error("Friend action error:", err);
-				alert(err instanceof Error ? err.message : "Something went wrong");
+				setupAlert('Oops!', err instanceof Error ? err.message : "Something went wrong", "close");
 				}
 			});
 
@@ -243,13 +245,13 @@ async function openUserProfile(username: string | number) {
 				const data = await res.json();
 				if (!res.ok) throw new Error(data.error || "Reject failed");
 
-				alert("Success: Request rejected.");
+				setupAlert('Boom!', "Request rejected.", "close");
 				// optional: refresh profile/friends tab
 				window.location.reload(); // 👈 refresh the whole page
 
 				} catch (err) {
-				console.error("Reject error:", err);
-				alert(err instanceof Error ? err.message : "Something went wrong");
+				// console.error("Reject error:", err);
+				setupAlert('Oops!', err instanceof Error ? err.message : "Something went wrong", "close");
 				}
 			});
 
@@ -270,6 +272,7 @@ async function openUserProfile(username: string | number) {
 
   } catch (err) {
     console.error("Profile modal error:", err);
-    alert("Failed to load user profile.");
+	setupAlert('Whoops!', "Failed to load user profile.", "close");
+    
   }
 }

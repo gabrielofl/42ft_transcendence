@@ -5,6 +5,7 @@ import { ClientGame } from "./ClientGame";
 import { PowerUpType } from '@shared/types/messages';
 import { navigateTo } from "../../navigation";
 import { API_BASE_URL } from "../config";
+import {  setupAlert } from "../AlertModal.js";
 import { ClientWaitRoomSocket } from "../Game/ClientWaitRoomSocket";
 
 let game: ClientGame;
@@ -273,7 +274,7 @@ function setupMapSelectionControls(): void {
     // 2) ensure session
     const session = await fetchJSON(`${API_BASE_URL}/users/session`, { credentials: 'include' });
     if (!session?.isLoggedIn) {
-      alert('Please sign in to continue.');
+      setupAlert('Whoops!', "Please sign in to continue.", "close");
       return;
     }
 
@@ -286,7 +287,7 @@ function setupMapSelectionControls(): void {
     });
 
     if (!created?.roomCode) {
-      alert('Failed to create room.');
+      setupAlert('Whoops!', "Failed to create room.", "close");
       return;
     }
 
