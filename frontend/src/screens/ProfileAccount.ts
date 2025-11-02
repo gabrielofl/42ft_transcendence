@@ -1,6 +1,6 @@
 import profileAccount from "./profile-account.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 import {  setupAlert } from "./AlertModal.js";
 
 export function renderAccountTab() {
@@ -10,7 +10,6 @@ export function renderAccountTab() {
 	try {
 		container.innerHTML = replaceTemplatePlaceholders(profileAccount, {API_BASE_URL});
 		setupAccountTab();
-		// initAlertModal();
 	} catch (err) {
 	console.error("Failed to load account:", err);
 	container.innerHTML = `<p class="text-red-500">Failed to load account tab.</p>`;

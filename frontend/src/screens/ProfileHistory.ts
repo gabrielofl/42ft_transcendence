@@ -1,7 +1,7 @@
 import profileMatchHistory from "./profile-match-history.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
 import { initProfileModal, setupProfileLinks } from "./ProfileModal";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 
 // Keep track of current page and perPage
 let currentPage = 1;
@@ -81,8 +81,12 @@ async function loadMatches(userId: number, page: number) {
 
 	// Update page info
 	const pageEl = document.querySelector<HTMLParagraphElement>('#page-info');
-	if (pageEl) pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
-	console.log(`Page: ${data.page} / ${data.totalPages}`);
+	if (pageEl) {
+		if (data.total == 0)
+			pageEl.textContent = `Page: 0 / 0`;
+		else
+			pageEl.textContent = `Page: ${data.page} / ${data.totalPages}`;
+	}
 
     // Render match rows
     const matchesContainer = document.querySelector<HTMLDivElement>('#matches-container');
@@ -276,9 +280,6 @@ async function getUserMatches(userId: number, page = 1, perPage = 5) {
 
   if (!res.ok) throw new Error(`Failed to fetch matches: ${res.status}`);
   const data = await res.json();
-
-  // debug: inspect server response when troubleshooting
-  console.debug('getUserMatches response:', data);
 
   return {
     matches: data.matches || [],

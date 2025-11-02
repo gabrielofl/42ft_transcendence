@@ -1,7 +1,7 @@
 import profileMatchHistory from "./profile-friends.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
 import { initProfileModal, setupProfileLinks } from "./ProfileModal";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 
 // Keep track of current page and perPage
 let friendsPerPage = 6;
@@ -30,7 +30,6 @@ export async function setupFriendsTab() {
 }
 
 async function loadFriends(page: number, requestsPage: number) {
-	console.log("LoadFriends");
   try {
 	const data = await getUserFriends(page, friendsPerPage);
 	const requestData = await getUserFriendsRequests(requestsPage, requestsPerPage);
@@ -68,8 +67,6 @@ async function loadFriends(page: number, requestsPage: number) {
 	const reqPageEl = document.querySelector<HTMLParagraphElement>('#request-page-info');
 	if (reqPageEl) reqPageEl.textContent = `Page: ${requestData.page} / ${requestData.totalPages}`;
 
-	console.log("acceptedFriends.length ", acceptedFriends.length);
-	console.log("pendingFriends.length ", pendingFriends.length);
 
 
 

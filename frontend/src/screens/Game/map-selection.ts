@@ -4,7 +4,7 @@ import view from "./map-selection.html?raw";
 import { ClientGame } from "./ClientGame";
 import { PowerUpType } from '@shared/types/messages';
 import { navigateTo } from "../../navigation";
-import { API_BASE_URL } from "../config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 import {  setupAlert } from "../AlertModal.js";
 import { ClientWaitRoomSocket } from "../Game/ClientWaitRoomSocket";
 

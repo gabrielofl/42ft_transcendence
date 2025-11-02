@@ -1,6 +1,6 @@
 import { navigateTo } from "../navigation.js";
 import resultTemplate from "./result-modal.html?raw";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 
 const result = 1;
 
