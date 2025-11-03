@@ -37,6 +37,7 @@ export class ServerGameSocket {
         this.people = new Map();
         this.handlers = {
 			"PlayerPreMove": (m, u) => this.HandlePreMoveMessage(m, u),
+			"PlayerUsePowerUp": (m, u) => this.HandleUsePowerUpMessage(m, u),
             "GameDispose": (m, u) => this.HandleGameDispose(m, u),
             "GameInit": (m, u) => this.HandleGameInit(m, u),
 		};
@@ -180,6 +181,14 @@ export class ServerGameSocket {
 		if (player)
 		{
 			player.GetPaddle().Move(msg.dir);
+		}
+    }
+
+    HandleUsePowerUpMessage(msg, u) {
+        let player = this.game.GetPlayers().find(p => p.id === msg.id);
+		if (player)
+		{
+			player.Inventory.UsePowerUp(msg.slot);
 		}
     }
 

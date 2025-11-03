@@ -204,6 +204,20 @@ async function databasePlugin(fastify, opts) {
 		UPDATE user_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
 		END;
 
+		CREATE TABLE IF NOT EXISTS password_resets (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT NOT NULL,
+			code TEXT NOT NULL,              -- store raw 6-digit OTP
+			expires_at TEXT NOT NULL,        -- ISO date string
+			created_at TEXT NOT NULL DEFAULT (datetime('now'))
+		);
+
+		CREATE TABLE IF NOT EXISTS login_challenges (
+			challenge TEXT PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			expires_at TEXT NOT NULL
+		);
+		CREATE INDEX IF NOT EXISTS idx_login_challenges_exp ON login_challenges(expires_at);
 
 	`);
 

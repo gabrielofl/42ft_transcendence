@@ -1,4 +1,3 @@
-import { ServerPaddle } from "../Collidable/ServerPaddle.js";
 import { APlayer } from "./APlayer.js";
 
 export class ServerSocketPlayer extends APlayer {
@@ -14,12 +13,4 @@ export class ServerSocketPlayer extends APlayer {
      * @param {Record<string, boolean>} inputMap 
      */
     ProcessPlayerAction(inputMap) {}
-
-    /**
-     * 
-     * @returns {IPaddle}
-     */
-    InstancePaddle() {
-        return new ServerPaddle(this.game, this, 8);
-    }
 }

@@ -2,7 +2,6 @@ import * as BABYLON from "@babylonjs/core";
 import { APlayer } from "./APlayer.js";
 import { ServerBall } from "../Collidable/ServerBall.js";
 import { ServerGame } from "../Game/ServerGame.js";
-import { ServerPaddle } from "../Collidable/ServerPaddle.js";
 
 export class AIPlayer extends APlayer {
     game;// ServerGame;
@@ -52,14 +51,6 @@ export class AIPlayer extends APlayer {
 
             return distA < distB ? ball : closest;
         }, null);
-    }
-
-    /**
-     * 
-     * @returns {IPaddle}
-     */
-    InstancePaddle() {
-        return new ServerPaddle(this.game, this, 8);
     }
 
     /**

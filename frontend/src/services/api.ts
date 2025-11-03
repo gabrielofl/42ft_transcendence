@@ -4,7 +4,6 @@ import { API_BASE_URL } from "../screens/config";
 export interface LoginRequest {
   username: string;
   password: string;
-  twoFactorCode?: string;
 }
 
 export interface RegisterRequest {
@@ -13,11 +12,16 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
+  allowDataCollection?: boolean;
+  allowDataProcessing?: boolean;
+  allowAiTraining?: boolean;
+  showScoresPublicly?: boolean;
 }
 
 export interface LoginResponse {
   success: boolean;
   requires2FA?: boolean;
+  challenge?: string;
   error?: string;
   status?: number;
   user?: {
@@ -54,6 +58,30 @@ export interface Verify2FAResponse {
 
 export interface Verify2FARequest {
   token: string;
+}
+
+export interface Login2FARequest {
+  challenge: string;
+  code: string;
+}
+
+export interface RequestPasswordResetRequest {
+  email: string;
+}
+export interface SimpleSuccessResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+export interface ResetWithOtpRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+export interface ResetWithBackupRequest {
+  email: string;
+  backupCode: string;
+  newPassword: string;
 }
 
 // API Service Class
@@ -120,10 +148,25 @@ export class ApiService {
       });
 
       const result = await response.json();
-      
+      result.status = response.status;
       return result;
     } catch (error) {
       console.error('Login error:', error);
+      return { success: false, error: 'Network error occurred' };
+    }
+  }
+	
+  async login2FA(data: Login2FARequest): Promise<LoginResponse> {
+    try {
+      const response = await this.makeRequest('/auth/login/2fa', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      result.status = response.status;
+      return result;
+    } catch (e) {
+      console.error('Login 2FA error:', e);
       return { success: false, error: 'Network error occurred' };
     }
   }
@@ -293,6 +336,45 @@ export class ApiService {
     const cookies = document.cookie.split(';');
     return cookies.some(cookie => cookie.trim().startsWith('csrfToken='));
   }
+
+	async requestPasswordReset(data: RequestPasswordResetRequest): Promise<SimpleSuccessResponse> {
+	try {
+		const res = await this.makeRequest('/auth/password/request-reset', {
+		method: 'POST',
+		body: JSON.stringify(data),
+		});
+		return await res.json();
+	} catch (err) {
+		console.error('requestPasswordReset error:', err);
+		return { success: false, error: 'Network error occurred' };
+	}
+	}
+
+	async resetPasswordWithOtp(data: ResetWithOtpRequest): Promise<SimpleSuccessResponse> {
+	try {
+		const res = await this.makeRequest('/auth/password/reset-otp', {
+		method: 'POST',
+		body: JSON.stringify(data),
+		});
+		return await res.json();
+	} catch (err) {
+		console.error('resetPasswordWithOtp error:', err);
+		return { success: false, error: 'Network error occurred' };
+	}
+	}
+
+	async resetPasswordWithBackup(data: ResetWithBackupRequest): Promise<SimpleSuccessResponse> {
+	try {
+		const res = await this.makeRequest('/auth/password/reset-backup', {
+		method: 'POST',
+		body: JSON.stringify(data),
+		});
+		return await res.json();
+	} catch (err) {
+		console.error('resetPasswordWithBackup error:', err);
+		return { success: false, error: 'Network error occurred' };
+	}
+	}
 }
 
 // Export singleton instance
