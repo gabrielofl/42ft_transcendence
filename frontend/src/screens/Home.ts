@@ -67,8 +67,7 @@ export function setupHome() {
 	});
 
 	tournamentBtn?.addEventListener('click', async () => {
-		navigateTo('tournament');
-		// navigateTo('game', type, players);
+		navigateTo('tournament-lobby');
 	});
 
 	// const panels = ['modes-panel'];

@@ -13,10 +13,11 @@ import { Maps } from "./Maps";
 import { navigateTo } from "src/navigation";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
+import { getCurrentUser } from "../ProfileHistory";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
-	private game: ClientGame | undefined;
+	public game: ClientGame | undefined;
 	private handlers: Partial<{[K in MessageTypes]: (payload: MessagePayloads[K]) => void }>;
 	public UIBroker: MessageBroker<MessagePayloads> = new MessageBroker();
 	private static socket: WebSocket | undefined;
@@ -93,12 +94,23 @@ export class ClientGameSocket {
 	/**
 	 * Establece la conexión WebSocket con el servidor del juego.
 	 * @param {string} code - El código de la sala a la que conectarse.
-	 * @param {() => void} onOpen - Callback que se ejecuta cuando la conexión se establece correctamente.
+	 * @param {() => void} [onOpen] - Callback que se ejecuta cuando la conexión se establece correctamente.
 	 */
-	private Connect(code: string, onOpen: () => void) {
+	public Connect(code: string, onOpen?: () => void) {
 		console.log(`Connecting to: ${code}`);
-		const connect = () => {
-			const userID = 42;
+		const connect = async () => {
+			const userID = (await getCurrentUser()).id;
+
+			// Solo usar tournamentMatchInfo si el code ya tiene formato de torneo
+			try {
+				const tournamentInfo = sessionStorage.getItem('tournamentMatchInfo');
+				if (tournamentInfo && code.startsWith('tournament-')) {
+					const info = JSON.parse(tournamentInfo);
+					code = info.roomId;
+				}
+			} catch (e) {
+				console.error('Error al parsear tournamentMatchInfo:', e);
+			}
 
 			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
@@ -112,7 +124,7 @@ export class ClientGameSocket {
 			});
 			ws.addEventListener('open', () => {
 				console.log("[ws] Connection established.");
-				onOpen(); // Ejecutar el callback cuando la conexión esté abierta.
+				if (onOpen) onOpen(); // Ejecutar el callback cuando la conexión esté abierta.
 			});
 
 			ClientGameSocket.socket = ws;
@@ -281,7 +293,10 @@ export class ClientGameSocket {
 	public HandleGameEnded(msg: ScoreMessage): void {
 		console.log("HandleGameEnded");
 		this.UIBroker.Publish("GameEnded", msg);
-		// navigateTo("results");
+		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
+		if (this.game) {
+			this.game.MessageBroker.Publish("GameEnded", msg);
+		}
 	}
 
 	/** Maneja el mensaje para reiniciar el juego. */

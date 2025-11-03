@@ -1,5 +1,4 @@
 import fp from 'fastify-plugin';
-import { genRoomCode } from './utils.js';
 import {
   addVirtualAI,
   addVirtualGuest,
@@ -11,6 +10,13 @@ import {
   sortCombinedPlayers,
 } from './virtual-players.js';
 import { startGame } from './game-manager.js'
+
+function genRoomCode(len = 6) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < len; i++) out += alphabet[(Math.random() * alphabet.length) | 0];
+  return out;
+}
 
 async function waitroomWebsocket(fastify) {
   const roomSockets = new Map(); // roomCode -> Set<{ userId, socket }>

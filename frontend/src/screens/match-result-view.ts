@@ -8,6 +8,7 @@ type ResultOptions = {
   frameImgUrl?: string;
   frameLabel?: string;
   pointsEarned?: number;
+  winnerName?: string;
   onContinue?: () => void;
 };
 
@@ -46,6 +47,7 @@ export function showResultOverlay(opts: ResultOptions) {
     frameImgUrl,
     frameLabel = scope === 'tournament' ? 'Champion' : '',
     pointsEarned,
+    winnerName,
     onContinue,
   } = opts;
 
@@ -60,36 +62,39 @@ export function showResultOverlay(opts: ResultOptions) {
   overlay.className =
     'fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm';
 
-  overlay.innerHTML = `
-    <div class="w-full max-w-3xl mx-auto px-6">
+    overlay.innerHTML = `
+    <div class="w-full max-w-4xl mx-auto px-6">
       <div class="border-2 border-[--primary-color] p-8 text-center mb-10">
-        <h2 class="text-3xl font-extrabold ${result.color} mb-3 tracking-wide">${result.title}</h2>
-        <p class="text-white/90">${result.subtitle}</p>
-        <div class="text-4xl mt-6">${result.emoji}</div>
+        <h2 class="text-4xl font-extrabold ${result.color} mb-3 tracking-wide">${result.title}</h2>
+        <p class="text-white/90 text-xl">${result.subtitle}</p>
+        <div class="text-6xl mt-6">${result.emoji}</div>
       </div>
 
-      <div class="text-left text-2xl text-white/80 mb-2">${scope === 'tournament' ? 'Tournament' : ''}</div>
+      <div class="text-center text-3xl text-white/80 mb-6 font-bold">${scope === 'tournament' ? 'TOURNAMENT CHAMPION' : ''}</div>
 
       <div class="flex flex-col items-center">
         ${
           frameImgUrl
-            ? `<img src="${frameImgUrl}" class="w-[260px] h-[260px] object-cover border-2 border-[--primary-color]" alt="frame" />`
-            : `<div class="w-[260px] h-[260px] bg-purple-900/40 border-2 border-[--primary-color]"></div>`
+            ? `<img src="${frameImgUrl}" class="w-[300px] h-[300px] object-cover border-4 border-[--primary-color] rounded-lg" alt="frame" />`
+            : `<div class="w-[300px] h-[300px] bg-gradient-to-br from-purple-900/40 to-yellow-900/40 border-4 border-[--primary-color] rounded-lg flex items-center justify-center">
+                <div class="text-8xl">🏆</div>
+               </div>`
         }
 
-        <div class="mt-6 text-center">
-          <p class="text-[10px] tracking-widest text-green-300">
-            ${outcome === 'win' ? 'CONGRATULATION!!' : 'BETTER LUCK NEXT TIME'}
+        <div class="mt-8 text-center">
+          <p class="text-sm tracking-widest text-green-300 mb-4">
+            ${outcome === 'final' ? 'CONGRATULATIONS CHAMPION!!' : outcome === 'win' ? 'CONGRATULATION!!' : 'BETTER LUCK NEXT TIME'}
           </p>
+          ${winnerName ? `<p class="text-2xl font-bold text-yellow-300 mb-4">🏆 ${winnerName}</p>` : ''}
           ${
             typeof pointsEarned === 'number'
-              ? `<p class="text-[12px] text-cyan-300 font-semibold">${result.pointsPrefix} <span class="text-green-300">+${pointsEarned}PTS</span></p>`
+              ? `<p class="text-sm text-cyan-300 font-semibold">${result.pointsPrefix} <span class="text-green-300">+${pointsEarned}PTS</span></p>`
               : ''
           }
         </div>
 
         <button id="result-continue"
-                class="mt-6 px-6 py-2 text-sm font-bold text-pink-200 border-2 border-pink-500 hover:bg-pink-600/10 transition">
+                class="mt-8 px-8 py-3 text-lg font-bold text-pink-200 border-2 border-pink-500 hover:bg-pink-600/10 transition rounded-lg">
           CONTINUE
         </button>
       </div>

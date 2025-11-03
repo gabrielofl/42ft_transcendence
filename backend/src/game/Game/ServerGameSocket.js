@@ -3,6 +3,7 @@ import * as BABYLON from "@babylonjs/core";
 import { ServerGame } from "./ServerGame.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
 import { logToFile } from "./logger.js";
+import { tournamentEventBus } from "../../websocket/event-bus.js";
 
 /**
  * Gestiona la lógica de una sala de juego en el servidor, incluyendo las conexiones
@@ -137,8 +138,18 @@ export class ServerGameSocket {
         // Suscribirse a eventos del juego
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
-        this.game.MessageBroker.Subscribe("PointMade", (msg) => { enqueueMessage(msg); console.log("PointMade"); });
-        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { this.handleGameEnded(msg); enqueueMessage(msg); console.log("GameEnded"); });
+        this.game.MessageBroker.Subscribe("PointMade", (msg) => { 
+            const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+            console.log(`⚽ ${roomInfo} GOL! ${msg.results[0]?.username}: ${msg.results[0]?.score} - ${msg.results[1]?.username}: ${msg.results[1]?.score}`);
+            enqueueMessage(msg); 
+        });
+        this.game.MessageBroker.Subscribe("GameEnded", (msg) => { 
+            const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+            const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+            console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
+            this.handleGameEnded(msg); 
+            enqueueMessage(msg); 
+        });
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         this.game.MessageBroker.Subscribe("WindChanged", enqueueMessage);
@@ -251,10 +262,25 @@ export class ServerGameSocket {
     /**
      * Handler para cuando el juego termina
      */
-    handleGameEnded(payload) {
+   handleGameEnded(payload) {
         console.log("🏁 Partida terminada.");
-        // console.log(`🏁 Partida terminada. Ganador: ${payload.winner?.name}`);
-        // Aquí puedes mostrar pantalla de fin de juego
+        // Verificar si es un match de torneo
+        const tournamentInfo = this.parseTournamentRoomId(this.roomId);
+        if (tournamentInfo) {
+            
+            // Determinar el ganador basado en los resultados
+            const winner = this.determineWinner(payload.results);
+            if (winner) {
+                // Emitir evento al sistema de torneos
+                tournamentEventBus.emit('matchResult', {
+                    tournamentId: tournamentInfo.tournamentId,
+                    matchId: tournamentInfo.matchId,
+                    winner: winner,
+                    results: payload.results,
+                    roomId: this.roomId
+                });
+            }
+        }
     }
 
     applyGameState(state) {
@@ -284,5 +310,48 @@ export class ServerGameSocket {
         });
         
         this.lastMoveSentAt = now; */
+    }
+
+    /**
+     * Parsea el roomId para extraer información del torneo
+     * @param {string} roomId - ID de la sala (formato: tournament-{id}-match-{matchId})
+     * @returns {Object|null} - { tournamentId, matchId } o null si no es un match de torneo
+     */
+    parseTournamentRoomId(roomId) {
+        if (!roomId || typeof roomId !== 'string') return null;
+        
+        // Formato esperado: tournament-123-match-1
+        const match = roomId.match(/^tournament-(\d+)-match-(\d+)$/);
+        if (match) {
+            return {
+                tournamentId: parseInt(match[1]),
+                matchId: parseInt(match[2])
+            };
+        }
+        return null;
+    }
+
+    /**
+     * Determina el ganador basado en los resultados del juego
+     * @param {Array} results - Array de resultados [{username, score}, ...]
+     * @returns {Object|null} - {userId, username} del ganador o null si no se puede determinar
+     */
+    determineWinner(results) {
+        if (!results || !Array.isArray(results) || results.length < 2) {
+            return null;
+        }
+
+        // Ordenar por puntuación (mayor a menor)
+        const sortedResults = results.sort((a, b) => b.score - a.score);
+        const winner = sortedResults[0];
+        
+        if (!winner || !winner.username) {
+            return null;
+        }
+
+        return {
+            username: winner.username,
+            score: winner.score
+        };
     }
 }
