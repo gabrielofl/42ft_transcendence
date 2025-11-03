@@ -94,6 +94,8 @@ function setupGameEvents(): void {
 	container.insertAdjacentHTML("beforeend", createPlayerCard(msg));
 }
 
+}
+
 // Subscripción al evento GameEnded.
 function setupGameEndedListener(game: ClientGame): void {
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
@@ -153,7 +155,8 @@ function setupGameEndedListener(game: ClientGame): void {
 					);
 				});
 			}
-		}
+	}
+	});
 	console.log("Registrando bindings");
 	binder.RegisterBindings(container.parentElement as HTMLElement);
 
