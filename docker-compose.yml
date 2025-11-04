@@ -23,8 +23,6 @@ services:
         context: ./backend
       ports:
         - '443:443'
-        # - "9229:9229" # puerto de depuración
-        # - '4444:4444' #Work on cluster
       volumes:
         - frontend-dist:/app/static
         - ./shared:/app/src/shared
@@ -35,7 +33,6 @@ services:
         - ./backend/.env
       networks:
         - ft_transcendence
-      # command: node --inspect=0.0.0.0:9229 src/index.js
 
 networks:
   ft_transcendence:

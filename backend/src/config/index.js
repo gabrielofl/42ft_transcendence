@@ -21,9 +21,8 @@ const config = {
 		port: parseInt(process.env.PORT, 10) || 443,  // Convert string to number
 		host: process.env.HOST || '0.0.0.0',
 		https: {
-			// Build full paths to certificate files
-			key: process.env.SSL_KEY || join(__dirname, '../../certs/privkey.pem'),
-			cert: process.env.SSL_CERT || join(__dirname, '../../certs/fullchain.pem'),
+			key: process.env.SSL_KEY || join(__dirname, '../../certs/localhost.key'),
+			cert: process.env.SSL_CERT || join(__dirname, '../../certs/localhost.crt'),
 		}
 	},
 	
