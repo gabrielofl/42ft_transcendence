@@ -1,5 +1,4 @@
 import fp from 'fastify-plugin';
-import { genRoomCode } from './utils.js';
 import {
   addVirtualAI,
   addVirtualGuest,
@@ -11,6 +10,13 @@ import {
   sortCombinedPlayers,
 } from './virtual-players.js';
 import { startGame } from './game-manager.js'
+
+function genRoomCode(len = 6) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < len; i++) out += alphabet[(Math.random() * alphabet.length) | 0];
+  return out;
+}
 
 async function waitroomWebsocket(fastify) {
   const roomSockets = new Map(); // roomCode -> Set<{ userId, socket }>
@@ -306,7 +312,7 @@ async function waitroomWebsocket(fastify) {
 
   // --- REST: POST /rooms (create)
   fastify.post('/rooms', async (req, reply) => {
-    const { mapKey, powerUpAmount, enabledPowerUps, maxPlayers } = req.body || {};
+    const { mapKey, powerUpAmount, enabledPowerUps, maxPlayers, windAmount, pointToWinAmount } = req.body || {};
     const token = req.cookies?.accessToken;
     if (!token) return reply.code(401).send({ error: 'Unauthorized' });
     const user = fastify.jwt.verify(token);
@@ -318,6 +324,8 @@ async function waitroomWebsocket(fastify) {
     const pua = Number.isFinite(powerUpAmount) ? powerUpAmount : 5;
     const ep = Array.isArray(enabledPowerUps) ? enabledPowerUps : [];
     const maxP = Number.isFinite(maxPlayers) && maxPlayers > 0 ? maxPlayers : null;
+    const wam = Number.isFinite(windAmount) ? windAmount : 50;
+    const pwin = Number.isFinite(pointToWinAmount) ? pointToWinAmount : 7;
 
     let code = '';
     while (true) {
@@ -327,9 +335,9 @@ async function waitroomWebsocket(fastify) {
     }
 
     const res = await fastify.db.run(
-      `INSERT INTO rooms (code, host_id, status, map_key, powerup_amount, enabled_powerups, max_players)
-       VALUES (?, ?, 'waiting', ?, ?, ?, ?)`,
-      [code, hostId, mk, pua, JSON.stringify(ep), maxP]
+      `INSERT INTO rooms (code, host_id, status, map_key, powerup_amount, enabled_powerups, max_players, point_to_win_amount, wind_amount)
+       VALUES (?, ?, 'waiting', ?, ?, ?, ?, ?, ?)`,
+      [code, hostId, mk, pua, JSON.stringify(ep), maxP, pwin, wam]
     );
     const roomId = res.lastID;
 

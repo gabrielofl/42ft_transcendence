@@ -63,6 +63,11 @@ export async function startGame(roomCode, combined, config) {
     console.log("Game Map");
     // console.log(gameSocket.game.Map);
     gameSocket.game.maxPowerUps = config.powerUpAmount;
+    
+    // Log de inicio de partida
+    const playerNames = players.map(p => p.GetName()).join(' vs ');
+    const isTournament = roomCode.startsWith('tournament-');
+    const roomInfo = isTournament ? `[Tournament ${roomCode}]` : `[Room ${roomCode}]`;
     gameSocket.game.CreateGame(players);
   } finally {
     startingGames.delete(roomCode); // "Liberamos" el bloqueo, haya funcionado o no.
@@ -108,7 +113,7 @@ export function isGameActive(roomCode) {
 export function handleGameConnection(connection, req) {
   console.log("handleGameConnection");
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const roomCode = (url.searchParams.get('room') || '').toUpperCase().trim();
+  const roomCode = (url.searchParams.get('room') || '').trim(); // No convertir a mayúsculas para soportar torneos
   const user = url.searchParams.get('user') || 'anonymous';
 
   if (!roomCode) {

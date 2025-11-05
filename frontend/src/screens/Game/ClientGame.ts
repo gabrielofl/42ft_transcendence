@@ -161,8 +161,9 @@ protected readonly WIN_POINTS = 50;
             if (isLocal) {
                 player = new LocalPlayer(this, d[0], d[1], "d", "a", localKeys[localPlayers]);
             } else {
-                // console.log("ClientSocketPlayer");
-                player = new ClientSocketPlayer(this, d[1]);
+                console.log("ClientSocketPlayer", d);
+                 // Pasar userId como tercer parámetro para poder ejecutar el movimiento de las palas de las IA en los torneos.
+                player = new ClientSocketPlayer(this, d[1], d[0]);
             }
             this.players.push(player);
         });
