@@ -217,7 +217,8 @@ export type WaitMsgTypes =
   | "LeaveRoom"        // client → server
   | "ToggleReady"      // client → server
   | "SetMapConfig"     // client → server (selected map, powerups)
-  | "InviteAI";        // client → server (if you support bots)
+  | "InviteAI"         // client → server (if you support bots)
+  | "InviteLocal";	   // client → server
 
 export type PlayerLite = {
   userId: number;
@@ -252,6 +253,7 @@ export type WaitPayloads = {
   ToggleReady: { roomCode: string; userId: number };
   SetMapConfig: { roomCode: string; mapKey: string; powerUpAmount: number; enabledPowerUps: string[];  windAmount?: number; pointToWinAmount?: number; };
   InviteAI: { roomCode: string };
+  InviteLocal: { roomCode: string };
 };
 
 export type WaitMessage = { type: WaitMsgTypes } & (WaitPayloads[keyof WaitPayloads]);

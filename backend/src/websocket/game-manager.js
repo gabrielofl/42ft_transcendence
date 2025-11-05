@@ -48,11 +48,13 @@ export async function startGame(roomCode, combined, config) {
     addGame(roomCode, gameSocket); // La registramos en el gestor de partidas activas.
 
     const players = combined.map(p => {
-      if (p.userId < 0) { // Jugador IA
+      if (p.userId < 0 && p.userId > -1000) { // Jugador IA
+	    console.log("Creando AIPlayer");
         let player = new AIPlayer(gameSocket.game, p.username);
         player.id = p.userId;
         return player;
       } else { // Jugador real
+	   console.log("Creando ServerSocketPlayer");
         let player = new ServerSocketPlayer(gameSocket.game, p.username);
         player.id = p.userId;
         return player;
@@ -112,6 +114,8 @@ export function isGameActive(roomCode) {
  */
 export function handleGameConnection(connection, req) {
   console.log("handleGameConnection");
+
+  //user validation req.usre_id == id del mensaje
   const url = new URL(req.url, `http://${req.headers.host}`);
   const roomCode = (url.searchParams.get('room') || '').trim(); // No convertir a mayúsculas para soportar torneos
   const user = url.searchParams.get('user') || 'anonymous';
@@ -134,7 +138,7 @@ export function handleGameConnection(connection, req) {
   }
 
   console.log(`[GameManager] Jugador ${user} uniéndose a la partida en la sala ${roomCode}.`);
-  gameSocket.AddPeople(user, connection);
+  gameSocket.AddPeople(user, connection, user);
 
   connection.on("close", () => {
     if (gameSocket.people.size === 0) {

@@ -115,7 +115,7 @@ export class ClientGameSocket {
 			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
 			
-			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));
+			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));
 			ws.addEventListener('close', (e) => {
 				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
@@ -201,7 +201,7 @@ export class ClientGameSocket {
 	 * Parsea el mensaje y lo delega al manejador correspondiente según su tipo.
 	 * @param {MessageEvent} payload El evento de mensaje del WebSocket.
 	 */
-	public RecieveSocketMessage(payload: MessageEvent): void {
+	public ReceiveSocketMessage(payload: MessageEvent): void {
 		if (this.disposed)
 			return;
 

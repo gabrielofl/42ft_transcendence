@@ -146,7 +146,8 @@ protected readonly WIN_POINTS = 50;
         if (!msg.nArray)
             throw new Error('Invalid AllReadyMessage received');
 
-        const me = (await this.GetMe()).username;
+        const me = (await this.GetMe()).id;
+		console.log("Me: ", me);
 
         // console.log(me);
         let localPlayers: number = 0;
@@ -155,11 +156,18 @@ protected readonly WIN_POINTS = 50;
             ['1', '2', '3'],
         ];
 
+		let localMove: [string, string][] = [
+            ['d', 'a'],
+            ["j", "l"],
+        ];
+
         msg.nArray.forEach(d => {
             let player: APlayer;
-            const isLocal = d[1] === me;
+            const isLocal = d[0] === me || d[0] < -1000;
             if (isLocal) {
-                player = new LocalPlayer(this, d[0], d[1], "d", "a", localKeys[localPlayers]);
+                console.log("LocalPlayer", d);
+                player = new LocalPlayer(this, d[0], d[1], localMove[localPlayers][0], localMove[localPlayers][1], localKeys[localPlayers]);
+				localPlayers++;
             } else {
                 console.log("ClientSocketPlayer", d);
                  // Pasar userId como tercer parámetro para poder ejecutar el movimiento de las palas de las IA en los torneos.

@@ -55,11 +55,11 @@ export class ServerGameSocket {
      * @param {string} user El identificador del usuario.
      * @param {import('ws')} connection La conexión WebSocket del usuario.
      */
-    AddPeople(user, connection) {
+    AddPeople(user, connection, userid) {
         this.people.set(user, connection);
 
         // Asigna los manejadores de eventos para esta conexión específica.
-        connection.on('message', (msg) => this.RecieveSocketMessage(msg, user));
+        connection.on('message', (msg) => this.ReceiveSocketMessage(msg, user, userid));
         connection.on('close', () => {
             console.log(`Sala ${this.roomId} cerrada para ${user}`);
             this.people.delete(user);
@@ -165,9 +165,13 @@ export class ServerGameSocket {
      * @param {Buffer} msg El mensaje binario recibido.
      * @param {string} user El usuario que envió el mensaje.
      */
-    RecieveSocketMessage(msg, user) {
+    ReceiveSocketMessage(msg, user, userid) {
         try {
             const message = JSON.parse(msg.toString());
+
+			if (message.id && userid != message.id)
+				return;
+
             const handler = this.handlers[message.type];
             if (handler) {
                 handler(message, user);
