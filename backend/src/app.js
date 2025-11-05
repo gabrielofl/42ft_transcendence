@@ -2,9 +2,6 @@
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// To read certificates
-import fs from 'fs';
-
 // Import Fastify plugins
 import autoLoad from '@fastify/autoload';    // Auto-load plugins/routes
 import fastifyStatic from '@fastify/static';  // Serve static files
@@ -23,12 +20,6 @@ import tournamentWebsocket from './websocket/tournament-websocket.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const httpsOptions = {
-  key: fs.readFileSync(join(__dirname, '../certs', 'localhost.key')),  // path to your key
-  cert: fs.readFileSync(join(__dirname, '../certs', 'localhost.crt')) // path to your CA-signed cert
-};
-
-
 // Main function that builds the app
 export async function buildApp(opts = {}) {
 	console.log("buildApp");
@@ -41,8 +32,7 @@ export async function buildApp(opts = {}) {
 	const app = opts.fastify || (await import('fastify')).default({
 	logger: opts.logger ?? true,
 	trustProxy: true,
-	https:  opts.https,   // <-- use your signed certificate
-	// https: httpsOptions,   // <-- use your signed certificate
+	https:  opts.https,
 	});
 
 	// STEP 1: Load our custom plugins (config, database)

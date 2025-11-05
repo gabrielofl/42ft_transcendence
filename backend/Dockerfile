@@ -20,5 +20,5 @@ COPY . .
 RUN mkdir -p /app/static
 
 # Run the server
-CMD ["node", "src/index.js"]
+CMD ["npm", "start"]
 # RUN chmod 755 /app && chmod 666 /app/pong.db 2>/dev/null || true
