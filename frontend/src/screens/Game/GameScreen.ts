@@ -162,33 +162,4 @@ function setupTournamentListeners(game: ClientGame): void {
 			}
 		}
 	});
-
-	// Listener para PointMade
-	game.MessageBroker.Subscribe("PointMade", (msg: ScoreMessage) => {
-		const obj = msg.results.reduce((acc, m) => {
-			acc[m.username] = { score: m.score };
-			return acc;
-		}, {} as Record<string, { score: number }>);
-
-		GameViewModel.UpdateFromObject(obj);
-	});
-
-	// Listener para otros eventos del UIBroker
-	const gameSocket = ClientGameSocket.GetInstance();
-	
-	gameSocket.UIBroker.Subscribe("InventoryChanged", (msg) => {
-		GameViewModel.UpdateFromObject({
-			[msg.username]: {
-				["inventory"]: {
-					[msg.slot]: {
-						["path"]: msg.path 
-					}
-				}
-			}
-		});
-	});
-
-	gameSocket.UIBroker.Subscribe("EffectsChanged", (msg) => {
-		GameViewModel.UpdateFromObject(msg.data);
-	});
 }

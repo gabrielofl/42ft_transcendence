@@ -263,11 +263,11 @@ function setupMapSelectionControls(): void {
 
     const createOptions = {
       mapKey: chosenMapKey,
-      powerUpAmount: parseInt(powerupAmountSlider.value, 10),
+      powerUpAmount: parseInt(powerupAmountSlider.value, 5),
       enabledPowerUps: enabledPowerups,
       maxPlayers: suggestedMaxPlayers, // suggestion only; backend decides
-      windAmount: parseInt(windAmountSlider.value, 10),
-      pointToWinAmount: parseInt(pointToWinAmountSlider.value, 10),
+      windAmount: parseInt(windAmountSlider.value, 50),
+      pointToWinAmount: parseInt(pointToWinAmountSlider.value, 7),
     };
 
     // 2) ensure session
