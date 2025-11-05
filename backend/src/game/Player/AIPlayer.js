@@ -59,8 +59,6 @@ export class AIPlayer extends APlayer {
      * @returns 
      */
     ProcessPlayerAction(inputMap) {
-        return;
-
         if (this.game.Paused)
             return;
 
