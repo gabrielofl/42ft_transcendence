@@ -112,7 +112,7 @@ export class ClientGameSocket {
 				console.error('Error al parsear tournamentMatchInfo:', e);
 			}
 
-			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
+			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
 			
 			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));
@@ -144,7 +144,7 @@ export class ClientGameSocket {
 
 		/** Petición a back para obtener la información del juego **/
 		// const roomState: RoomStatePayload | null = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
-		const roomState: RoomStatePayload | null = await fetchJSON(`https://localhost:443/rooms/mine`, { credentials: "include" });
+		const roomState: RoomStatePayload | null = await fetchJSON(`https://localhost:4444/rooms/mine`, { credentials: "include" });
 		if (!roomState) {
 			throw new Error(`Failed to fetch room data or room is not available.`);
 		}
@@ -195,7 +195,8 @@ export class ClientGameSocket {
 		}
 	}
 	
-	/**
+	/**			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
+
 	 * Recibe y procesa los mensajes que llegan desde el servidor WebSocket.
 	 * Parsea el mensaje y lo delega al manejador correspondiente según su tipo.
 	 * @param {MessageEvent} payload El evento de mensaje del WebSocket.

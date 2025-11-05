@@ -4,7 +4,7 @@ services:
       build:
           context: ./frontend
       ports:
-        - "8080:5173"
+        - "5173:5173"
       volumes:
           - ./frontend:/app 
           - /app/node_modules
@@ -22,7 +22,7 @@ services:
       build:
         context: ./backend
       ports:
-        - '443:443'
+        - '4444:4444'
       volumes:
         - frontend-dist:/app/static
         - ./shared:/app/src/shared
