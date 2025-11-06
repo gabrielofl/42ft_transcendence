@@ -120,39 +120,6 @@ protected readonly WIN_POINTS = 50;
 	public GetMaterial(name: string): BABYLON.Material {
 		return this.materialFact.GetMaterial(name);
 	}
-
-
-    /* function addPlayer(msg: AddPlayerMessage): void {
-        const container = document.getElementById("player-cards-client");
-        if (!container)
-            return;
-    
-        let clientgame: ClientGame | undefined= ClientGameSocket.GetInstance().GetGame();
-        if (!clientgame)
-            return;
-        
-        const isLocal = msg.playerData.name === "Gabriel"; // Asumiendo que "Gabriel" es el jugador local
-        let player: APlayer;
-        if (isLocal) {
-            player = new LocalPlayer(clientgame, msg.playerData.name, "d", "a");
-        } else {
-            player = new ClientSocketPlayer(clientgame, msg.playerData.name);
-        }
-        // clientgame.AddPlayer(player);
-    
-        // Asignar color desde el mensaje del backend
-        player.Color = BABYLON.Color3.FromHexString(msg.playerData.color);
-        // Configurar la pala del jugador con la posición y rotación del backend
-        player.ConfigurePaddleBehavior(
-            { 
-                position: new BABYLON.Vector3(msg.position.x, msg.position.y, msg.position.z),
-                lookAt: new BABYLON.Vector3(msg.lookAt.x, msg.lookAt.y, msg.lookAt.z)
-            });
-    
-        // Añadir la tarjeta del jugador a la UI
-        container.insertAdjacentHTML("beforeend", createPlayerCard(msg));
-    } */
-
     
     private async GetMe(): Promise<any> {
         const res = await fetch(`${API_BASE_URL}/users/me`, {
@@ -179,19 +146,32 @@ protected readonly WIN_POINTS = 50;
         if (!msg.nArray)
             throw new Error('Invalid AllReadyMessage received');
 
-        const me = (await this.GetMe()).username;
+        const me = (await this.GetMe()).id;
+		console.log("Me: ", me);
 
         // console.log(me);
+        let localPlayers: number = 0;
+        let localKeys: [string, string, string][] = [
+            ['z', 'x', 'c'],
+            ['1', '2', '3'],
+        ];
+
+		let localMove: [string, string][] = [
+            ['d', 'a'],
+            ["j", "l"],
+        ];
 
         msg.nArray.forEach(d => {
             let player: APlayer;
-            const isLocal = d[1] === me;
+            const isLocal = d[0] === me || d[0] < -1000;
             if (isLocal) {
-                // console.log("LocalPlayer", d);
-                player = new LocalPlayer(this, d[0], d[1], "d", "a");
+                console.log("LocalPlayer", d);
+                player = new LocalPlayer(this, d[0], d[1], localMove[localPlayers][0], localMove[localPlayers][1], localKeys[localPlayers]);
+				localPlayers++;
             } else {
-                // console.log("ClientSocketPlayer");
-                player = new ClientSocketPlayer(this, d[1]);
+                console.log("ClientSocketPlayer", d);
+                 // Pasar userId como tercer parámetro para poder ejecutar el movimiento de las palas de las IA en los torneos.
+                player = new ClientSocketPlayer(this, d[1], d[0]);
             }
             this.players.push(player);
         });

@@ -82,11 +82,39 @@ async function databasePlugin(fastify, opts) {
 		CREATE TABLE IF NOT EXISTS tournaments (
 			id          INTEGER  PRIMARY KEY AUTOINCREMENT,
 			name        TEXT     NOT NULL,
-			status      TEXT     DEFAULT 'pending',
+			creator_id  INTEGER  NOT NULL,
+			status      TEXT     DEFAULT 'waiting',           -- waiting/ready/in_progress/finished
+			winner_id   INTEGER,
+			current_round INTEGER DEFAULT 0,
+			bracket     TEXT,                                 -- JSON string del bracket
+			-- Tournament configuration
+			map_key     TEXT     DEFAULT 'ObstacleMap',       -- Map configuration
+			powerup_amount INTEGER DEFAULT 3,                 -- Number of powerups
+			enabled_powerups TEXT DEFAULT '[]',               -- JSON array of enabled powerups
+			wind_amount INTEGER DEFAULT 50,                   -- Wind strength
+			point_to_win_amount INTEGER DEFAULT 5,           -- Points to win match
+			match_time_limit INTEGER DEFAULT 180,             -- Match time limit in seconds
 			created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
 			started_at  DATETIME,
-			finished_at DATETIME
+			finished_at DATETIME,
+			FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE SET NULL,
+			FOREIGN KEY (winner_id) REFERENCES users (id) ON DELETE SET NULL
 		);
+
+		CREATE TABLE IF NOT EXISTS tournament_players (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			tournament_id INTEGER NOT NULL,
+			user_id       INTEGER NOT NULL,
+			username      TEXT NOT NULL,
+			is_host       INTEGER DEFAULT 0,                  -- 1 si es el creador
+			ready         INTEGER DEFAULT 0,                  -- 1 si está ready
+			joined_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(tournament_id, user_id),
+			FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_tournament_players_tournament ON tournament_players(tournament_id);
 
 		CREATE TABLE IF NOT EXISTS refresh_tokens (
 			id         INTEGER  PRIMARY KEY AUTOINCREMENT,

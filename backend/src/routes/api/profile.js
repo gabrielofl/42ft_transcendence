@@ -67,7 +67,7 @@ export default async function (fastify, opts) {
 				);
 
 				// Return success response
-				reply.header('Access-Control-Allow-Origin', 'https://localhost:8080');
+				reply.header('Access-Control-Allow-Origin', 'https://localhost:5173');
 				reply.header('Access-Control-Allow-Credentials', 'true');
 				reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
 				return {
@@ -110,7 +110,7 @@ export default async function (fastify, opts) {
 				else if (ext === 'webp') contentType = 'image/webp';
 				
 				// Set CORS and CORP headers explicitly
-				reply.header('Access-Control-Allow-Origin', 'https://localhost:8080');
+				reply.header('Access-Control-Allow-Origin', 'https://localhost:5173');
 				reply.header('Access-Control-Allow-Credentials', 'true');
 				reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
 				reply.header('Content-Type', contentType);

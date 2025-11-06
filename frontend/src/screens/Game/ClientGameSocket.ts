@@ -12,10 +12,12 @@ import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
 import { navigateTo } from "src/navigation";
 import { WindCompass } from "./WindCompass";
+import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
+import { getCurrentUser } from "../ProfileHistory";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
-	private game: ClientGame | undefined;
+	public game: ClientGame | undefined;
 	private handlers: Partial<{[K in MessageTypes]: (payload: MessagePayloads[K]) => void }>;
 	public UIBroker: MessageBroker<MessagePayloads> = new MessageBroker();
 	private static socket: WebSocket | undefined;
@@ -43,6 +45,26 @@ export class ClientGameSocket {
 
 	HandleEffectsChanged(msg: EffectsChangedMessage): void {
 		console.log("Received EffectsChanged message from server:", msg.data);
+
+		const entries = Object.entries(msg.data);
+		for (const [username, data] of entries) {
+			let player = this.game?.GetPlayers().find(p => p.GetName() === username);
+			if (player)
+			{
+				player.CreatePaddle(data.paddleWidth);
+				if (data.hasShield && player.Shields.GetAll().length === 0 && this.game)
+				{
+					let shield = new PaddleShieldEffect(this.game, "", -1);
+					shield.Execute(player);
+				}
+				else
+				{
+					let shields = player.Shields.GetAll();
+					shields.forEach(s => s.Undo(player));
+				}
+					
+			}
+		}
 		this.UIBroker.Publish("EffectsChanged", msg);
 	}
 
@@ -72,17 +94,28 @@ export class ClientGameSocket {
 	/**
 	 * Establece la conexión WebSocket con el servidor del juego.
 	 * @param {string} code - El código de la sala a la que conectarse.
-	 * @param {() => void} onOpen - Callback que se ejecuta cuando la conexión se establece correctamente.
+	 * @param {() => void} [onOpen] - Callback que se ejecuta cuando la conexión se establece correctamente.
 	 */
-	private Connect(code: string, onOpen: () => void) {
+	public Connect(code: string, onOpen?: () => void) {
 		console.log(`Connecting to: ${code}`);
-		const connect = () => {
-			const userID = 42;
+		const connect = async () => {
+			const userID = (await getCurrentUser()).id;
 
-			const ws = new WebSocket(`wss://localhost:443/gamews?room=${code}&user=${userID}`);
+			// Solo usar tournamentMatchInfo si el code ya tiene formato de torneo
+			try {
+				const tournamentInfo = sessionStorage.getItem('tournamentMatchInfo');
+				if (tournamentInfo && code.startsWith('tournament-')) {
+					const info = JSON.parse(tournamentInfo);
+					code = info.roomId;
+				}
+			} catch (e) {
+				console.error('Error al parsear tournamentMatchInfo:', e);
+			}
+
+			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
 			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
 			
-			ws.addEventListener('message', (e) => this.RecieveSocketMessage(e));
+			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));
 			ws.addEventListener('close', (e) => {
 				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
@@ -91,7 +124,7 @@ export class ClientGameSocket {
 			});
 			ws.addEventListener('open', () => {
 				console.log("[ws] Connection established.");
-				onOpen(); // Ejecutar el callback cuando la conexión esté abierta.
+				if (onOpen) onOpen(); // Ejecutar el callback cuando la conexión esté abierta.
 			});
 
 			ClientGameSocket.socket = ws;
@@ -111,7 +144,7 @@ export class ClientGameSocket {
 
 		/** Petición a back para obtener la información del juego **/
 		// const roomState: RoomStatePayload | null = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
-		const roomState: RoomStatePayload | null = await fetchJSON(`https://localhost:443/rooms/mine`, { credentials: "include" });
+		const roomState: RoomStatePayload | null = await fetchJSON(`https://localhost:4444/rooms/mine`, { credentials: "include" });
 		if (!roomState) {
 			throw new Error(`Failed to fetch room data or room is not available.`);
 		}
@@ -119,6 +152,7 @@ export class ClientGameSocket {
 		ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
 		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.config.mapKey]);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
+		this.game.MessageBroker.Subscribe("PlayerUsePowerUp", (msg) => this.Send(msg));
 		console.log('roomState', roomState);
 
 		// El backend en `waitroom-websocket.js` devuelve un `nArray` en el evento `AllReady`.
@@ -161,12 +195,13 @@ export class ClientGameSocket {
 		}
 	}
 	
-	/**
+	/**			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
+
 	 * Recibe y procesa los mensajes que llegan desde el servidor WebSocket.
 	 * Parsea el mensaje y lo delega al manejador correspondiente según su tipo.
 	 * @param {MessageEvent} payload El evento de mensaje del WebSocket.
 	 */
-	public RecieveSocketMessage(payload: MessageEvent): void {
+	public ReceiveSocketMessage(payload: MessageEvent): void {
 		if (this.disposed)
 			return;
 
@@ -259,7 +294,10 @@ export class ClientGameSocket {
 	public HandleGameEnded(msg: ScoreMessage): void {
 		console.log("HandleGameEnded");
 		this.UIBroker.Publish("GameEnded", msg);
-		// navigateTo("results");
+		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
+		if (this.game) {
+			this.game.MessageBroker.Publish("GameEnded", msg);
+		}
 	}
 
 	/** Maneja el mensaje para reiniciar el juego. */

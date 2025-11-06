@@ -2,9 +2,6 @@
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// To read certificates
-import fs from 'fs';
-
 // Import Fastify plugins
 import autoLoad from '@fastify/autoload';    // Auto-load plugins/routes
 import fastifyStatic from '@fastify/static';  // Serve static files
@@ -15,19 +12,13 @@ import fastifyCookie from '@fastify/cookie';  // Cookie parsing
 import fastifyWebsocket from '@fastify/websocket';  // WebSocket support
 import fastifyMultipart from '@fastify/multipart';  // File uploads
 import fastifyFormbody from '@fastify/formbody';    // Form parsing
-import { resetGame, movePlayer, gameTick, getState } from './game.js';
 import registerWebsocket from './websocket/index.js';
 import onlineWebsocket from './websocket/online-websocket.js';
 import waitroomWebsocket from './websocket/waitroom-websocket.js';
+import tournamentWebsocket from './websocket/tournament-websocket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-const httpsOptions = {
-  key: fs.readFileSync(join(__dirname, '../certs', 'localhost.key')),  // path to your key
-  cert: fs.readFileSync(join(__dirname, '../certs', 'localhost.crt')) // path to your CA-signed cert
-};
-
 
 // Main function that builds the app
 export async function buildApp(opts = {}) {
@@ -41,8 +32,7 @@ export async function buildApp(opts = {}) {
 	const app = opts.fastify || (await import('fastify')).default({
 	logger: opts.logger ?? true,
 	trustProxy: true,
-	https:  opts.https,   // <-- use your signed certificate
-	// https: httpsOptions,   // <-- use your signed certificate
+	https:  opts.https,
 	});
 
 	// STEP 1: Load our custom plugins (config, database)
@@ -90,7 +80,7 @@ await app.register(fastifyCors, app.config.cors);
 	await registerWebsocket(app);
 	await app.register(onlineWebsocket);
 	await app.register(waitroomWebsocket);
-
+	await app.register(tournamentWebsocket);
 	
 	// File upload support
 	await app.register(fastifyMultipart);

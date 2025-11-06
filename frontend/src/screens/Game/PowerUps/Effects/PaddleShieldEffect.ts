@@ -12,7 +12,7 @@ export class PaddleShieldEffect extends APlayerEffect {
     }
 
     public Execute(target: APlayer): void {
-        if (this.disposed || target !== this.Origin) 
+        if (this.disposed) 
             return;
 
         target.Shields.Add(this);
@@ -20,11 +20,6 @@ export class PaddleShieldEffect extends APlayerEffect {
 
         // Limpiar efectos negativos
         target.Effects.GetAll().Where(e => e.IsNegative).forEach(e => e.Undo(target));
-        this.game.MessageBroker.Publish("AppliedEffect", {
-            type: "AppliedEffect",
-            effect: "Shield",
-            origin: target.GetName()
-        });
         super.Execute(target);
     }
 

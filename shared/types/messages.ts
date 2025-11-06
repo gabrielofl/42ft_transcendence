@@ -9,6 +9,7 @@ export type MessageTypes =
 "PointMade"|
 "BallMove"|
 "PlayerPreMove"|
+"PlayerUsePowerUp"|
 "BallRemove"|
 "PaddlePosition"|
 "WindChanged"|
@@ -35,6 +36,7 @@ export type MessagePayloads = {
     ["PointMade"]: ScoreMessage;
     ["BallMove"]: BallMoveMessage;
     ["PlayerPreMove"]: PreMoveMessage;
+    ["PlayerUsePowerUp"]: UsePowerUpMessage;
     ["PaddlePosition"]: PaddlePositionMessage;
     ["BallRemove"]: BallRemoveMessage;
     ["InventoryChanged"]: InventoryChangeMessage;
@@ -106,6 +108,12 @@ export interface PreMoveMessage extends Message {
     dir: number, // -1 Izquierda, 1 Derecha
 }
 
+export interface UsePowerUpMessage extends Message {
+    type: "PlayerUsePowerUp";
+    id: number;
+    slot: number;
+}
+
 export interface WindChangedMessage extends Message {
     type: "WindChanged";
     wind: Vector3Data,
@@ -129,23 +137,19 @@ export interface PowerUpBoxPickedMessage extends Message {
 }
 
 export interface BallRemoveMessage extends Message {
+    type: "BallRemove";
     id: number,
 }
 
-// check to erase
-export interface PlayerPosition {
-    username: string;
-    x: number;
-    y: number;
-}
-
 export interface PaddlePositionMessage extends Message {
+    type: "PaddlePosition";
 	id: number;
     x: number;
     z: number;
 }
 
 export interface BallMoveMessage extends Message {
+    type: "BallMove";
     id: number,
     x: number,
     z: number,
@@ -154,10 +158,12 @@ export interface BallMoveMessage extends Message {
 }
 
 export interface GamePauseMessage extends Message {
+    type: "GamePause";
     pause: boolean;
 }
 
 export interface ScoreMessage extends Message {
+    type: "GameEnded" | "PointMade";
     results: PlayerResult[];
 }
 
@@ -181,6 +187,8 @@ export interface EffectsChangedMessage extends Message {
     type: "EffectsChanged";
     data: {
         [username: string]: {
+            hasShield: boolean;
+            paddleWidth: number;
             effects: string[];
         }
     }
@@ -209,7 +217,8 @@ export type WaitMsgTypes =
   | "LeaveRoom"        // client → server
   | "ToggleReady"      // client → server
   | "SetMapConfig"     // client → server (selected map, powerups)
-  | "InviteAI";        // client → server (if you support bots)
+  | "InviteAI"         // client → server (if you support bots)
+  | "InviteLocal";	   // client → server
 
 export type PlayerLite = {
   userId: number;
@@ -244,6 +253,7 @@ export type WaitPayloads = {
   ToggleReady: { roomCode: string; userId: number };
   SetMapConfig: { roomCode: string; mapKey: string; powerUpAmount: number; enabledPowerUps: string[];  windAmount?: number; pointToWinAmount?: number; };
   InviteAI: { roomCode: string };
+  InviteLocal: { roomCode: string };
 };
 
 export type WaitMessage = { type: WaitMsgTypes } & (WaitPayloads[keyof WaitPayloads]);

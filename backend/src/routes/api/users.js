@@ -5,7 +5,7 @@ const DEFAULT_CFG = {
   powerUpAmount: 5,
   enabledPowerUps: ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"],
   windAmount: 50,
-  pointToWinAmount: 7,
+  pointToWinAmount: 10,
 };
 
   function requireUserFromCookie(req) {

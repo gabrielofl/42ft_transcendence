@@ -20,9 +20,8 @@ const config = {
 		port: parseInt(process.env.PORT, 10) || 443,
 		host: process.env.HOST || '0.0.0.0',
 		https: {
-			// Build full paths to certificate files
-			key: process.env.SSL_KEY || join(__dirname, '../../certs/privkey.pem'),
-			cert: process.env.SSL_CERT || join(__dirname, '../../certs/fullchain.pem'),
+			key: process.env.SSL_KEY || join(__dirname, '../../certs/localhost.key'),
+			cert: process.env.SSL_CERT || join(__dirname, '../../certs/localhost.crt'),
 		}
 	},
 	
@@ -39,7 +38,7 @@ const config = {
 	
 	// CORS settings (Cross-Origin Resource Sharing)
 	cors: {
-		origin: 'https://localhost:8080',
+		origin: 'https://localhost:5173',
 		// origin: [
 		// 	// 'https://localhost:443',  // Production frontend served by backend
 		// 	// 'https://localhost:8080',  // Frontend dev server
