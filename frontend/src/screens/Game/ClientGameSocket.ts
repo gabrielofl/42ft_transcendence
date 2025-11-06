@@ -14,6 +14,7 @@ import { navigateTo } from "src/navigation";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
+import { WS_URL } from "../config";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -112,8 +113,7 @@ export class ClientGameSocket {
 				console.error('Error al parsear tournamentMatchInfo:', e);
 			}
 
-			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
-			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
+			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
 			
 			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));

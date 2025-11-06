@@ -17,8 +17,7 @@ const config = {
 	
 	// Server settings
 	server: {
-		// port: parseInt(process.env.PORT, 10) || 4444,  // Work on cluster
-		port: parseInt(process.env.PORT, 10) || 443,  // Convert string to number
+		port: parseInt(process.env.PORT, 10) || 4444,
 		host: process.env.HOST || '0.0.0.0',
 		https: {
 			key: process.env.SSL_KEY || join(__dirname, '../../certs/localhost.key'),
@@ -39,14 +38,7 @@ const config = {
 	
 	// CORS settings (Cross-Origin Resource Sharing)
 	cors: {
-		origin: 'https://localhost:5173',
-		// origin: [
-		// 	// 'https://localhost:443',  // Production frontend served by backend
-		// 	// 'https://localhost:8080',  // Frontend dev server
-		// 	// 'http://localhost:5173',  // Vite dev server (alternative port)
-		// 	// process.env.FRONTEND_URL  // Environment override
-		// 	'*'
-		// ].filter(Boolean),  // Remove any undefined values
+		origin: process.env.FRONTEND_URL,
 		methods: ['GET', 'POST', 'OPTIONS'],
 		credentials: true,  // Allow cookies to be sent
 	},
