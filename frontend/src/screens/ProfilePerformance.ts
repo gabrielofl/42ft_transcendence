@@ -1,6 +1,6 @@
 import profilePerformance from "./profile-performance.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 
 
 export function renderPerformanceTab() {

@@ -3,7 +3,7 @@ import { renderPreTournamentView, PreMatch } from './pre-tournament-view';
 import { avatarImgHTML } from './fallback-avatar';
 import { showResultOverlay } from './match-result-view';
 import { initProfileModal, setupProfileLinks } from "./ProfileModal";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 
 const MOCK_USER = 1;
 

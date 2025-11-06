@@ -1,7 +1,7 @@
 import profileAccount from "./profile-account.html?raw";
-// import { apiService } from '../services/api.js';
 import { replaceTemplatePlaceholders } from "./utils";
-import { API_BASE_URL } from "./config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import {  setupAlert } from "./AlertModal.js";
 
 export function renderAccountTab() {
 
@@ -100,11 +100,11 @@ export function setupAccountTab() {
 				}
 
 				if (!res.ok || !result.success) {
-				alert(result.error || 'Failed to update privacy settings');
+				setupAlert('Oops!', result.error || 'Failed to update privacy settings', "close");
 				// rollback UI if update failed
 				cb.checked = !cb.checked;
 				} else {
-				console.log(result.message);
+				// console.log(result.message);
 				}
 			});
 			});
@@ -153,7 +153,7 @@ export function setupAccountTab() {
 		result = {};
 		}
 
-		if (!result.success) alert('Avatar upload failed');
+		if (!result.success) setupAlert('Oops!','Avatar upload failed', "close");
 	});
 
 
@@ -161,8 +161,8 @@ export function setupAccountTab() {
 	updateNameBtn?.addEventListener('click', async () => {
 		const name = nameInput?.value.trim();
 		const lastname = lastnameInput?.value.trim();
-		if (!name || name.length < 3) return alert('Name too short');
-		if (!lastname || lastname.length < 3) return alert('Last name too short');
+		if (!name || name.length < 3) return setupAlert('Oops!','Name too short', "close");
+		if (!lastname || lastname.length < 3) return setupAlert('Oops!','Last name too short', "close");
 
 		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			method: 'POST',
@@ -175,7 +175,7 @@ export function setupAccountTab() {
 		});
 
 		if (!res.ok)
-			alert('Failed to update');
+			setupAlert('Oops!','Oh no! Failed to update', "close");
 		else
 			renderAccountTab();
 
@@ -185,14 +185,14 @@ export function setupAccountTab() {
 		} catch {
 		result = {};
 		}
-		if (result.success) alert(result.message);
-		else alert(result.error || 'Failed to update');
+		if (result.success) setupAlert('Success!',result.message, "close");
+		else setupAlert('Oops!',result.error || 'Oh no! Failed to update', "close");
 	});
 
 	// Update username
 	updateUsernameBtn?.addEventListener('click', async () => {
 		const username = usernameInput?.value.trim();
-		if (!username || username.length < 3) return alert('Name too short');
+		if (!username || username.length < 3) return setupAlert('Oops!','Name too short', "close");
 
 		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			method: 'POST',
@@ -205,7 +205,7 @@ export function setupAccountTab() {
 		});
 
 		if (!res.ok)
-			alert('Failed to update');
+			setupAlert('Oops!','Oh no! Failed to update', "close");
 		else
 			renderAccountTab();
 
@@ -215,14 +215,14 @@ export function setupAccountTab() {
 		} catch {
 		result = {};
 		}
-		if (result.success) alert(result.message);
-		else alert(result.error || 'Failed to update');
+		if (result.success) setupAlert('Success!', result.message, "close");
+		else setupAlert('Oops!', result.error || 'Oh no! Failed to update', "close");
 	});
 
 	// Update email
 	updateEmailBtn?.addEventListener('click', async () => {
 		const email = emailInput?.value.trim();
-		if (!email || email.length < 5) return alert('Invalid email: email too short');
+		if (!email || email.length < 5) return setupAlert('Oops!', 'Invalid email: email too short', "close");
 
 		const res = await fetch(`${API_BASE_URL}/users/me`, {
 			method: 'POST',
@@ -235,7 +235,7 @@ export function setupAccountTab() {
 		});
 
 		if (!res.ok)
-			alert('Failed to update');
+			setupAlert('Oops!', 'Oh no! Failed to update', "close");
 		else
 			renderAccountTab();
 		
@@ -246,15 +246,15 @@ export function setupAccountTab() {
 		result = {};
 		}
 
-		if (result.success) alert(result.message);
-		else alert(result.error || 'Failed to update');
+		if (result.success) setupAlert('Success!', result.message, "close");
+		else setupAlert('Oops!', result.error || 'Oh no! Failed to update', "close");
 	});
 
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
 		const password = (document.getElementById('password') as HTMLInputElement).value;
 		const newPassword = (document.getElementById('new-password') as HTMLInputElement).value;
 		// const rePassword = (document.getElementById('re-password') as HTMLInputElement).value;
-		if (newPassword.length < 4) return alert('Password too short');
+		if (newPassword.length < 4) return setupAlert('Oops!', 'Oh no! Password too short', "close");
 
 		// const currentPassword = prompt('Enter current password:');
 		// if (!currentPassword) return;
@@ -275,8 +275,8 @@ export function setupAccountTab() {
 		result = {};
 		}
 
-		if (result.success) alert('Password changed!');
-		else alert(result.error || 'Failed to update password');
+		if (result.success) setupAlert('Success!', 'Yay! Password changed!', "close");
+		else setupAlert('Oops!', result.error || 'Failed to update password', "close");
 	});
 
 	
@@ -347,12 +347,12 @@ Profile created: ${data.created_at}
 		if (!deletePassInput?.classList.contains("hidden"))
 		{
 			password = deletePassInput?.value.trim();
-			if (!password || password.length < 3) return alert('Password is required');
+			if (!password || password.length < 3) return setupAlert('Whoops!', 'Password is required', "close");
 		}
 		else if (!googleDeletePassInput?.classList.contains("hidden"))
 		{
 			password = googleDeletePassInput?.value.trim();
-			if (!password || password.length < 3) return alert('Type DELETE to continue');
+			if (!password || password.length < 3) return setupAlert('Whoops!', 'Type DELETE to continue', "close");
 		}
 
 		const modalDelete = document.getElementById("user-delete-modal");	
@@ -372,12 +372,12 @@ Profile created: ${data.created_at}
 		if (!deletePassInput?.classList.contains("hidden"))
 		{
 			password = deletePassInput?.value.trim();
-			if (!password || password.length < 3) return alert('Password is required');
+			if (!password || password.length < 3) return setupAlert('Whoops!', 'Password is required', "close");
 		}
 		else if (!googleDeletePassInput?.classList.contains("hidden"))
 		{
 			password = googleDeletePassInput?.value.trim();
-			if (!password || password.length < 3) return alert('Type DELETE to continue');
+			if (!password || password.length < 3) return setupAlert('Whoops!', 'Type DELETE to continue', "close");
 		}
 		try {
 			const res = await fetch(`${API_BASE_URL}/profile/delete`, {
@@ -396,12 +396,12 @@ Profile created: ${data.created_at}
 			}
 
 			// Success → maybe redirect to homepage
-			alert("Account deleted successfully!");
+			setupAlert('Boom!', "Account deleted successfully!", "close");
 			window.location.href = "/"; // redirect after deletion
 		} catch (err) { //err: unknown
-			console.error("Error deleting account:", err);
+			// console.error("Error deleting account:", err);
 			const message = err instanceof Error ? err.message : String(err);
-			alert(message || "Something went wrong");
+			setupAlert('Whoops!', message || "Something went wrong", "close");
 		}
 		});
 
@@ -440,7 +440,7 @@ Profile created: ${data.created_at}
 				document.getElementById('verify-2fa-btn')?.addEventListener('click', async () => {
 					const code = (document.getElementById('verify-2fa-code') as HTMLInputElement)?.value;
 					if (!code || code.length !== 6) {
-						alert('Please enter a valid 6-digit code');
+						setupAlert('Whoops!', 'Please enter a valid 6-digit code', "close");
 						return;
 					}
 					
@@ -498,7 +498,7 @@ Profile created: ${data.created_at}
 										}, 2000);
 									}
 								} catch (err) {
-									alert('Failed to copy codes to clipboard');
+									setupAlert('Whoops!', 'Failed to copy codes to clipboard', "close");
 								}
 							});
 
@@ -548,11 +548,11 @@ Do NOT share these codes with anyone.`;
 								update2FAStatus(true);
 							});
 						} else {
-							alert('2FA enabled successfully!');
+							setupAlert('Boom!', '2FA enabled successfully!', "close");
 							update2FAStatus(true);
 						}
 					} else {
-						alert(verifyData.error || 'Invalid code');
+						setupAlert('Whoops!', verifyData.error || 'Invalid code', "close");
 					}
 				});
 				
@@ -560,11 +560,11 @@ Do NOT share these codes with anyone.`;
 					document.getElementById('qr-modal')?.remove();
 				});
 			} else {
-				alert(data.error || '2FA setup failed');
+				setupAlert('Whoops!', data.error || '2FA setup failed', "close");
 			}
 		} catch (error) {
 			console.error('2FA setup error:', error);
-			alert('Failed to set up 2FA');
+			setupAlert('Whoops!', 'Failed to set up 2FA', "close");
 		}
 	});
 
@@ -619,14 +619,15 @@ document.getElementById('disable-2fa-btn')?.addEventListener('click', async () =
 
 		const data = await response.json();
 		if (data.success) {
-		alert('2FA disabled successfully!');
+		setupAlert('Boom!', '2FA disabled successfully!', "close");
 		update2FAStatus(false);
 		} else {
-		alert(data.error || 'Failed to disable 2FA');
+		setupAlert('Whoops!', data.error || 'Failed to disable 2FA', "close");
+		
 		}
 	} catch (error) {
 		console.error('2FA disable error:', error);
-		alert('Failed to disable 2FA');
+		setupAlert('Whoops!', 'Failed to disable 2FA', "close");
 	}
 	});
 

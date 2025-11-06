@@ -4,16 +4,16 @@ import { renderAccountTab } from "../screens/ProfileAccount";
 import { renderPerformanceTab } from "../screens/ProfilePerformance";
 import { renderHistoryTab } from "../screens/ProfileHistory";
 import { renderFriendsTab } from "../screens/ProfileFriends";
-
-import { AppStore } from '../redux/AppStore';
-import { updateLangue } from '../redux/reducers/langueReducer';
-import { replaceTemplatePlaceholders } from "./utils";
-import { API_BASE_URL } from "./config";
+import { renderFooter } from "../components/Footer.js";
+import { renderHeader } from "../components/Header.js";
 
 export function setupProfileSidebar() {
   const sidebar = document.getElementById("profile-sidebar");
   if (!sidebar)
 	return;
+
+	renderFooter();
+	renderHeader();
 
   // Configurar eventos de tabs
   sidebar.querySelectorAll(".sidebar-tab").forEach(btn => {
@@ -75,19 +75,3 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('[data-tab="account"]')?.dispatchEvent(new Event('click'));
   }, 0);
 });
-
-// interface PlayerStats {
-// name: string;
-// wins: number;
-// losses: number;
-// ratio: number;
-// time: string;
-// }
-// const davidStats: PlayerStats = {
-// name: "David",
-// wins: 10,
-// losses: 3,
-// ratio: 5.0,
-// time: "12:34"
-// };
-
