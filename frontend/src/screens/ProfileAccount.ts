@@ -1,6 +1,6 @@
 import profileAccount from "./profile-account.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "./config";
 import {  setupAlert } from "./AlertModal.js";
 
 export function renderAccountTab() {

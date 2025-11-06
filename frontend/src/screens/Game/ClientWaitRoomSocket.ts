@@ -1,6 +1,6 @@
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { WaitMessage, WaitMsgTypes, WaitPayloads } from "../../../../shared/types/messages";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "../config";
 
 type WSLike = WebSocket | undefined;
 

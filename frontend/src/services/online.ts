@@ -1,5 +1,5 @@
 // services/presence.ts
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "src/screens/config";
 import { apiService } from "./api";
 
 export type OnlineUser = { userId: number; username: string; avatar?: string };
