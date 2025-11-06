@@ -331,12 +331,12 @@ export default async function (fastify, opts) {
 				const { credential} = request.body;
 
 				// Initialize Google OAuth2 client with your client ID
-				const client = new OAuth2Client('723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com');
+				const client = new OAuth2Client(process.env.GOOGLE_AUTH_CLIENT);
 
 				// Verify the Google ID token
 				const ticket = await client.verifyIdToken({
 					idToken: credential,
-					audience: '723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com'
+					audience: process.env.GOOGLE_AUTH_CLIENT
 				});
 
 				const payload = ticket.getPayload();

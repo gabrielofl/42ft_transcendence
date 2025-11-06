@@ -1,6 +1,6 @@
 import { replaceTemplatePlaceholders } from "./utils";
 import userCardTemplate from "./user-card.html?raw";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "./config";
 import { UserData } from "@shared/types/messages";
 
 export function createUserCard(userData: UserData): string {

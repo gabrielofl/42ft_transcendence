@@ -1,7 +1,7 @@
 // join-game.ts
 import view from "./join-game.html?raw";
 import { navigateTo } from "../navigation";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "./config";
 
 type RoomSummary = {
   code: string;

@@ -22,20 +22,12 @@ const __dirname = dirname(__filename);
 
 // Main function that builds the app
 export async function buildApp(opts = {}) {
-	console.log("buildApp");
-	// Create Fastify instance (or use provided one)
-	// const app = opts.fastify || (await import('fastify')).default({
-	// 	logger: opts.logger ?? true,     // Enable logging
-	// 	trustProxy: true,                // Trust X-Forwarded headers
-	// 	https: opts.https,               // HTTPS configuration
-	// });
 	const app = opts.fastify || (await import('fastify')).default({
 	logger: opts.logger ?? true,
 	trustProxy: true,
 	https:  opts.https,
 	});
 
-	// STEP 1: Load our custom plugins (config, database)
 	await app.register(autoLoad, {
 		dir: join(__dirname, 'plugins'),    // Look in plugins/ directory
 		dirNameRoutePrefix: false,          // Don't use folder name in routes

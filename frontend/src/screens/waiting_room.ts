@@ -5,7 +5,7 @@ import { createAddPlayerCard } from "./add_player_card";
 import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
 import { PlayerLite, RoomStatePayload, UserData } from "@shared/types/messages";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "./config";
 import {  setupAlert } from "./AlertModal.js";
 import { fetchJSON } from "./utils";
 

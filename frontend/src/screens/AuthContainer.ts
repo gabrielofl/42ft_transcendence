@@ -660,7 +660,7 @@ function initializeGoogleSignIn(retryCount = 0) {
 	if (window.google && window.google.accounts?.id) {
 		try {
 			window.google.accounts.id.initialize({
-				client_id: '723996318435-bavdbrolseqgqq06val5dc1sumgam12j.apps.googleusercontent.com',
+				client_id: import.meta.env.VITE_GOOGLE_AUTH_CLIENT,
 				callback: window.handleCredentialResponse,
 				auto_select: false,
 				cancel_on_tap_outside: true,

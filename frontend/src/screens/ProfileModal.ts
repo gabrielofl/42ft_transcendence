@@ -1,5 +1,5 @@
 import profileModalHtml from "./profile-modal.html?raw";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "./config";
 import { loadUserGameStats, loadUserStats } from "./ProfilePerformance";
 import { navigateTo } from "../navigation";
 import { initAlertModal, setupAlert } from "./AlertModal.js";

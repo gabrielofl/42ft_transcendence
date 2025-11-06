@@ -35,7 +35,7 @@ const start = async () => {
 
 		// Start listening for requests
 		app.listen({
-			port: config.server.port, // 443
+			port: config.server.port,
 			host: config.server.host, // 0.0.0.0
 		}).catch((err) => {
 			// If the port is already in use, another instance is already running.

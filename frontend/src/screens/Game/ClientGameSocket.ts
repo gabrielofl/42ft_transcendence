@@ -1,19 +1,15 @@
 import * as BABYLON from "@babylonjs/core";
 import { MessageBroker } from "@shared/utils/MessageBroker";
-import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, EffectsChangedMessage, GamePauseMessage, GameStatusMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PowerUpBoxPickedMessage, PreMoveMessage, RoomStatePayload, ScoreMessage, WindChangedMessage } from "@shared/types/messages";
-import { IPowerUpBox } from "src/screens/Game/Interfaces/IPowerUpBox";
+import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, EffectsChangedMessage, GamePauseMessage, GameStatusMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PowerUpBoxPickedMessage, RoomStatePayload, ScoreMessage, WindChangedMessage } from "@shared/types/messages";
 import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
 import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
-import { APlayer } from "./Player/APlayer";
-import { SelectedMap } from "./map-selection";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
-import { navigateTo } from "src/navigation";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
+import { BASE_URL, WS_URL } from "../config";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -112,8 +108,7 @@ export class ClientGameSocket {
 				console.error('Error al parsear tournamentMatchInfo:', e);
 			}
 
-			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
-			// const ws = new WebSocket(`${"https://localhost:443".replace('https', 'wss')}/gamews`);
+			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
 			
 			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));
@@ -144,7 +139,7 @@ export class ClientGameSocket {
 
 		/** Petición a back para obtener la información del juego **/
 		// const roomState: RoomStatePayload | null = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
-		const roomState: RoomStatePayload | null = await fetchJSON(`https://localhost:4444/rooms/mine`, { credentials: "include" });
+		const roomState: RoomStatePayload | null = await fetchJSON(`${BASE_URL}/rooms/mine`, { credentials: "include" });
 		if (!roomState) {
 			throw new Error(`Failed to fetch room data or room is not available.`);
 		}
@@ -195,7 +190,7 @@ export class ClientGameSocket {
 		}
 	}
 	
-	/**			const ws = new WebSocket(`wss://localhost:4444/gamews?room=${code}&user=${userID}`);
+	/**	
 
 	 * Recibe y procesa los mensajes que llegan desde el servidor WebSocket.
 	 * Parsea el mensaje y lo delega al manejador correspondiente según su tipo.

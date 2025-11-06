@@ -1,7 +1,7 @@
 import profileMatchHistory from "./profile-match-history.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
 import { initProfileModal, setupProfileLinks } from "./ProfileModal";
-const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+import { API_BASE_URL } from "./config";
 
 // Keep track of current page and perPage
 let currentPage = 1;
