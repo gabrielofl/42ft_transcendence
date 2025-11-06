@@ -52,6 +52,7 @@ export class ClientWaitRoomSocket {
       ToggleReady: undefined,
       SetMapConfig: undefined,
       InviteAI: undefined,
+      InviteLocal: undefined,
     };
   }
 
@@ -122,6 +123,11 @@ export class ClientWaitRoomSocket {
   public InviteAI() {
     if (!this._roomCode) return;
     this.Send({ type: "InviteAI", roomCode: this._roomCode });
+  }
+
+  public InviteLocalGuest() {
+    if (!this._roomCode) return;
+    this.Send({ type: "InviteLocal", roomCode: this._roomCode });
   }
 
   public Leave() {

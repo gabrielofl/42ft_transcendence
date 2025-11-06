@@ -39,7 +39,7 @@ const config = {
 	
 	// CORS settings (Cross-Origin Resource Sharing)
 	cors: {
-		origin: 'https://localhost:8080',
+		origin: 'https://localhost:5173',
 		// origin: [
 		// 	// 'https://localhost:443',  // Production frontend served by backend
 		// 	// 'https://localhost:8080',  // Frontend dev server

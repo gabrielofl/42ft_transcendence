@@ -19,11 +19,13 @@ export async function startTournamentMatch(roomId) {
   const MAPS = await import('../game/Maps.js');
   
   const gamePlayers = players.map(p => {
-    if (p.userId < 0) { // Jugador IA
+    if (p.userId < 0 && p.userId > -1000) { // Jugador IA
+	  console.log("Creando AIPlayer");
       let player = new AIPlayer(gameSocket.game, p.username);
       player.id = p.userId;
       return player;
     } else { // Jugador real
+	  console.log("Creando ServerSocketPlayer");
       let player = new ServerSocketPlayer(gameSocket.game, p.username);
       player.id = p.userId;
       return player;

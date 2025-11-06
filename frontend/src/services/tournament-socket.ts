@@ -53,7 +53,7 @@ export class ClientTournamentSocket {
     
     // Conectar al WebSocket con tournament ID en query params
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = 'localhost:443';
+    const host = 'localhost:4444';
     const wsUrl = `${protocol}//${host}/tournamentws?tournament=${tournamentId}`;
     
     this.ws = new WebSocket(wsUrl);
