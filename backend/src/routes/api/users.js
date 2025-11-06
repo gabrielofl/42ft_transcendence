@@ -10,7 +10,7 @@ const DEFAULT_CFG = {
 
   function requireUserFromCookie(req) {
     const token = req.cookies?.accessToken;
-    if (!token) throw fastify.httpErrors.unauthorized('Unauthorized');
+    if (!token) throw fastify.httpErrors.unauthorized('Oops! Unauthorized');
     return fastify.jwt.verify(token); // { id, username }
   }
 
@@ -45,7 +45,7 @@ export default async function (fastify, opts) {
       }
     } catch (e) {
       log('warn', 'GET /room-config failed', { err: e?.message });
-      return reply.code(e?.statusCode || 401).send({ error: e?.message || 'Unauthorized' });
+      return reply.code(e?.statusCode || 401).send({ error: e?.message || 'Oops! Unauthorized' });
     }
   });
 
@@ -83,7 +83,7 @@ export default async function (fastify, opts) {
       return { ok: true };
     } catch (e) {
       // log('error', 'POST /room-config failed', { err: e?.message });
-      return reply.code(e?.statusCode || 400).send({ error: e?.message || 'Bad Request' });
+      return reply.code(e?.statusCode || 400).send({ error: e?.message || 'Oops! Bad Request' });
     }
   });
 
@@ -125,7 +125,7 @@ export default async function (fastify, opts) {
 			);
 			
 			if (!user) {
-				return reply.code(404).send({ error: 'User not found' });
+				return reply.code(404).send({ error: 'Oops! User not found' });
 			}
 			
 			let ranking = null;
@@ -152,7 +152,7 @@ export default async function (fastify, opts) {
 
 			const { username } = request.query;
 			if (!username) {
-				return reply.code(400).send({ error: 'Username is required' });
+				return reply.code(400).send({ error: 'Oops! Username is required' });
 			}
 
 			// Get user data from database
@@ -164,7 +164,7 @@ export default async function (fastify, opts) {
 			);
 
 			if (!user) {
-				return reply.code(404).send({ error: 'User not found' });
+				return reply.code(404).send({ error: 'Oops! User not found' });
 			}
 
 			return {
@@ -216,7 +216,7 @@ export default async function (fastify, opts) {
 				}
 				
 				if (updates.length === 0) {
-					return reply.code(400).send({ error: 'No fields to update' });
+					return reply.code(400).send({ error: 'Whoops! No fields to update' });
 				}
 				
 				values.push(request.user.id);  // Add user ID for WHERE clause
@@ -226,14 +226,14 @@ export default async function (fastify, opts) {
 					values
 				);
 				
-				return { success: true, message: 'Profile updated successfully' };
+				return { success: true, message: 'Success! Profile updated successfully' };
 				
 			} catch (error) {
 				if (error.code === 'SQLITE_CONSTRAINT') {
-					return reply.code(409).send({ error: 'Username or email already in use' });
+					return reply.code(409).send({ error: 'Darn! Username or email already in use' });
 				}
-				console.error('Profile update error:', error);
-				return reply.code(500).send({ error: 'Failed to update profile' });
+				console.error('Darn! Profile update error:', error);
+				return reply.code(500).send({ error: 'Darn! Failed to update profile' });
 			}
 		});
 		
@@ -255,7 +255,7 @@ export default async function (fastify, opts) {
 			);
 			
 			if (!user) {
-				return reply.code(404).send({ error: 'User not found' });
+				return reply.code(404).send({ error: 'Oops! User not found' });
 			}
 			
 			return user;
@@ -304,7 +304,7 @@ export default async function (fastify, opts) {
 				}
 				
 				if (updates.length === 0) {
-					return reply.code(400).send({ error: 'No privacy settings to update' });
+					return reply.code(400).send({ error: 'Oops! No privacy settings to update' });
 				}
 				
 				values.push(request.user.id);  // Add user ID for WHERE clause
@@ -314,11 +314,11 @@ export default async function (fastify, opts) {
 					values
 				);
 				
-				return { success: true, message: 'Privacy settings updated successfully' };
+				return { success: true, message: 'Yay! Privacy settings updated successfully' };
 				
 			} catch (error) {
-				console.error('Privacy settings update error:', error);
-				return reply.code(500).send({ error: 'Failed to update privacy settings' });
+				console.error('Oops! Privacy settings update error:', error);
+				return reply.code(500).send({ error: 'Oops! Failed to update privacy settings' });
 			}
 		});
 
@@ -333,7 +333,7 @@ export default async function (fastify, opts) {
 				);
 				
 				if (!user) {
-					return reply.code(404).send({ error: 'User not found' });
+					return reply.code(404).send({ error: 'Oops! User not found' });
 				}
 				
 				return {
@@ -344,8 +344,8 @@ export default async function (fastify, opts) {
 				};
 				
 			} catch (error) {
-				console.error('Privacy settings fetch error:', error);
-				return reply.code(500).send({ error: 'Failed to fetch privacy settings' });
+				console.error('Oops! Privacy settings fetch error:', error);
+				return reply.code(500).send({ error: 'Oops! Failed to fetch privacy settings' });
 			}
 		});
 
@@ -367,7 +367,7 @@ export default async function (fastify, opts) {
 				);
 
 				if (!user) {
-					return reply.code(404).send({ error: 'User not found' });
+					return reply.code(404).send({ error: 'Oops! User not found' });
 				}
 
 				const exportPayload = {
@@ -402,8 +402,8 @@ export default async function (fastify, opts) {
 				reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
 				return reply.send(JSON.stringify(exportPayload, null, 2));
 			} catch (error) {
-				fastify.log.error(error, 'Export user data failed');
-				return reply.code(500).send({ error: 'Failed to export user data' });
+				fastify.log.error(error, 'Oops! Export user data failed');
+				return reply.code(500).send({ error: 'Oops! Failed to export user data' });
 			}
 		});
 
@@ -431,7 +431,7 @@ export default async function (fastify, opts) {
 				);
 				
 				if (!currentUser) {
-					return reply.code(404).send({ error: 'User not found' });
+					return reply.code(404).send({ error: 'Oops! User not found' });
 				}
 				
 				// Import bcrypt for password comparison
@@ -440,11 +440,11 @@ export default async function (fastify, opts) {
 				// Verify current password using bcrypt
 				const isPasswordValid = await bcrypt.compare(password, currentUser.password);
 				if (!isPasswordValid) {
-					return reply.code(400).send({ error: 'Current password is incorrect' });
+					return reply.code(400).send({ error: 'Oh no! Current password is incorrect' });
 				}
 				
 				if (password === newPassword) {
-					return reply.code(400).send({ error: 'New password must be different from current password' });
+					return reply.code(400).send({ error: 'Oh no! New password must be different from current password' });
 				}
 				
 				// Hash the new password
@@ -459,11 +459,11 @@ export default async function (fastify, opts) {
 					[hashedNewPassword, request.user.id]
 				);
 				
-				return { success: true, message: 'Password updated successfully' };
+				return { success: true, message: 'Boom! Password updated successfully' };
 				
 			} catch (error) {
-				console.error('Password update error:', error);
-				return reply.code(500).send({ error: 'Failed to update password' });
+				console.error('Oh no! Password update error:', error);
+				return reply.code(500).send({ error: 'Oh no! Failed to update password' });
 			}
 		});
 
@@ -517,8 +517,8 @@ export default async function (fastify, opts) {
 				};
 				
 			} catch (error) {
-				console.error('Leaderboard fetch error:', error);
-				return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
+				console.error('Oh no! Leaderboard fetch error:', error);
+				return reply.code(500).send({ error: 'Oh no! Failed to fetch leaderboard' });
 			}
 		});
 

@@ -15,7 +15,7 @@ import { APongTable } from "./Abstract/APongTable";
 import { AllReadyMessage } from "../waiting_room"
 import { LocalPlayer } from "./Player/LocalPlayer";
 import { ClientSocketPlayer } from "./Player/ClientSocketPlayer";
-import { API_BASE_URL } from "../config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 import { MessagePayloads } from "@shared/types/messages";
 
 export class ClientGame implements IDisposable {

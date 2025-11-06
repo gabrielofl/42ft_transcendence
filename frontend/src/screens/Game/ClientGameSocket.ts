@@ -7,7 +7,7 @@ import { ClientBall } from "../Collidable/ClientBall";
 import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
 import { APlayer } from "./Player/APlayer";
 import { SelectedMap } from "./map-selection";
-import { API_BASE_URL } from "../config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
 import { fetchJSON } from "../utils";
 import { Maps } from "./Maps";
 import { navigateTo } from "src/navigation";

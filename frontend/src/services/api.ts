@@ -1,4 +1,5 @@
-import { API_BASE_URL } from "../screens/config";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL_API;
+
 
 // Types for API requests and responses
 export interface LoginRequest {
