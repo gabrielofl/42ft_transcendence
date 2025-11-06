@@ -8,7 +8,6 @@ import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
 import { ScoreMessage } from "@shared/types/messages";
 
-const API_BASE_URL = 'https://localhost:4444';
 var unsubscribeFromGameLeave: () => void;
 
 interface GameViewModel {

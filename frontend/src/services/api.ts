@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "src/screens/config";
+import { API_BASE_URL } from "../screens/config";
 
 
 // Types for API requests and responses

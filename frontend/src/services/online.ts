@@ -1,5 +1,5 @@
 // services/presence.ts
-import { API_BASE_URL } from "src/screens/config";
+import { API_BASE_URL } from "../screens/config";
 import { apiService } from "./api";
 
 export type OnlineUser = { userId: number; username: string; avatar?: string };
