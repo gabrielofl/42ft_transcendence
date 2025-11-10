@@ -4,6 +4,7 @@ import { ClientGame } from "./ClientGame";
 import { PowerUpType } from '@shared/types/messages';
 import { navigateTo } from "../../navigation";
 import { API_BASE_URL } from "../config";
+import { clearTournamentMatchInfo } from "../../services/tournament-state";
 
 let game: ClientGame;
 const ALL_POWERUPS: PowerUpType[] = ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"];
@@ -110,7 +111,7 @@ function setupTournamentSelectionControls(): void {
     const mapDef = TournamentMaps[chosenMapKey as keyof typeof TournamentMaps] ?? TournamentMaps.ObstacleMap;
     
     // 2) Limpiar estado de torneos anteriores
-    sessionStorage.removeItem('tournamentMatchInfo');
+    clearTournamentMatchInfo();
     sessionStorage.removeItem('pendingCountdown');
     
     // 3) ensure session
@@ -152,7 +153,7 @@ function setupTournamentSelectionControls(): void {
     try {
       sessionStorage.setItem("currentTournamentId", String(tournamentId));
       // Limpiar información de torneos anteriores
-      sessionStorage.removeItem('tournamentMatchInfo');
+      clearTournamentMatchInfo();
     } catch (e) {
       console.error('Failed to store in sessionStorage:', e);
     }

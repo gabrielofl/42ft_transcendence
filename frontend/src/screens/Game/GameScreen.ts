@@ -7,6 +7,7 @@ import { ClientGame } from "./ClientGame";
 import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
 import { ScoreMessage } from "@shared/types/messages";
+import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, validateStoredTournamentMatch } from "../../services/tournament-state";
 
 var unsubscribeFromGameLeave: () => void;
 
@@ -32,11 +33,26 @@ export async function renderGame() {
 	main.innerHTML = gameTemplate;
 
 	// Verificar si es un torneo
-	const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
-	if (tournamentMatchInfo) {
-		await setupTournamentGame(JSON.parse(tournamentMatchInfo));
-	} else {
-		setupNormalGameEvents();
+	const { status, matchInfo } = await validateStoredTournamentMatch();
+
+	if ((status === "active" || status === "unknown") && matchInfo) {
+		if (status === "unknown") {
+			console.warn("No se pudo verificar el estado del torneo. Continuando con la información local.");
+		}
+		await setupTournamentGame(matchInfo);
+		return;
+	}
+
+	if (status === "inactive") {
+		clearTournamentMatchInfo();
+	}
+
+	setupNormalGameEvents();
+	try {
+		await ClientGameSocket.GetInstance().StartGame();
+	} catch (error) {
+		console.error("❌ Error iniciando juego normal:", error);
+		alert("No se pudo iniciar la partida. Inténtalo de nuevo.");
 	}
 }
 
@@ -135,10 +151,9 @@ function setupTournamentListeners(game: ClientGame): void {
 
 	// Listener para GameEnded (torneos)
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
-		const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
-		
-		if (tournamentMatchInfo) {
-			const matchInfo = JSON.parse(tournamentMatchInfo);
+		const matchInfo = getStoredTournamentMatchInfo();
+
+		if (matchInfo) {
 			const isFinal = matchInfo.round === 'Finals';
 			
 			if (isFinal) {
