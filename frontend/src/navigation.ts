@@ -17,6 +17,8 @@ import { renderTournamentSelection } from "./screens/Game/tournament-selection.j
 import { renderTournamentLobby } from "./screens/tournament-lobby.js";
 import { renderWaitingRoom as renderTournamentWaitingRoom } from "./screens/tournament_waiting_room.js";
 import { ClientTournamentSocket } from "./services/tournament-socket";
+import { cleanupWaitingRoom } from "./screens/waiting_room.js";
+import { cleanupMapSelection } from "./screens/Game/map-selection.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -61,8 +63,12 @@ export function initNavigation() {
   });
 
   onScreenLeave("waiting", () => {
-    console.log("Saliendo de waiting room normal");
+	cleanupWaitingRoom();
     sessionStorage.removeItem('tournamentMatchInfo');
+  });
+	
+  onScreenLeave("create", () => {
+	cleanupMapSelection();
   });
 
   onScreenLeave("tournament-waiting", () => {

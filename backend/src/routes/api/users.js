@@ -44,7 +44,7 @@ export default async function (fastify, opts) {
         return DEFAULT_CFG;
       }
     } catch (e) {
-      log('warn', 'GET /room-config failed', { err: e?.message });
+    //   log('warn', 'GET /room-config failed', { err: e?.message });
       return reply.code(e?.statusCode || 401).send({ error: e?.message || 'Oops! Unauthorized' });
     }
   });
