@@ -5,6 +5,7 @@ import { navigateTo } from "../navigation";
 import { PlayerLite, UserData } from "../../../shared/types/messages";
 import { API_BASE_URL } from "./config";
 import { ClientTournamentSocket } from "../services/tournament-socket";
+import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, setTournamentMatchInfo, validateStoredTournamentMatch } from "../services/tournament-state";
 import { BracketViewer } from "./Game/BracketViewer";
 import { showResultOverlay } from "./match-result-view";
 
@@ -54,25 +55,43 @@ function setTournamentName(name: string) {
 }
 
 function updateReadyButton() {
-  if (readyButtonRef) {
-    // Verificar si el torneo está en progreso
-    const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
-    const isTournamentInProgress = tournamentMatchInfo !== null;
-    
-    if (isTournamentInProgress) {
-      // Deshabilitar el botón cuando el torneo está en progreso
-      readyButtonRef.disabled = true;
-      readyButtonRef.textContent = "TOURNAMENT IN PROGRESS";
-      readyButtonRef.style.opacity = "0.5";
-      readyButtonRef.style.cursor = "not-allowed";
-    } else {
-      // Habilitar el botón cuando el torneo está en waiting
-      readyButtonRef.disabled = false;
-      readyButtonRef.textContent = myReadyState ? "NOT READY" : "READY";
-      readyButtonRef.style.opacity = "1";
-      readyButtonRef.style.cursor = "pointer";
-    }
+  if (!readyButtonRef) return;
+
+  const setInProgressState = () => {
+    readyButtonRef.disabled = true;
+    readyButtonRef.textContent = "TOURNAMENT IN PROGRESS";
+    readyButtonRef.style.opacity = "0.5";
+    readyButtonRef.style.cursor = "not-allowed";
+  };
+
+  const setReadyState = () => {
+    readyButtonRef.disabled = false;
+    readyButtonRef.textContent = myReadyState ? "NOT READY" : "READY";
+    readyButtonRef.style.opacity = "1";
+    readyButtonRef.style.cursor = "pointer";
+  };
+
+  const localMatchInfo = getStoredTournamentMatchInfo();
+
+  if (!localMatchInfo) {
+    setReadyState();
+    return;
   }
+
+  setInProgressState();
+
+  validateStoredTournamentMatch()
+    .then(({ status, matchInfo }) => {
+      const shouldDisable = status === "active" || (status === "unknown" && !!matchInfo);
+      if (shouldDisable) {
+        setInProgressState();
+      } else {
+        setReadyState();
+      }
+    })
+    .catch(() => {
+      setInProgressState();
+    });
 }
 
 function getTournamentIdFromURL(): number | null {
@@ -108,42 +127,31 @@ function replaceTournamentIdInURL(id: number | null) {
 
 // Guardar info del match en sessionStorage
 async function saveMatchInfo(tournamentId: number, match: any, roundName: string) {
+  const matchInfo = {
+    tournamentId,
+    matchId: match.matchId,
+    roomId: match.roomId,
+    userId,
+    username,
+    opponent: match.player1.userId === userId ? match.player2 : match.player1,
+    player1: match.player1,
+    player2: match.player2,
+    round: roundName,
+    mapKey: "ObstacleMap",
+    isTournament: true,
+  };
+
   try {
     const tournamentConfig = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
-      credentials: 'include'
+      credentials: "include",
     });
     const config = await tournamentConfig.json();
-    
-    sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
-      tournamentId,
-      matchId: match.matchId,
-      roomId: match.roomId,
-      userId: userId,
-      username: username,
-      opponent: match.player1.userId === userId ? match.player2 : match.player1,
-      player1: match.player1,
-      player2: match.player2,
-      round: roundName,
-      mapKey: config.map_key || 'ObstacleMap',
-      isTournament: true
-    }));
+    matchInfo.mapKey = config.map_key || "ObstacleMap";
   } catch (error) {
-    console.error('Error obteniendo configuración del torneo:', error);
-    // Fallback con configuración por defecto
-    sessionStorage.setItem('tournamentMatchInfo', JSON.stringify({
-      tournamentId,
-      matchId: match.matchId,
-      roomId: match.roomId,
-      userId: userId,
-      username: username,
-      opponent: match.player1.userId === userId ? match.player2 : match.player1,
-      player1: match.player1,
-      player2: match.player2,
-      round: roundName,
-      mapKey: 'ObstacleMap',
-      isTournament: true
-    }));
+    console.error("Error obteniendo configuración del torneo:", error);
   }
+
+  setTournamentMatchInfo(matchInfo);
 }
 
 function showBracket() {
@@ -209,7 +217,7 @@ function initializeBracketViewer() {
 
 function cleanupTournamentState() {
   // Limpiar estado del torneo actual
-  sessionStorage.removeItem('tournamentMatchInfo');
+  clearTournamentMatchInfo();
   sessionStorage.removeItem('pendingCountdown');
   
   // Limpiar variables globales
@@ -548,39 +556,38 @@ export async function renderWaitingRoom(): Promise<void> {
   const loadingNode = document.getElementById("wait-loading-banner");
   if (loadingNode) loadingNode.remove();
   
-  // Mostrar bracket si hay información de match en sessionStorage
-  const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
-  if (tournamentMatchInfo) {
+  // Mostrar bracket si hay información de match válida en storage
+  const { status: storedMatchStatus, matchInfo: activeMatchInfo } = await validateStoredTournamentMatch();
+  if (activeMatchInfo) {
     showBracket();
-    
+
     // Verificar si hay un countdown pendiente de iniciar
     const hasPendingCountdown = sessionStorage.getItem('pendingCountdown');
     if (hasPendingCountdown === 'true') {
       sessionStorage.removeItem('pendingCountdown');
-      const matchInfo = JSON.parse(tournamentMatchInfo);
-      
+
       setTimeout(() => {
         startCountdown(10, async () => {
           navigateTo('game');
           await new Promise(resolve => setTimeout(resolve, 1000));
           const tournamentSocket = ClientTournamentSocket.GetInstance();
-          tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: matchInfo.roomId });
+          tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: activeMatchInfo.roomId });
         });
       }, 100);
     }
-    
+
     // Obtener el bracket actualizado del backend para mostrar el estado actual
     try {
       const response = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
         credentials: 'include'
       });
       const tournamentData = await response.json();
-      
+
       if (tournamentData.bracket) {
         const bracket = typeof tournamentData.bracket === 'string' 
           ? JSON.parse(tournamentData.bracket) 
           : tournamentData.bracket;
-        const allRounds = bracket.rounds.map((round: any, index: number) => ({
+        const allRounds = bracket.rounds.map((round: any) => ({
           name: round.name,
           matches: round.matches.map((match: any) => ({
             matchId: match.matchId,
@@ -597,7 +604,7 @@ export async function renderWaitingRoom(): Promise<void> {
           tournamentId: tournamentId,
           currentRound: bracket.currentRound || 0,
           rounds: allRounds,
-          status: bracket.status || 'in_progress'
+          status: bracket.status || (storedMatchStatus === 'active' ? 'in_progress' : 'pending')
         });
       }
     } catch (error) {
