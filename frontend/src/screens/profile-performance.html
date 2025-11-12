@@ -30,16 +30,18 @@
 			
 	</div>
 	<!-- User Info Edit -->
-	<div class="box-border p-4  shadow-lg grid gap-3" id="profile-edit-form">
-			<div  class="w-1/2 ">
-				<h3 class="block txt-body-base">Match Accuracy</h3>
-				<canvas id="accuracy_chart" ></canvas>
-			</div>
-			<div  class="w-1/2 ">
-				<h3 class="block txt-body-base">Match Accuracy</h3>
-				<canvas id="score_chart" ></canvas>
-			</div>
-	</div>
+	<div class="box-border p-4 shadow-lg grid gap-6 md:grid-cols-3" id="profile-edit-form">
+  <div class="w-full">
+    <h3 class="block txt-body-base mb-2">Match Accuracy</h3>
+    <canvas id="accuracy_chart"></canvas>
+  </div>
+
+  <div class="w-full md:col-span-2">
+    <h3 class="block txt-body-base mb-2 ">Score Progression</h3>
+    <canvas id="score_chart"></canvas>
+  </div>
+</div>
+
 
 	
 	</div>

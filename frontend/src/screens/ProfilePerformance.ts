@@ -45,80 +45,63 @@ export async function setupPerformanceTab() {
 			}
 		}
 
-		// CHART LINES
-		const container = document.getElementById('accuracy_chart');
-		if (!container) {
-			console.error("Chart container not found!");
-			return;
-		}
-		
-		(async function() {
-			const data = {
-			labels: [
-				'Red',
-				'Blue',
-				'Yellow'
-			],
-			datasets: [{
-				label: 'My First Dataset',
-				data: [300, 50, 100],
-				backgroundColor: [
-				'rgb(255, 99, 132)',
-				'rgb(54, 162, 235)',
-				'rgb(255, 205, 86)'
-				],
-				hoverOffset: 4
-			}]
-			};
+	// Keep a reference to the chart globally (or in module scope)
+let doughnutChart: Chart | null = null;
+let lineChart: Chart | null = null;
 
-			new Chart(
-				container,
-				{
-				type: 'doughnut',
-				data: {
-					labels: data.labels,
-					datasets: [
-					{
-						label: 'Acquisitions by year',
-						data: data.datasets
-					}
-					]
-				}
-				}
-			);
-		})();
-		
-		// CHART LINE
-		const linechart = document.getElementById('score_chart') as HTMLCanvasElement;
-		if (!linechart) {
-			console.error("Chart score_chart not found!");
-			return;
-		}
-		const chartData = await fetch(`${API_BASE_URL}/profile/games/progression`, {
-			credentials: 'include',
-		}).then(r => r.json());
-		
-		console.log(chartData);
-		
-		new Chart(linechart, {
-		type: 'line',
-		data: {
-			datasets: [{
-			label: 'Score Progression',
-			data: chartData.progression,
-			fill: false,
-			borderColor: '#4ade80',
-			tension: 0.3
-			}]
-		},
-		options: {
-			scales: {
-			x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: 'Match Date' } },
-			y: { min: 0, max: chartData.maxScore, title: { display: true, text: 'Score' } }
-			}
-		}
-		});
+// Doughnut chart
+const container = document.getElementById('accuracy_chart') as HTMLCanvasElement;
+if (container) {
+  if (doughnutChart) doughnutChart.destroy();  // destroy previous chart if exists
 
+  doughnutChart = new Chart(container, {
+    type: 'doughnut',
+    data: {
+      labels: ['Red', 'Blue', 'Yellow'],
+      datasets: [{
+        label: 'Acquisitions by year',
+        data: [300, 50, 100],
+        backgroundColor: ['rgb(255, 99, 132)','rgb(54, 162, 235)','rgb(255, 205, 86)'],
+        hoverOffset: 4
+      }]
+    }
+  });
+}
+
+// Line chart
+const linechart = document.getElementById('score_chart') as HTMLCanvasElement;
+if (linechart) {
+  if (lineChart) lineChart.destroy();  // destroy previous chart if exists
+
+  const chartData = await fetch(`${API_BASE_URL}/profile/games/progression`, { credentials: 'include' }).then(r => r.json());
+
+  lineChart = new Chart(linechart, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Score Progression',
+        data: chartData.progression,
+        fill: false,
+        borderColor: '#4ade80',
+        tension: 0.3
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'day' },
+          title: { display: true, text: 'Match Date' }
+        },
+        y: {
+          min: 0,
+          max: chartData.maxScore,
+          title: { display: true, text: 'Score' }
+        }
+      }
+    }
+  });
+}
 
 
 
