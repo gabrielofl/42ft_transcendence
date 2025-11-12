@@ -279,7 +279,60 @@ export default async function (fastify, opts) {
 		};
 		});
 
-		
+		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
+		// Statistics for charts endpoint 
+		fastify.get('/games/progression', {
+		preHandler: authenticate,
+		schema: {
+			params: {
+			type: 'object',
+			
+			}
+		}
+		}, async (request, reply) => {
+		const id = request.user?.id;
+
+		// Fetch user score (to set max Y-axis)
+		const user = await fastify.db.get(
+			'SELECT score FROM users WHERE id = ?',
+			[id]
+		);
+
+		if (!user) {
+			return reply.status(404).send({ error: 'User not found' });
+		}
+
+		const maxScore = user.score;
+
+		// Fetch all finished matches for this user, ordered by finished_at
+		const matches = await fastify.db.all(
+			`SELECT id, player1_id, player2_id, winner_id, finished_at
+			FROM games
+			WHERE (player1_id = ? OR player2_id = ?) AND finished_at IS NOT NULL
+			ORDER BY finished_at ASC`,
+			[id, id]
+		);
+
+		if (!matches.length) {
+			return { maxScore, progression: [] };
+		}
+
+		// Generate progression points
+		let accumulatedScore = 0;
+		const progression = matches.map(match => {
+			const won = match.winner_id === id;
+			const points = won ? 150 : 50;
+			accumulatedScore += points;
+			return {
+			x: match.finished_at,
+			y: accumulatedScore
+			};
+		});
+
+		return { maxScore, progression };
+		});
+
+
 
 		// <<<<<<<<<<<<<<                   >>>>>>>>>>>>>>>>
 		// Delete account endpoint - POST /api/profile/delete

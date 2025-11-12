@@ -130,7 +130,8 @@ async function renderScreen(screen: Screen) {
 		renderAuthContainer();
 		break;
 	case "home":
-      renderHome();
+      renderProfile();
+    //   renderHome();
       break;
     case "game":
       await renderGame();

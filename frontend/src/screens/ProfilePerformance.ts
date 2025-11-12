@@ -1,6 +1,10 @@
 import profilePerformance from "./profile-performance.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
 import { API_BASE_URL } from "./config";
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
+
+
 
 
 export function renderPerformanceTab() {
@@ -40,6 +44,89 @@ export async function setupPerformanceTab() {
 				scoreTitle.textContent = `${data.score} Pts | 🔒 Ranking Private`;
 			}
 		}
+
+		// CHART LINES
+		const container = document.getElementById('accuracy_chart');
+		if (!container) {
+			console.error("Chart container not found!");
+			return;
+		}
+		
+		(async function() {
+			const data = {
+			labels: [
+				'Red',
+				'Blue',
+				'Yellow'
+			],
+			datasets: [{
+				label: 'My First Dataset',
+				data: [300, 50, 100],
+				backgroundColor: [
+				'rgb(255, 99, 132)',
+				'rgb(54, 162, 235)',
+				'rgb(255, 205, 86)'
+				],
+				hoverOffset: 4
+			}]
+			};
+
+			new Chart(
+				container,
+				{
+				type: 'doughnut',
+				data: {
+					labels: data.labels,
+					datasets: [
+					{
+						label: 'Acquisitions by year',
+						data: data.datasets
+					}
+					]
+				}
+				}
+			);
+		})();
+		
+		// CHART LINE
+		const linechart = document.getElementById('score_chart') as HTMLCanvasElement;
+		if (!linechart) {
+			console.error("Chart score_chart not found!");
+			return;
+		}
+		const chartData = await fetch(`${API_BASE_URL}/profile/games/progression`, {
+			credentials: 'include',
+		}).then(r => r.json());
+		
+		console.log(chartData);
+		
+		new Chart(linechart, {
+		type: 'line',
+		data: {
+			datasets: [{
+			label: 'Score Progression',
+			data: chartData.progression,
+			fill: false,
+			borderColor: '#4ade80',
+			tension: 0.3
+			}]
+		},
+		options: {
+			scales: {
+			x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: 'Match Date' } },
+			y: { min: 0, max: chartData.maxScore, title: { display: true, text: 'Score' } }
+			}
+		}
+		});
+
+
+
+
+
+
+
+
+
 		
 	} catch (err) {
 		console.error('Error loading stats:', err);
