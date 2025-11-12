@@ -94,6 +94,7 @@ async function databasePlugin(fastify, opts) {
 			wind_amount INTEGER DEFAULT 50,                   -- Wind strength
 			point_to_win_amount INTEGER DEFAULT 5,           -- Points to win match
 			match_time_limit INTEGER DEFAULT 180,             -- Match time limit in seconds
+			onchain_final_bracket_txhash TEXT,
 			created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
 			started_at  DATETIME,
 			finished_at DATETIME,
@@ -115,6 +116,15 @@ async function databasePlugin(fastify, opts) {
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_tournament_players_tournament ON tournament_players(tournament_id);
+
+		CREATE TABLE IF NOT EXISTS tournament_onchain_matches (
+			tournament_id INTEGER NOT NULL,
+			match_id      INTEGER NOT NULL,
+			chain_index   INTEGER,
+			txhash        TEXT,
+			created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (tournament_id, match_id)
+		);
 
 		CREATE TABLE IF NOT EXISTS refresh_tokens (
 			id         INTEGER  PRIMARY KEY AUTOINCREMENT,
@@ -147,15 +157,10 @@ async function databasePlugin(fastify, opts) {
 			player1_id    INTEGER,								-- References users.id
 			player2_id    INTEGER,								-- References users.id
 			status        TEXT     DEFAULT 'pending',			-- pending/accepted/
-			FOREIGN KEY (
-				player1_id
-			)
-			REFERENCES users (id) ON DELETE SET NULL,			-- Link to users table
-			FOREIGN KEY (
-				player2_id
-			)
-			REFERENCES users (id) ON DELETE SET NULL
-
+			requester_id  INTEGER,								-- References users.id
+			FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE
 		);
 
 		CREATE TABLE IF NOT EXISTS rooms (
