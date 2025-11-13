@@ -1,6 +1,7 @@
 import view from "./tournament-lobby.html?raw";
 import { navigateTo } from "../navigation";
 import { API_BASE_URL } from "./config";
+import { clearTournamentMatchInfo } from "../services/tournament-state";
 
 export async function renderTournamentLobby(): Promise<void> {
   const main = document.getElementById('main');
@@ -15,7 +16,7 @@ export async function renderTournamentLobby(): Promise<void> {
   
   // Limpiar sessionStorage de torneos viejos al entrar al lobby
   sessionStorage.removeItem('currentTournamentId');
-  sessionStorage.removeItem('tournamentMatchInfo');
+  clearTournamentMatchInfo();
   sessionStorage.removeItem('pendingCountdown');
   
   // Limpiar completamente el socket del torneo
@@ -124,7 +125,7 @@ function renderWaitingTournaments(tournaments: any[]) {
       try {
         sessionStorage.setItem("currentTournamentId", String(id));
         // Limpiar información de torneos anteriores
-        sessionStorage.removeItem('tournamentMatchInfo');
+        clearTournamentMatchInfo();
       } catch (e) {
         console.error('Failed to save to sessionStorage:', e);
       }

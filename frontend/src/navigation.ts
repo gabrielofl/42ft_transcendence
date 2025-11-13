@@ -2,7 +2,6 @@ import { renderFooter } from "./components/Footer.js";
 import { renderAuthContainer } from "./screens/AuthContainer.js";
 import { renderHome } from "./screens/Home.js";
 import { initAlertModal, setupAlert } from "./screens/AlertModal.js";
-// import { renderTournament } from "./screens/Tournament.js";
 import { renderProfile } from "./screens/Profile.js";
 import { renderLeaderboard } from "./screens/Leaderboard.js";
 import { renderGame } from "./screens/Game/GameScreen.js";
@@ -17,6 +16,7 @@ import { renderTournamentSelection } from "./screens/Game/tournament-selection.j
 import { renderTournamentLobby } from "./screens/tournament-lobby.js";
 import { renderWaitingRoom as renderTournamentWaitingRoom } from "./screens/tournament_waiting_room.js";
 import { ClientTournamentSocket } from "./services/tournament-socket";
+import { clearTournamentMatchInfo, validateStoredTournamentMatch } from "./services/tournament-state";
 import { cleanupWaitingRoom } from "./screens/waiting_room.js";
 import { cleanupMapSelection } from "./screens/Game/map-selection.js";
 
@@ -54,15 +54,25 @@ export function initNavigation() {
     console.log("Saliendo de game");
     ClientGameSocket.GetInstance()?.DisposeGame();
     
-    // Si volvemos de un match de torneo, reconectar al tournament socket
-    const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
-    if (tournamentMatchInfo) {
-      // El socket ya debería estar conectado, no hacer nada
-      console.log("🏆 Volviendo de match de torneo, manteniendo conexión");
-    }
+    void (async () => {
+      const { status } = await validateStoredTournamentMatch();
+
+      if (status === "active") {
+        console.log("🏆 Volviendo de match de torneo, manteniendo conexión");
+        return;
+      }
+
+      if (status === "inactive") {
+        console.log("🏁 Torneo finalizado o ya no activo, desconectando socket de torneo");
+        ClientTournamentSocket.GetInstance()?.Disconnect();
+        clearTournamentMatchInfo();
+      }
+    })();
   });
 
   onScreenLeave("waiting", () => {
+    console.log("Saliendo de waiting room normal");
+    clearTournamentMatchInfo();
 	cleanupWaitingRoom();
     sessionStorage.removeItem('tournamentMatchInfo');
   });
@@ -131,17 +141,7 @@ async function renderScreen(screen: Screen) {
       renderHome();
       break;
     case "game":
-      renderGame().then(() => {
-        // Verificar si es un torneo DESPUÉS de renderizar
-        const tournamentMatchInfo = sessionStorage.getItem('tournamentMatchInfo');
-        
-        if (!tournamentMatchInfo) {
-          // Sala normal: limpiar sessionStorage y llamar StartGame
-          sessionStorage.removeItem('tournamentMatchInfo');
-          ClientGameSocket.GetInstance().StartGame();
-        }
-        // Para torneos: GameScreen.ts ya maneja todo internamente
-      });
+      await renderGame();
       break;
     case "create":
       renderMapSelection();

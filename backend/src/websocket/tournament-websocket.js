@@ -585,9 +585,16 @@ async function tournamentWebsocket(fastify) {
       
       if (advanceResult?.tournamentFinished) {
         // Torneo terminado
+        const winnerId = (advanceResult.winner?.userId ?? null);
+        const persistedWinnerId = typeof winnerId === 'number' && winnerId > 0 ? winnerId : null;
+
         await fastify.db.run(
-          `UPDATE tournaments SET status = 'finished', finished_at = datetime('now') WHERE id = ?`,
-          [tournamentId]
+          `UPDATE tournaments 
+             SET status = 'finished', 
+                 finished_at = datetime('now'),
+                 winner_id = ?
+           WHERE id = ?`,
+          [persistedWinnerId, tournamentId]
         );
 		  
 	  try {

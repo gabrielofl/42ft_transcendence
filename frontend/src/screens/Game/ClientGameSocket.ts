@@ -10,6 +10,7 @@ import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
 import { BASE_URL, WS_URL } from "../config";
+import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -98,14 +99,9 @@ export class ClientGameSocket {
 			const userID = (await getCurrentUser()).id;
 
 			// Solo usar tournamentMatchInfo si el code ya tiene formato de torneo
-			try {
-				const tournamentInfo = sessionStorage.getItem('tournamentMatchInfo');
-				if (tournamentInfo && code.startsWith('tournament-')) {
-					const info = JSON.parse(tournamentInfo);
-					code = info.roomId;
-				}
-			} catch (e) {
-				console.error('Error al parsear tournamentMatchInfo:', e);
+			const tournamentInfo = getStoredTournamentMatchInfo();
+			if (tournamentInfo && code.startsWith('tournament-')) {
+				code = tournamentInfo.roomId;
 			}
 
 			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
