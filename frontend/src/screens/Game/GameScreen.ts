@@ -6,7 +6,7 @@ import { onScreenLeave, navigateTo } from "../../navigation";
 import { ClientGame } from "./ClientGame";
 import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
-import { ScoreMessage } from "@shared/types/messages";
+import { MatchSuddenDeathMessage, MatchTimerTickMessage, ScoreMessage } from "@shared/types/messages";
 import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, validateStoredTournamentMatch } from "../../services/tournament-state";
 
 var unsubscribeFromGameLeave: () => void;
@@ -21,6 +21,92 @@ interface GameViewModel {
 
 export const GameViewModel = new ReactiveViewModel<GameViewModel>();
 const binder = new DOMBinder(GameViewModel);
+
+let tournamentHudContainer: HTMLElement | null = null;
+let tournamentTimerDisplay: HTMLElement | null = null;
+let tournamentSuddenDeathBanner: HTMLElement | null = null;
+
+function formatTournamentTimer(seconds: number): string {
+	const total = Math.max(0, Math.floor(seconds));
+	const minutes = Math.floor(total / 60);
+	const remainingSeconds = total % 60;
+	return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+const handleTournamentTimerTick = (msg: MatchTimerTickMessage) => {
+	if (!tournamentTimerDisplay) {
+		return;
+	}
+
+	tournamentTimerDisplay.textContent = formatTournamentTimer(msg.remainingSeconds);
+
+	if (tournamentSuddenDeathBanner) {
+		if (msg.suddenDeath) {
+			tournamentSuddenDeathBanner.classList.remove("hidden");
+		} else {
+			tournamentSuddenDeathBanner.classList.add("hidden");
+		}
+	}
+};
+
+const handleTournamentSuddenDeath = (_msg: MatchSuddenDeathMessage) => {
+	if (tournamentSuddenDeathBanner) {
+		tournamentSuddenDeathBanner.classList.remove("hidden");
+	}
+
+	if (tournamentTimerDisplay) {
+		tournamentTimerDisplay.textContent = "00:00";
+	}
+};
+
+function prepareTournamentHUD(): void {
+	tournamentHudContainer = document.getElementById("tournament-hud");
+	if (!tournamentHudContainer) {
+		return;
+	}
+
+	tournamentHudContainer.classList.remove("hidden");
+	tournamentHudContainer.innerHTML = `
+		<div class="text-xs uppercase tracking-wide text-gray-300">Time Remaining</div>
+		<div id="tournament-timer-display" class="text-3xl font-extrabold text-white">--:--</div>
+		<div id="tournament-sudden-death" class="hidden text-sm font-bold text-red-400 uppercase tracking-wide">Sudden Death</div>
+	`;
+
+	tournamentTimerDisplay = document.getElementById("tournament-timer-display");
+	tournamentSuddenDeathBanner = document.getElementById("tournament-sudden-death");
+	if (tournamentTimerDisplay) {
+		tournamentTimerDisplay.textContent = "--:--";
+	}
+	if (tournamentSuddenDeathBanner) {
+		tournamentSuddenDeathBanner.classList.add("hidden");
+	}
+}
+
+function hideTournamentHUD(): void {
+	tournamentHudContainer = document.getElementById("tournament-hud");
+	if (!tournamentHudContainer) {
+		return;
+	}
+
+	tournamentHudContainer.classList.add("hidden");
+	tournamentHudContainer.innerHTML = "";
+	tournamentTimerDisplay = null;
+	tournamentSuddenDeathBanner = null;
+}
+
+function attachTournamentEventHandlers(): void {
+	const socket = ClientGameSocket.GetInstance();
+	socket.UIBroker.Unsubscribe("MatchTimerTick", handleTournamentTimerTick);
+	socket.UIBroker.Unsubscribe("MatchSuddenDeath", handleTournamentSuddenDeath);
+	socket.UIBroker.Subscribe("MatchTimerTick", handleTournamentTimerTick);
+	socket.UIBroker.Subscribe("MatchSuddenDeath", handleTournamentSuddenDeath);
+}
+
+function detachTournamentEventHandlers(): void {
+	const socket = ClientGameSocket.GetInstance();
+	socket.UIBroker.Unsubscribe("MatchTimerTick", handleTournamentTimerTick);
+	socket.UIBroker.Unsubscribe("MatchSuddenDeath", handleTournamentSuddenDeath);
+}
 
 export function replaceTemplatePlaceholders(template: string, data: Record<string, string>): string {
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
@@ -63,6 +149,9 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 		return;
 	}
 
+	prepareTournamentHUD();
+	attachTournamentEventHandlers();
+
 	try {
 		// Crear el juego con el mapa del torneo
 		const game = new ClientGame(canvas, Maps[matchInfo.mapKey || 'ObstacleMap']);
@@ -101,6 +190,9 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 }
 
 function setupNormalGameEvents(): void {
+	hideTournamentHUD();
+	detachTournamentEventHandlers();
+
 	const container = document.getElementById("player-cards-client");
 	if (!container)
 		return;

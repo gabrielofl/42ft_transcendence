@@ -76,8 +76,17 @@ export class ServerGame {
         this.scene.activeCameras?.push(this.camera);
 
         // EVENTS
-        this.scene.actionManager = new BABYLON.ActionManager(this.scene);
-        this.engine.runRenderLoop(() => this.scene.render());
+		this.scene.actionManager = new BABYLON.ActionManager(this.scene);
+		this.engine.runRenderLoop(() => this.scene.render());
+
+		this.matchTimeLimitMs = null;
+		this.matchTimeTotalMs = null;
+		this.matchTimer = null;
+		this.matchStartTimestamp = null;
+		this.lastTimerSecondBroadcast = null;
+		this.isTimeBased = false;
+		this.isSuddenDeath = false;
+		this.isEnding = false;
 
 		// PHYSICS
 		const gravityVector = new BABYLON.Vector3(0, 0, 0); // Sin gravedad en Pong
@@ -155,18 +164,164 @@ export class ServerGame {
         }
     }
 
-    BallRemoved() {
-		logToFile("ServerGame BallRemoved Start");
-		if (!this.players.every(p => p.GetScore() < this.WIN_POINTS))
-		{
-			console.log("GameEnded");
-			this.GameEnded();
+	SetWinPoints(points) {
+		const parsed = Number(points);
+		this.WIN_POINTS = Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+	}
+
+	SetMatchTimeLimit(limitSeconds) {
+		this.clearMatchTimer();
+		const seconds = Number(limitSeconds);
+		const isValid = Number.isFinite(seconds) && seconds > 0;
+		this.matchTimeLimitMs = isValid ? seconds * 1000 : null;
+		this.matchTimeTotalMs = this.matchTimeLimitMs;
+		this.isTimeBased = isValid;
+		this.isSuddenDeath = false;
+		this.isEnding = false;
+		this.lastTimerSecondBroadcast = null;
+		if (!isValid) {
+			this.matchStartTimestamp = null;
 		}
-		else if (this.Balls.GetAll().length == 0)
-		{
+	}
+
+	clearMatchTimer() {
+		if (this.matchTimer) {
+			clearInterval(this.matchTimer);
+			this.matchTimer = null;
+		}
+		this.matchStartTimestamp = null;
+		this.lastTimerSecondBroadcast = null;
+	}
+
+	publishMatchTimerTick(remainingMs) {
+		if (!this.isTimeBased || remainingMs == null) {
+			return;
+		}
+
+		const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+		if (this.lastTimerSecondBroadcast === remainingSeconds) {
+			return;
+		}
+
+		this.lastTimerSecondBroadcast = remainingSeconds;
+
+		const totalSeconds = this.matchTimeTotalMs
+			? Math.ceil(this.matchTimeTotalMs / 1000)
+			: remainingSeconds;
+
+		this.MessageBroker.Publish("MatchTimerTick", {
+			type: "MatchTimerTick",
+			remainingSeconds,
+			totalSeconds,
+			suddenDeath: this.isSuddenDeath
+		});
+	}
+
+	initializeMatchTimer() {
+		if (!this.matchTimeLimitMs) {
+			this.clearMatchTimer();
+			this.isTimeBased = false;
+			return;
+		}
+
+		this.clearMatchTimer();
+		this.isTimeBased = true;
+		this.isSuddenDeath = false;
+		this.matchStartTimestamp = Date.now();
+		this.publishMatchTimerTick(this.matchTimeLimitMs);
+
+		const tickInterval = 250;
+		this.matchTimer = setInterval(() => {
+			if (!this.matchStartTimestamp) {
+				return;
+			}
+
+			const elapsed = Date.now() - this.matchStartTimestamp;
+			const remaining = Math.max(this.matchTimeLimitMs - elapsed, 0);
+			this.publishMatchTimerTick(remaining);
+
+			if (remaining <= 0) {
+				this.clearMatchTimer();
+				this.handleMatchTimeExpired();
+			}
+		}, tickInterval);
+	}
+
+	handleMatchTimeExpired() {
+		if (!this.isTimeBased) {
+			return;
+		}
+
+		console.log("[MatchTimer] Tiempo límite alcanzado. Evaluando ganador…");
+
+		const players = this.GetPlayers();
+		if (players.length === 0) {
+			console.log("[MatchTimer] No hay jugadores activos; finalizando partida.");
+			this.GameEnded();
+			return;
+		}
+
+		const sortedPlayers = [...players].sort((a, b) => b.GetScore() - a.GetScore());
+		const topScore = sortedPlayers[0].GetScore();
+		console.log(`[MatchTimer] Marcador máximo: ${topScore}. Scores: ${sortedPlayers.map(p => `${p.GetName()}:${p.GetScore()}`).join(", ")}`);
+		const leaders = players.filter(p => p.GetScore() === topScore);
+
+		if (leaders.length <= 1) {
+			console.log("[MatchTimer] No hay empate en el marcador; finalizando partida por tiempo.");
+			this.GameEnded();
+			return;
+		}
+
+		console.log("[MatchTimer] Empate detectado. Entrando en muerte súbita.");
+		this.enterSuddenDeath();
+	}
+
+	enterSuddenDeath() {
+		if (this.isSuddenDeath) {
+			return;
+		}
+
+		this.isSuddenDeath = true;
+		console.log("[MatchTimer] Muerte súbita activada. Próximo punto decide al ganador.");
+		this.MessageBroker.Publish("MatchSuddenDeath", {
+			type: "MatchSuddenDeath",
+			reason: "time-expired"
+		});
+
+		if (this.Balls.GetAll().length === 0) {
+			this.Start();
+		}
+	}
+
+	BallRemoved() {
+		logToFile("ServerGame BallRemoved Start");
+
+		if (this.isEnding) {
+			console.log("[MatchTimer] BallRemoved ignorado: la partida ya está finalizando.");
+			logToFile("ServerGame BallRemoved End");
+			return;
+		}
+
+		if (this.isSuddenDeath) {
+			console.log("[MatchTimer] Gol en muerte súbita. Finalizando partida.");
+			this.GameEnded();
+			logToFile("ServerGame BallRemoved End");
+			return;
+		}
+
+		const allBelowWinPoints = this.players.every(p => p.GetScore() < this.WIN_POINTS);
+		if (!this.isTimeBased && !allBelowWinPoints) {
+			console.log("[MatchPoints] Se alcanzó la puntuación objetivo. Finalizando partida.");
+			this.GameEnded();
+			logToFile("ServerGame BallRemoved End");
+			return;
+		}
+
+		if (this.Balls.GetAll().length == 0) {
 			console.log("Start with new Ball");
 			this.Start();
 		}
+
 		logToFile("ServerGame BallRemoved End");
 	}
 
@@ -186,6 +341,9 @@ export class ServerGame {
         if(this.isDisposed)
             return;
 
+		this.isEnding = true;
+		this.clearMatchTimer();
+		this.isSuddenDeath = false;
         this.isDisposed = true;
         this.dependents.GetAll().forEach(d => d.Dispose());
         this.MessageBroker.ClearAll();
@@ -212,6 +370,7 @@ export class ServerGame {
 	CreateGame(players) {
 		logToFile("ServerGame CreateGame Start");
 		
+		this.isEnding = false;
 		// EVENTS
 		this.Balls.OnRemoveEvent.Subscribe((ball) => {
 			this.MessageBroker.Publish("BallRemove", {
@@ -246,6 +405,7 @@ export class ServerGame {
 			}
 		});
 		this.Start();
+		this.initializeMatchTimer();
 		this.dependents.Add(this.PongTable);
 		logToFile("ServerGame CreateGame End");
 	}
@@ -287,6 +447,13 @@ export class ServerGame {
 
 	GameEnded() {
 		logToFile("ServerGame GameEnded Start");
+		console.log(`[MatchEnd] GameEnded invocado. Tiempo=${this.isTimeBased} | Muerte súbita=${this.isSuddenDeath}`);
+
+		this.isEnding = true;
+		this.isTimeBased = false;
+		this.clearMatchTimer();
+		this.isSuddenDeath = false;
+
 		if (this.Paused === true)
 			return;
 
@@ -298,9 +465,12 @@ export class ServerGame {
 
 	GameRestart() {
 		logToFile("ServerGame GameRestart Start");
+		this.isEnding = false;
+		this.isSuddenDeath = false;
 		this.players.forEach(p => p.Reset());
 		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: false});
-		this.Start()
+		this.Start();
+		this.initializeMatchTimer();
 		logToFile("ServerGame GameRestart End");
 	}
 
