@@ -1,13 +1,13 @@
 import view from "./waiting_room.html?raw";
 import { ClientWaitRoomSocket } from "./Game/ClientWaitRoomSocket";
-import { ClientGameSocket } from "./Game/ClientGameSocket";
 import { createAddPlayerCard } from "./add_player_card";
 import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
 import { PlayerLite, RoomStatePayload, UserData } from "@shared/types/messages";
-import { API_BASE_URL } from "./config";
-import {  setupAlert } from "./AlertModal.js";
+import { BASE_URL, API_BASE_URL } from "./config";
+import { setupAlert } from "./AlertModal.js";
 import { fetchJSON } from "./utils";
+import { WaitPayloads } from "@shared/types/messages";
 
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
 let serverPlayers: PlayerLite[] = [];
@@ -55,41 +55,15 @@ function replaceURLRoom(code: string) {
   window.history.replaceState(null, "", url.toString());
 }
 
-// Await the first RoomState from the socket (so we never render "empty")
-function waitForFirstRoomState(timeoutMs = 8000): Promise<RoomStatePayload | null> {
-  return new Promise(resolve => {
-    const wait = ClientWaitRoomSocket.GetInstance();
-    let settled = false;
-
-    const done = (val: RoomStatePayload | null) => {
-      if (settled) return;
-      settled = true;
-      try { wait.UIBroker.Unsubscribe?.("RoomState", handler as any); } catch {}
-      resolve(val);
-    };
-
-    const timer = setTimeout(() => done(null), timeoutMs);
-    const handler = (state: RoomStatePayload) => { clearTimeout(timer); done(state); };
-
-    wait.UIBroker.Subscribe("RoomState", handler as any);
-
-    // If WS closes before a state arrives, bail
-    try {
-      const ws = (wait as any).ws as WebSocket | undefined;
-      if (ws) {
-        const onClose = () => { ws.removeEventListener("close", onClose as any); clearTimeout(timer); done(null); };
-        ws.addEventListener("close", onClose as any, { once: true });
-      }
-    } catch {}
-  });
-}
-
 // ---------- main render ----------
 export async function renderWaitingRoom(): Promise<void> {
   const main = document.getElementById("main");
   if (!main) return;
 
   main.innerHTML = view;
+	
+  totalSlots = 0;
+  cards = [];
 
   // loading banner inside cards container; hide until first RoomState
   const cardsContainer = document.getElementById("player-cards-container") as HTMLDivElement | null;
@@ -116,23 +90,23 @@ export async function renderWaitingRoom(): Promise<void> {
   userId = me.userId;
   username = me.username ?? me.email ?? `Player${userId}`;
 
-  // 2) Resolve room target: URL invite > backend "mine"
-  const inviteRoom = getInviteRoomFromURL();
-  if (inviteRoom) {
-    roomCode = inviteRoom;
-  } else {
-    const mine = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
-    if (mine?.roomCode) {
-      roomCode = String(mine.roomCode).toUpperCase();
-      // sync URL for share
-      replaceURLRoom(roomCode);
-    } else {
-      setupAlert('Whoops!', "No room to join. Create a game first.", "close");
-      navigateTo("create");
-      return;
-    }
+  const url = new URL(location.href);
+  let code = (url.searchParams.get("room") || "").toUpperCase().trim();
+
+  if (!code) {
+    const mine = await fetchJSON(`${BASE_URL}/rooms/mine`, { credentials: "include" });
+    if (!mine?.roomCode) { setupAlert('Whoops!', "No room to join. Create a game first.", "close"); navigateTo("create"); return; }
+    code = String(mine.roomCode).toUpperCase();
+    url.searchParams.set("room", code);
+    history.replaceState(null, "", url.toString());
   }
-  setRoomCodeText(roomCode);
+  	roomCode = code;
+	setRoomCodeText(roomCode);
+	
+	const state = await fetchJSON(`${BASE_URL}/rooms/${encodeURIComponent(roomCode)}`, { credentials: "include" });
+	if (!state) { setupAlert('Whoops!', "Room not found or closed.", "close"); navigateTo("create"); return; }
+		console.log('this is state: ', state);
+	applyRoomState(state);
 
   // 3) Top controls
   const readyBtn = selectButtonByText("READY");
@@ -143,8 +117,13 @@ export async function renderWaitingRoom(): Promise<void> {
 
   readyBtn?.addEventListener("click", () => ClientWaitRoomSocket.GetInstance().ToggleReady());
 
-  // no local/session storage; creation screen will read from /rooms/mine or /users/room-config
-  editBtn?.addEventListener("click", () => { navigateTo("create"); });
+	editBtn?.addEventListener("click", () => {
+		try {
+			sessionStorage.setItem("ms.intent", "edit");
+			sessionStorage.setItem("ms.room", roomCode);
+		} catch {}
+		navigateTo("create");
+		});
 
   shareBtn?.addEventListener("click", async () => {
     if (!roomCode) { setupAlert('Whoops!', "Room code not assigned yet.", "close");return; }
@@ -153,34 +132,56 @@ export async function renderWaitingRoom(): Promise<void> {
     setupAlert('Boom!', "Room link copied!", "close");
   });
 
-  // 4) SUBSCRIBE BEFORE CONNECT to avoid missing the initial RoomState
   const wait = ClientWaitRoomSocket.GetInstance();
 
-  const onServerRoomCode = ({ roomCode: rc }: { roomCode: string }) => {
-    if (!rc) return;
-    roomCode = rc.toUpperCase();
-    replaceURLRoom(roomCode);
-    setRoomCodeText(roomCode);
-    if (roomBox) roomBox.textContent = prettyRoom(roomCode);
-  };
-  wait.UIBroker.Subscribe("RoomCreated", onServerRoomCode);
-  wait.UIBroker.Subscribe("SetRoomCode", onServerRoomCode);
+unbindAll(wait.UIBroker);
 
-  wait.UIBroker.Subscribe("RoomState", (state) => {
-    applyRoomState(state);
-  });
+let pushedEdit = false;
+const onRoomState = (s: RoomStatePayload) => {
+  applyRoomState(s);
+  if (!pushedEdit) {
+    pushedEdit = true;
+    try {
+      const raw = sessionStorage.getItem("ms.pendingConfig");
+      if (raw && s?.roomCode?.toUpperCase() === roomCode) {
+        const cfg = JSON.parse(raw);
+        ClientWaitRoomSocket.GetInstance().SetMapConfig?.({
+          mapKey: cfg.mapKey,
+          powerUpAmount: cfg.powerUpAmount,
+          enabledPowerUps: cfg.enabledPowerUps,
+          maxPlayers: cfg.maxPlayers,
+          windAmount: cfg.windAmount,
+          pointToWinAmount: cfg.pointToWinAmount,
+        });
+      }
+    } catch {}
+    try {
+      sessionStorage.removeItem("ms.intent");
+      sessionStorage.removeItem("ms.room");
+      sessionStorage.removeItem("ms.pendingConfig");
+    } catch {}
+  }
+};
 
-	wait.UIBroker.Subscribe("AddPlayer", (p) => {
-		upsertServerPlayer(p); renderPlayers();
-	});
-	wait.UIBroker.Subscribe("RemovePlayer", ({ userId: uid }) => {
-		serverPlayers = serverPlayers.filter(p => p.userId !== uid); renderPlayers();
-	});
-  wait.UIBroker.Subscribe("PlayerReady", ({ userId: uid }) => { setServerReady(uid, true); renderPlayers(); });
-  wait.UIBroker.Subscribe("PlayerUnready", ({ userId: uid }) => { setServerReady(uid, false); renderPlayers(); });
-  wait.UIBroker.Subscribe("SetHost", ({ userId: newHost }) => { serverPlayers = serverPlayers.map(p => ({ ...p, isHost: p.userId === newHost })); renderPlayers(); });
-  wait.UIBroker.Subscribe("Error", ({ message }) => { setupAlert('Whoops!', message, "close"); });
-  wait.UIBroker.Subscribe("AllReady", (msg: any) => { allReady(msg as AllReadyMessage); });
+const onServerRoomCode = ({ roomCode: rc }: { roomCode: string }) => {
+  if (!rc) return;
+  roomCode = rc.toUpperCase();
+  replaceURLRoom(roomCode);
+  setRoomCodeText(roomCode);
+  const roomBox = document.querySelector<HTMLSpanElement>("div [class*='tracking-widest'], span.block");
+  if (roomBox) roomBox.textContent = prettyRoom(roomCode);
+};
+
+bind("RoomCreated", onServerRoomCode, wait.UIBroker);
+bind("SetRoomCode", onServerRoomCode, wait.UIBroker);
+bind("RoomState", onRoomState, wait.UIBroker);
+bind("AddPlayer", (p) => { upsertServerPlayer(p); renderPlayers(); }, wait.UIBroker);
+bind("RemovePlayer", ({ userId: uid }) => { serverPlayers = serverPlayers.filter(p => p.userId !== uid); renderPlayers(); }, wait.UIBroker);
+bind("PlayerReady", ({ userId: uid }) => { setServerReady(uid, true); renderPlayers(); }, wait.UIBroker);
+bind("PlayerUnready", ({ userId: uid }) => { setServerReady(uid, false); renderPlayers(); }, wait.UIBroker);
+bind("SetHost", ({ userId: newHost }) => { serverPlayers = serverPlayers.map(p => ({ ...p, isHost: p.userId === newHost })); renderPlayers(); }, wait.UIBroker);
+bind("Error", ({ message }) => { setupAlert('Whoops!', message, "close"); }, wait.UIBroker);
+bind("AllReady", (msg) => { allReady(msg as any); }, wait.UIBroker);
 
   // 5) Connect (after subscriptions are ready)
   const isConnected =
@@ -201,19 +202,6 @@ export async function renderWaitingRoom(): Promise<void> {
     wait.ConnectAndJoin(roomCode, userId, username);
   } else {
   }
-
-  // Block UI until first RoomState
-  const first = await waitForFirstRoomState(8000);
-  if (!first) {
-    setupAlert('Whoops!', "Could not fetch room state. Please try again.", "close");
-    navigateTo("create");
-    return;
-  }
-
-  // reveal UI now (applyRoomState also reveals UI)
-  if (cardsContainer) cardsContainer.style.visibility = "visible";
-  const loadingNode = document.getElementById("wait-loading-banner");
-  if (loadingNode) loadingNode.remove();
 }
 
 // ---------- UI construction (cards driven by serverPlayers only) ----------
@@ -285,7 +273,14 @@ function setServerReady(uid: number, ready: boolean) {
   if (i >= 0) serverPlayers[i] = { ...serverPlayers[i], ready };
 }
 
+function asArray<T>(v: any): T[] {
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === 'object') return Object.values(v) as T[];
+  return [];
+}
+
 function applyRoomState(state: RoomStatePayload) {
+  const playersArr = asArray<PlayerLite>(state.players);
   roomCode = state.roomCode.toUpperCase();
   replaceURLRoom(roomCode);
   setRoomCodeText(roomCode);
@@ -293,21 +288,19 @@ function applyRoomState(state: RoomStatePayload) {
   const slotsFromServer =
     typeof state.maxPlayers === "number" && state.maxPlayers > 0
       ? state.maxPlayers
-      : (state.players?.length || totalSlots);
+      : (playersArr.length || totalSlots);
 
-  if (slotsFromServer !== totalSlots) {
+  if (slotsFromServer !== totalSlots || cards.length !== slotsFromServer) {
     totalSlots = slotsFromServer;
     buildSlots(totalSlots);
   }
 
-  serverPlayers = [...state.players]; // backend truth (includes virtuals)
+  serverPlayers = [...playersArr];
   renderPlayers();
 
   const container = document.getElementById("player-cards-container") as HTMLDivElement | null;
   if (container) container.style.visibility = "visible";
-  const loadingNode = document.getElementById("wait-loading-banner");
-  if (loadingNode) loadingNode.remove();
-
+  document.getElementById("wait-loading-banner")?.remove();
 }
 
 // ---------- transforms & payload ----------
@@ -334,4 +327,40 @@ function allReady(msg: AllReadyMessage) {
   try { ClientWaitRoomSocket.GetInstance().Dispose(); } catch {}
   
   navigateTo('game');
+}
+
+export function cleanupWaitingRoom() {
+  unbindAll(ClientWaitRoomSocket.GetInstance().UIBroker);
+  try { ClientWaitRoomSocket.GetInstance().Dispose(); } catch {}
+  try { sessionStorage.removeItem("roomCode"); } catch {}
+  const url = new URL(location.href);
+  url.searchParams.delete("room");
+  history.replaceState(null, "", url.toString());
+}
+
+type Handler<E> = (p: E) => void;
+const localSubs = new Map<string, Set<Function>>();
+
+function bind<K extends keyof WaitPayloads>(
+  event: K,
+  handler: Handler<WaitPayloads[K]>,
+  broker = ClientWaitRoomSocket.GetInstance().UIBroker
+) {
+  const key = String(event);
+  let set = localSubs.get(key);
+  if (!set) { set = new Set(); localSubs.set(key, set); }
+
+  if (set.has(handler)) return;
+
+  broker.Subscribe(event, handler);
+  set.add(handler);
+}
+
+function unbindAll(broker = ClientWaitRoomSocket.GetInstance().UIBroker) {
+  for (const [key, set] of localSubs.entries()) {
+    for (const fn of set) {
+      broker.Unsubscribe(key as keyof WaitPayloads, fn as any);
+    }
+  }
+  localSubs.clear();
 }

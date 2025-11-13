@@ -6,9 +6,8 @@ import { PowerUpType } from '@shared/types/messages';
 import { navigateTo } from "../../navigation";
 import { API_BASE_URL } from "../config";
 import {  setupAlert } from "../AlertModal.js";
-import { ClientWaitRoomSocket } from "../Game/ClientWaitRoomSocket";
 
-let game: ClientGame;
+let game: ClientGame | null = null;
 const ALL_POWERUPS: PowerUpType[] = ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"];
 export let SelectedMap: MapDefinition = Maps.MultiplayerMap;
 
@@ -149,36 +148,40 @@ export async function renderMapSelection(): Promise<void> {
 
   main.innerHTML = view;
 
-  // 0) Ask backend if I already belong to a room (no storage trust)
+  const intent = (() => { try { return sessionStorage.getItem("ms.intent") || ""; } catch { return ""; } })();
+  const editRoom = (() => { try { return (sessionStorage.getItem("ms.room") || "").toUpperCase(); } catch { return ""; } })();
+
   const me = await fetchJSON(`${API_BASE_URL}/users/session`, { credentials: 'include' });
   if (!me?.isLoggedIn) {
     setupMapSelectionControls();
     return;
   }
 
-  const mine = await fetchJSON(roomsUrl('/mine'), { credentials: 'include' });
-  if (mine && mine.roomCode) {
-    const choice = await promptRejoin(mine.roomCode);
-    if (choice === 'rejoin') {
-      replaceURLRoom(mine.roomCode);
-      navigateTo('waiting');
-      return;
+  if (intent !== "edit") {
+    const mine = await fetchJSON(roomsUrl('/mine'), { credentials: 'include' });
+    if (mine && mine.roomCode) {
+      const choice = await promptRejoin(mine.roomCode);
+      if (choice === 'rejoin') {
+        replaceURLRoom(mine.roomCode);
+        navigateTo('waiting');
+        return;
+      }
+      if (choice === 'remove') {
+        await fetch(roomsUrl(`/${encodeURIComponent(mine.roomCode)}/leave`), {
+          method: 'POST',
+          credentials: 'include'
+        }).catch(() => {});
+        replaceURLRoom(null);
+      }
     }
-    if (choice === 'remove') {
-      await fetch(roomsUrl(`/${encodeURIComponent(mine.roomCode)}/leave`), {
-        method: 'POST',
-        credentials: 'include'
-      }).catch(() => {});
-      replaceURLRoom(null);
-    }
-    // else 'cancel' → stay
   }
 
   setupMapSelectionControls();
 
-  // Prefill from server if available: 1) prior room state; 2) last saved user config
-  if (mine && mine.config) applyConfigToUI(mine);
-  else {
+  if (intent === "edit" && editRoom) {
+    const state = await fetchJSON(`${restBase()}/rooms/${encodeURIComponent(editRoom)}`, { credentials: "include" });
+    if (state) applyConfigToUI(state);
+  } else {
     const lastCfg = await fetchJSON(`${API_BASE_URL}/users/room-config`, { credentials: 'include' });
     if (lastCfg) applyConfigToUI(lastCfg);
   }
@@ -251,6 +254,11 @@ function setupMapSelectionControls(): void {
     `).join('');
   }
 
+	// --- add this helper near the top ---
+function getMaxPlayersForMap(mapKey: string): number {
+  return mapKey === "MultiplayerMap" ? 4 : 2;
+}
+
   // ---- create / save button flow ----
   createGameBtn?.addEventListener('click', async () => {
     // 1) collect options
@@ -259,16 +267,15 @@ function setupMapSelectionControls(): void {
     ).map(cb => cb.value as PowerUpType);
 
     const chosenMapKey = selectedMapKey ?? "MultiplayerMap";
-    const mapDef = Maps[chosenMapKey as keyof typeof Maps] ?? Maps.MultiplayerMap;
-    const suggestedMaxPlayers = Array.isArray((mapDef as any)?.spots) ? (mapDef as any).spots.length : undefined;
+	const maxPlayers = getMaxPlayersForMap(chosenMapKey);
 
     const createOptions = {
       mapKey: chosenMapKey,
-      powerUpAmount: parseInt(powerupAmountSlider.value, 5),
+      powerUpAmount: parseInt(powerupAmountSlider.value, 10),
       enabledPowerUps: enabledPowerups,
-      maxPlayers: suggestedMaxPlayers, // suggestion only; backend decides
-      windAmount: parseInt(windAmountSlider.value, 50),
-      pointToWinAmount: parseInt(pointToWinAmountSlider.value, 7),
+      maxPlayers: maxPlayers,
+      windAmount: parseInt(windAmountSlider.value, 10),
+      pointToWinAmount: parseInt(pointToWinAmountSlider.value, 10),
     };
 
     // 2) ensure session
@@ -278,57 +285,39 @@ function setupMapSelectionControls(): void {
       return;
     }
 
-    // 3) Always create NEW room
-    const created = await fetchJSON(roomsUrl(''), {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(createOptions)
-    });
+  const intent = (() => { try { return sessionStorage.getItem("ms.intent") || ""; } catch { return ""; } })();
+  const editRoom = (() => { try { return (sessionStorage.getItem("ms.room") || "").toUpperCase(); } catch { return ""; } })();
 
-    if (!created?.roomCode) {
-      setupAlert('Whoops!', "Failed to create room.", "close");
-      return;
-    }
+  fetch(`${API_BASE_URL}/users/room-config`, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mapKey: createOptions.mapKey,
+      powerUpAmount: createOptions.powerUpAmount,
+	  enabledPowerUps: createOptions.enabledPowerUps,
+	  maxPlayers: createOptions.maxPlayers,
+      windAmount: createOptions.windAmount,
+      pointToWinAmount: createOptions.pointToWinAmount,
+    })
+  }).catch(() => {});
 
-    const code = String(created.roomCode).toUpperCase();
-    replaceURLRoom(code);
-
-    // 3.5) persist “last used config” server-side (no localStorage)
-    fetch(`${API_BASE_URL}/users/room-config`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mapKey: createOptions.mapKey,
-        powerUpAmount: createOptions.powerUpAmount,
-        enabledPowerUps: createOptions.enabledPowerUps,
-        windAmount: createOptions.windAmount,
-        pointToWinAmount: createOptions.pointToWinAmount,
-      })
-    }).catch(() => {});
-
-    // 4) Connect WS; send SetMapConfig on first state (host only)
-    const socket = ClientWaitRoomSocket.GetInstance();
-    const onFirstState = (state: any) => {
-      if (state?.hostId === session.userId) {
-        socket.SetMapConfig?.({
-          mapKey: createOptions.mapKey,
-          powerUpAmount: createOptions.powerUpAmount,
-          enabledPowerUps: createOptions.enabledPowerUps,
-          maxPlayers: createOptions.maxPlayers,
-          windAmount: createOptions.windAmount,
-          pointToWinAmount: createOptions.pointToWinAmount,
-        });
-      }
-      socket.UIBroker.Unsubscribe?.("RoomState", onFirstState);
-    };
-    socket.UIBroker.Subscribe("RoomState", onFirstState);
-    socket.ConnectAndJoin(code, session.userId, session.username ?? session.email ?? `Player${session.userId}`);
-
-    // 5) Navigate to waiting
+  if (intent === "edit" && editRoom) {
+    try { sessionStorage.setItem("ms.pendingConfig", JSON.stringify(createOptions)); } catch {}
+    replaceURLRoom(editRoom);
     navigateTo('waiting');
+    return;
+  }
+
+  const created = await fetchJSON(roomsUrl(''), {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(createOptions)
   });
+
+  if (!created?.roomCode) { setupAlert('Whoops!', "Failed to create room.", "close"); return; }
+  replaceURLRoom(String(created.roomCode).toUpperCase());
+  navigateTo('waiting');
+});
 }
 
 function renderPreview(mapDef: MapDefinition) {
@@ -336,4 +325,16 @@ function renderPreview(mapDef: MapDefinition) {
   SelectedMap = mapDef;
   if (game) game.Dispose();
   game = new ClientGame(canvas, SelectedMap, true);
+}
+
+export function cleanupMapSelection(): void {
+  try {
+    if (game) {
+      game.Dispose();
+    }
+  } catch (e) {
+    console.debug("[MAP] cleanup error:", e);
+  } finally {
+    game = null;
+  }
 }

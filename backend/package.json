@@ -35,7 +35,8 @@
     	"qrcode": "^1.5.3",
 		"crypto": "^1.0.1",
 		"google-auth-library": "^9.4.0",
-		"nodemailer": "7.0.10"
+		"nodemailer": "7.0.10",
+		"ethers": "6.15.0"
 	},
 	"devDependencies": {
 		"nodemon": "^3.0.2",
