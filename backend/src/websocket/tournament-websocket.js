@@ -135,7 +135,7 @@ async function tournamentWebsocket(fastify) {
 
       // Obtener configuración del torneo
       const tournamentConfig = await fastify.db.get(
-        `SELECT map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount FROM tournaments WHERE id = ?`,
+        `SELECT map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount, match_time_limit FROM tournaments WHERE id = ?`,
         [tournamentId]
       );
 
@@ -156,12 +156,14 @@ async function tournamentWebsocket(fastify) {
         });
         
         const matchPlayers = [match.player1, match.player2];
+        const matchTimeLimit = Number(tournamentConfig?.match_time_limit);
         const config = {
           mapKey: tournamentConfig?.map_key || 'ObstacleMap',
           powerUpAmount: tournamentConfig?.powerup_amount || 3,
           enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]'),
           windAmount: tournamentConfig?.wind_amount || 50,
-          pointToWinAmount: tournamentConfig?.point_to_win_amount || 5
+          pointToWinAmount: tournamentConfig?.point_to_win_amount || 5,
+          matchTimeLimit: Number.isFinite(matchTimeLimit) && matchTimeLimit > 0 ? matchTimeLimit : null
         };
         
         // Crear la sala para este match con config
@@ -529,14 +531,27 @@ async function tournamentWebsocket(fastify) {
       const bracket = JSON.parse(tournament.bracket);
 
       // 2. Convertir username a userId para el ganador
-      const winnerPlayer = await fastify.db.get(
+      let winnerPlayer = await fastify.db.get(
         `SELECT user_id AS userId, username FROM tournament_players 
          WHERE tournament_id = ? AND username = ?`,
         [tournamentId, winner.username]
       );
 
       if (!winnerPlayer) {
-        return;
+        const matchEntry = bracket.rounds[bracket.currentRound]?.matches.find(m => m.matchId === matchId);
+        const fallbackPlayer = [matchEntry?.player1, matchEntry?.player2]
+          .filter(Boolean)
+          .find(p => p.username === winner.username);
+
+        if (fallbackPlayer) {
+          winnerPlayer = {
+            userId: fallbackPlayer.userId,
+            username: fallbackPlayer.username
+          };
+        } else {
+          console.warn(`No se pudo determinar el ganador para torneo ${tournamentId}, match ${matchId}`);
+          return;
+        }
       }
 
       const winnerData = {
@@ -604,7 +619,7 @@ async function tournamentWebsocket(fastify) {
 
         // Preparar y crear TODAS las salas de la nueva ronda
         const tournamentConfig = await fastify.db.get(
-          `SELECT map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount FROM tournaments WHERE id = ?`,
+          `SELECT map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount, match_time_limit FROM tournaments WHERE id = ?`,
           [tournamentId]
         );
 
@@ -614,12 +629,14 @@ async function tournamentWebsocket(fastify) {
 
         for (const roomInfo of roomIds) {
           const matchPlayers = [roomInfo.player1, roomInfo.player2];
-          const config = {
+        const matchTimeLimit = Number(tournamentConfig?.match_time_limit);
+        const config = {
             mapKey: tournamentConfig?.map_key || 'ObstacleMap',
             powerUpAmount: tournamentConfig?.powerup_amount || 3,
             enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]'),
             windAmount: tournamentConfig?.wind_amount || 50,
-            pointToWinAmount: tournamentConfig?.point_to_win_amount || 5
+            pointToWinAmount: tournamentConfig?.point_to_win_amount || 5,
+            matchTimeLimit: Number.isFinite(matchTimeLimit) && matchTimeLimit > 0 ? matchTimeLimit : null
           };
           
           // Crear la sala para este match con config

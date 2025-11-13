@@ -17,7 +17,9 @@ export type MessageTypes =
 "InventoryChanged"|
 "PowerUpBoxPicked"|
 "EffectsChanged"|
-"GameStatus";
+"GameStatus"|
+"MatchTimerTick"|
+"MatchSuddenDeath";
 
 export interface Message {
     type: MessageTypes
@@ -45,6 +47,8 @@ export type MessagePayloads = {
     ["EffectsChanged"]: EffectsChangedMessage;
     ["GameInit"]: Message;  // El servidor responde con un GameStatus
     ["GameStatus"]: GameStatusMessage; // Contiene varios mensajes
+    ["MatchTimerTick"]: MatchTimerTickMessage;
+    ["MatchSuddenDeath"]: MatchSuddenDeathMessage;
 };
 
 export type PowerUpType = "MoreLength" | "LessLength" | "CreateBall" | "Shield" | "SpeedDown" | "SpeedUp";
@@ -192,6 +196,18 @@ export interface EffectsChangedMessage extends Message {
             effects: string[];
         }
     }
+}
+
+export interface MatchTimerTickMessage extends Message {
+    type: "MatchTimerTick";
+    remainingSeconds: number;
+    totalSeconds: number;
+    suddenDeath: boolean;
+}
+
+export interface MatchSuddenDeathMessage extends Message {
+    type: "MatchSuddenDeath";
+    reason: "time-expired";
 }
 
 export interface FriendRequest {

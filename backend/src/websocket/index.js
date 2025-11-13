@@ -34,6 +34,8 @@ export async function startTournamentMatch(roomId) {
 
   // Configurar mapa
   gameSocket.game.Map = MAPS[config.mapKey] || MAPS.MultiplayerMap;
+  gameSocket.game.SetWinPoints(config.pointToWinAmount || 5);
+  gameSocket.game.SetMatchTimeLimit(config.matchTimeLimit ?? null);
   
   // Iniciar el juego con CreateGame
   gameSocket.game.CreateGame(gamePlayers);

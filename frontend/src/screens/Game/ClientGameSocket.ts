@@ -1,6 +1,6 @@
 import * as BABYLON from "@babylonjs/core";
 import { MessageBroker } from "@shared/utils/MessageBroker";
-import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, EffectsChangedMessage, GamePauseMessage, GameStatusMessage, InventoryChangeMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PowerUpBoxPickedMessage, RoomStatePayload, ScoreMessage, WindChangedMessage } from "@shared/types/messages";
+import { AddPlayerMessage, BallMoveMessage, BallRemoveMessage, CreatePowerUpMessage, EffectsChangedMessage, GamePauseMessage, GameStatusMessage, InventoryChangeMessage, MatchSuddenDeathMessage, MatchTimerTickMessage, Message, MessagePayloads, MessageTypes, PaddlePositionMessage, PlayerEffectMessage, PowerUpBoxPickedMessage, RoomStatePayload, ScoreMessage, WindChangedMessage } from "@shared/types/messages";
 import { ClientGame } from "./ClientGame";
 import { ClientBall } from "../Collidable/ClientBall";
 import { ClientPowerUpBox } from "./PowerUps/ClientPowerUpBox";
@@ -37,6 +37,8 @@ export class ClientGameSocket {
 			"WindChanged": (m: MessagePayloads["WindChanged"]) => this.HandleWindChanged(m), 
 			"GameStatus": (m: MessagePayloads["GameStatus"]) => this.HandleGameStatus(m), 
 			"EffectsChanged": (m: MessagePayloads["EffectsChanged"]) => this.HandleEffectsChanged(m), 
+			"MatchTimerTick": (m: MessagePayloads["MatchTimerTick"]) => this.HandleMatchTimerTick(m),
+			"MatchSuddenDeath": (m: MessagePayloads["MatchSuddenDeath"]) => this.HandleMatchSuddenDeath(m),
 		};
 	}
 
@@ -385,6 +387,16 @@ export class ClientGameSocket {
 		if (box) {
 			box.Dispose();
 		}
+	}
+
+	private HandleMatchTimerTick(msg: MatchTimerTickMessage): void {
+		this.UIBroker.Publish("MatchTimerTick", msg);
+		this.game?.MessageBroker.Publish("MatchTimerTick", msg);
+	}
+
+	private HandleMatchSuddenDeath(msg: MatchSuddenDeathMessage): void {
+		this.UIBroker.Publish("MatchSuddenDeath", msg);
+		this.game?.MessageBroker.Publish("MatchSuddenDeath", msg);
 	}
 
 	/**
