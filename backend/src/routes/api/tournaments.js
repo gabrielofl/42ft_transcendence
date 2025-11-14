@@ -1,3 +1,4 @@
+import { getMatch, getMatchCount, getFinalBracket } from "../../services/blockchain.js";
 // Tournament REST API - Endpoints para torneos
 
 // Función para limpiar automáticamente torneos que solo tienen jugadores IA
@@ -245,6 +246,142 @@ export default async function (fastify, opts) {
       fastify.log.error(error);
       return reply.code(500).send({ error: 'Failed to get tournament' });
     }
+  });
+
+	fastify.get('/tournament/avalanche/:id', async (req, reply) => {
+	const tournamentId = Number(req.params.id);
+	try {
+		const rawCount = await getMatchCount(tournamentId);
+		const count = Number(rawCount);
+
+		const dbRows = await fastify.db.all(
+		`SELECT match_id, txhash
+			FROM tournament_onchain_matches
+			WHERE tournament_id = ?`,
+		[tournamentId]
+		);
+		const txByIndex = new Map(dbRows.map(r => [Number(r.match_id), r.txhash]));
+
+		const matches = [];
+		for (let i = 0; i < count; i++) {
+		const m = await getMatch(tournamentId, i);
+		matches.push({
+			matchId: i,
+			player1: m.player1,
+			player2: m.player2,
+			winner:  m.winner,
+			score1:  Number(m.score1),
+			score2:  Number(m.score2),
+			timestamp: Number(m.timestamp),
+			txhash: txByIndex.get(i) ?? null
+		});
+		}
+
+		const finalBracket = await getFinalBracket(tournamentId);
+		const finalRow = await fastify.db.get(
+		`SELECT onchain_final_bracket_txhash AS tx
+			FROM tournaments
+			WHERE id = ?`,
+		[tournamentId]
+		);
+
+		return reply.send({
+		matches,
+		finalBracket: finalBracket || null,
+		finalBracketTx: finalRow?.tx ?? null
+		});
+	} catch (err) {
+		fastify.log.error(err);
+		return reply.code(500).send({ error: 'Failed to fetch on-chain data' });
+	}
+	});
+
+	fastify.get('/tournament/status', async (req, reply) => {
+	try {
+		const token = req.cookies?.accessToken;
+		if (!token) return reply.code(401).send({ error: 'Unauthorized' });
+		const user = fastify.jwt.verify(token);
+
+		const mine = await fastify.db.get(
+		`
+		SELECT t.id, t.status
+		FROM tournaments t
+		JOIN tournament_players tp ON tp.tournament_id = t.id
+		WHERE tp.user_id = ? AND t.status IN ('in_progress','ready','waiting')
+		ORDER BY CASE t.status WHEN 'in_progress' THEN 0 WHEN 'ready' THEN 1 ELSE 2 END, t.started_at DESC, t.created_at DESC
+		LIMIT 1
+		`,
+		[user.id]
+		);
+
+		if (mine) {
+		return reply.send({ id: mine.id, status: mine.status });
+		}
+
+		const latestActive = await fastify.db.get(
+		`
+		SELECT id, status
+		FROM tournaments
+		WHERE status IN ('in_progress','ready','waiting')
+		ORDER BY CASE status WHEN 'in_progress' THEN 0 WHEN 'ready' THEN 1 ELSE 2 END, started_at DESC, created_at DESC
+		LIMIT 1
+		`
+		);
+
+		if (latestActive) {
+		return reply.send({ id: latestActive.id, status: latestActive.status });
+		}
+
+		return reply.send({ id: null, status: 'none' });
+	} catch (e) {
+		req.log.error(e);
+		return reply.code(500).send({ error: 'Failed to get tournament status' });
+	}
+	});
+
+	fastify.get('/api/tournament/current', async (req, reply) => {
+	try {
+		const row = await fastify.db.get(
+		`SELECT id
+			FROM tournaments
+			WHERE status IN ('waiting','ready','in_progress')
+		ORDER BY COALESCE(started_at, created_at) DESC
+			LIMIT 1`
+		);
+		return { id: row?.id ?? null };
+	} catch (e) {
+		fastify.log.error(e);
+		return reply.code(500).send({ error: 'Failed to read current tournament' });
+	}
+	});
+
+	fastify.get('/api/tournaments/history', async (req, reply) => {
+	try {
+		const limit = Math.min(parseInt(req.query.limit ?? '25', 10), 100);
+		const offset = Math.max(parseInt(req.query.offset ?? '0', 10), 0);
+
+		const rows = await fastify.db.all(
+		`SELECT
+			t.id,
+			t.name,
+			t.finished_at,
+			t.onchain_final_bracket_txhash AS final_tx,
+			COALESCE((
+			SELECT COUNT(*) FROM tournament_onchain_matches m
+				WHERE m.tournament_id = t.id
+			), 0) AS onchain_matches
+		FROM tournaments t
+		WHERE t.status = 'finished'
+	ORDER BY t.finished_at DESC NULLS LAST, t.id DESC
+		LIMIT ? OFFSET ?`,
+		[limit, offset]
+		);
+
+		return { tournaments: rows, limit, offset };
+	} catch (e) {
+		fastify.log.error(e);
+		return reply.code(500).send({ error: 'Failed to list past tournaments' });
+	}
   });
   });
 }

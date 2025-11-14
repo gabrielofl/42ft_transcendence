@@ -349,6 +349,40 @@ async function waitroomWebsocket(fastify) {
 
     return { roomCode: code };
   });
+	
+	fastify.get('/rooms/:code', async (req, reply) => {
+  const code = (req.params.code || '').toUpperCase();
+  const pub = await publicCombinedRoomState(code);
+  if (!pub || pub.status === 'closed') return reply.code(404).send({ error: 'Room not found' });
+  return pub;
+});
+
+fastify.get('/rooms', async (req, reply) => {
+  const status = (req.query?.status || '').toLowerCase();
+  const where = status ? `WHERE r.status = ?` : '';
+  const params = status ? [status] : [];
+  const rows = await fastify.db.all(
+    `
+    SELECT r.code, r.max_players, r.created_at,
+           (SELECT username FROM users WHERE id = r.host_id) as host,
+           (SELECT COUNT(*) FROM room_players p WHERE p.room_id = r.id) as players
+    FROM rooms r
+    ${where}
+    ORDER BY r.created_at DESC
+    LIMIT 100
+    `,
+    params
+  );
+
+  const out = rows.map(r => ({
+    code: r.code,
+    host: r.host || null,
+    players: Number(r.players) || 0,
+    maxPlayers: r.max_players ?? null,
+    createdAt: r.created_at
+  }));
+  return out;
+});
 
   // --- WS: /waitws
   fastify.get('/waitws', { websocket: true }, async (socket, req) => {

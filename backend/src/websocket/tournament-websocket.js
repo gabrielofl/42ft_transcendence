@@ -2,6 +2,7 @@ import fp from 'fastify-plugin';
 import { generateBracket, updateBracketWithWinner, advanceRoundIfReady } from './tournament-brackets.js';
 import { addVirtualAI } from './virtual-players.js';
 import { tournamentEventBus } from './event-bus.js';
+import { blockchainWriteMatchOnce, blockchainWriteFinalBracketOnce } from '../services/blockchain.js';
 
 async function tournamentWebsocket(fastify) {
   // Conexiones por torneo: tournamentId -> Set<{ userId, socket }>
@@ -550,6 +551,20 @@ async function tournamentWebsocket(fastify) {
       const player2Score = results.find(r => r.username === bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username)?.score || 0;
       
       updateBracketWithWinner(bracket, matchId, winnerData, player1Score, player2Score);
+		
+		try {
+			await blockchainWriteMatchOnce(fastify, {
+				tournamentId,
+				matchId,
+				player1: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player1?.username || 'TBD',
+				player2: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username || 'TBD',
+				winner: winnerData.username,
+				score1: player1Score,
+				score2: player2Score
+			});
+			} catch (e) {
+			console.error('Failed blockchain store match on-chain:', e);
+		}
 
       // 4. Verificar si la ronda está completa y avanzar si es necesario
       const advanceResult = advanceRoundIfReady(bracket);
@@ -581,6 +596,12 @@ async function tournamentWebsocket(fastify) {
            WHERE id = ?`,
           [persistedWinnerId, tournamentId]
         );
+		  
+	  try {
+		await blockchainWriteFinalBracketOnce(fastify, tournamentId, bracket);
+		} catch (e) {
+		console.error('Failed blockchain store final bracket on-chain:', e);
+		}
 
         broadcast(tournamentId, {
           type: 'TournamentFinished',
