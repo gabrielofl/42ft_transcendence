@@ -497,8 +497,8 @@ export class ServerGame {
 
 	CreatePlayerEffect(effectType) {
 		let powerUpFactory = {
-			MoreLength: () => new PaddleLenEffect(this, "textures/PwrUpLessLength.jpg", -2),
-			LessLength: () => new PaddleLenEffect(this, "textures/PwrUpLong.jpg", 4),
+			MoreLength: () => new PaddleLenEffect(this, "textures/PwrUpLessLength.jpg", 4),
+			LessLength: () => new PaddleLenEffect(this, "textures/PwrUpLong.jpg", -2),
 			Shield: () => new PaddleShieldEffect(this, "textures/PowerUpShield.jpg"),
 			SpeedDown: () => new PaddleSpeedEffect(this, "textures/PowerUpSpeedDown.jpg", -0.2),
 			SpeedUp: () => new PaddleSpeedEffect(this, "textures/PowerUpSpeedUp.jpg", 0.8)
