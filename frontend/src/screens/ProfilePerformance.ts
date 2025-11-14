@@ -54,18 +54,22 @@ const container = document.getElementById('accuracy_chart') as HTMLCanvasElement
 if (container) {
   if (doughnutChart) doughnutChart.destroy();  // destroy previous chart if exists
 
-  doughnutChart = new Chart(container, {
-    type: 'doughnut',
-    data: {
-      labels: ['Red', 'Blue', 'Yellow'],
-      datasets: [{
-        label: 'Acquisitions by year',
-        data: [300, 50, 100],
-        backgroundColor: ['rgb(255, 99, 132)','rgb(54, 162, 235)','rgb(255, 205, 86)'],
-        hoverOffset: 4
-      }]
-    }
-  });
+ if (data.win || data.losses)
+ {
+
+	 doughnutChart = new Chart(container, {
+	   type: 'doughnut',
+	   data: {
+		 labels: ['Wins', 'Looses'],
+		 datasets: [{
+		   label: 'Match accuracy',
+		   data: [data.wins, data.losses],
+		   backgroundColor: ['rgb(0,255,153)','rgb(255,170,0)'],
+		   hoverOffset: 4
+		 }]
+	   }
+	 });
+ }
 }
 
 // Line chart
@@ -73,34 +77,38 @@ const linechart = document.getElementById('score_chart') as HTMLCanvasElement;
 if (linechart) {
   if (lineChart) lineChart.destroy();  // destroy previous chart if exists
 
-  const chartData = await fetch(`${API_BASE_URL}/profile/games/progression`, { credentials: 'include' }).then(r => r.json());
+	if (data.score)
+	{
+		const chartData = await fetch(`${API_BASE_URL}/profile/games/progression`, { credentials: 'include' }).then(r => r.json());
 
-  lineChart = new Chart(linechart, {
-    type: 'line',
-    data: {
-      datasets: [{
-        label: 'Score Progression',
-        data: chartData.progression,
-        fill: false,
-        borderColor: '#4ade80',
-        tension: 0.3
-      }]
-    },
-    options: {
-      scales: {
-        x: {
-          type: 'time',
-          time: { unit: 'day' },
-          title: { display: true, text: 'Match Date' }
-        },
-        y: {
-          min: 0,
-          max: chartData.maxScore,
-          title: { display: true, text: 'Score' }
-        }
-      }
-    }
-  });
+		lineChart = new Chart(linechart, {
+		type: 'line',
+		data: {
+			datasets: [{
+			label: 'Score Progression',
+			data: chartData.progression,
+			fill: false,
+			borderColor: '#4ade80',
+			tension: 0.3
+			}]
+		},
+		options: {
+			scales: {
+			x: {
+				type: 'time',
+				time: { unit: 'day' },
+				title: { display: true, text: 'Match Date' }
+			},
+			y: {
+				min: 0,
+				max: chartData.maxScore,
+				title: { display: true, text: 'Score' }
+			}
+			}
+		}
+		});
+
+	}
 }
 
 

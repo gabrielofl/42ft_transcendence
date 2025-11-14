@@ -173,12 +173,12 @@ body {
 }
 
 :root {
-  --primary-color: #ff00ff;     /* Bright magenta */
-  --secondary-color: #ffff66;   /* Neon yellow */
-  --success-color: #00ff99;     /* Bright green */
-  --error-color: #ff0033;       /* Bright red   - as alternative color use text-red-500*/
-  --warning-color: #ffaa00;     /* Orange-yellow */
-  --bg-color: #25004d;          /* Deep purple background */
+  --primary-color: #ff00ff;     /* Bright magenta ff00ff*/
+  --secondary-color: #ffff66;   /* Neon yellow rgb(255 255 102)*/
+  --success-color: #00ff99;     /* Bright green rgb(0 255 153)*/ 
+  --error-color: #ff0033;       /* Bright red   - as alternative color use text-red-500 rgb(255 0 51)*/
+  --warning-color: #ffaa00;     /* Orange-yellow rgb(255 170 0)*/
+  --bg-color: #25004d;          /* Deep purple background rgb(37 0 77)*/
   --text-light: #fffcf2;        /* Off-white */
 }
 
