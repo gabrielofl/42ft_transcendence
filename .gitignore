@@ -4,8 +4,10 @@ backend/.env
 frontend/.env.production
 frontend/package-lock.json
 backend/pong.db
+backend/db/pong.db
 backend/uploads/avatars
 /.vs
 /.vscode
 client_secret_*.json
 CLAUDE.md
+backend/db/pong.db
