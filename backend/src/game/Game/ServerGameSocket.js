@@ -34,10 +34,12 @@ export class ServerGameSocket {
      * @param {number} [config.pointToWinAmount] - Los puntos para ganar (opcional).
      */
     constructor(roomId, config) {
+        config = config || {};
         this.roomId = roomId;
         logToFile(`Creating ServerGameSocket for room ${roomId} with config: ${JSON.stringify(config)}`);
         this.game = new ServerGame();
-        this.game.WIN_POINTS = config.pointToWinAmount || 5;
+        this.game.SetWinPoints(config.pointToWinAmount || 5);
+        this.game.SetMatchTimeLimit(config.matchTimeLimit ?? null);
         this.game.SetEnabledPowerUps(config.enabledPowerUps);
         this.setupGameEventListeners();
         this.game.SetWind(config.windAmount || 0);
@@ -158,6 +160,8 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
         this.game.MessageBroker.Subscribe("PowerUpBoxPicked", enqueueMessage);
         this.game.MessageBroker.Subscribe("EffectsChanged", enqueueMessage);
+        this.game.MessageBroker.Subscribe("MatchTimerTick", enqueueMessage);
+        this.game.MessageBroker.Subscribe("MatchSuddenDeath", enqueueMessage);
     }
 
     /**
