@@ -165,8 +165,8 @@ async function loadMatches(userId: number, page: number) {
         <div class="flex justify-between items-center border-2 border-[--primary-color] p-4 gap-4">
           <!-- Player A -->
           <div class="player-card ${player1Border}">
-            <a href="#" class="open-profile" data-user="${player1.username}">
-              <img class="w-12 h-12 rounded-full bg-gray-300" src="${player1Avatar}" alt="${player1.username}">
+            <a href="#" class="open-profile" data-user="${player1.username}" data-redirect="history">
+              <img class="w-12 h-12 rounded-full bg-gray-300" src="${player1Avatar}" alt="${player1.username}" >
             </a>
             <div class="ml-3 flex flex-col">
               <div class="flex items-center space-x-2">
@@ -182,7 +182,7 @@ async function loadMatches(userId: number, page: number) {
 				</div>
             </div>
                 <span class="font-bold text-white">
-                  <a href="#" class="open-profile" data-user="${player1.username}">${player1.username}</a>
+                  <a href="#" class="open-profile" data-user="${player1.username}" data-redirect="history">${player1.username}</a>
                 </span>
               </div>
               <div class="text-red-500 font-bold text-sm">${player1.score ?? 0} pts</div>
@@ -199,7 +199,7 @@ async function loadMatches(userId: number, page: number) {
 
           <!-- Player B -->
           <div class="player-card ${player2Border}">
-            <a href="#" class="open-profile" data-user="${player2.username}">
+            <a href="#" class="open-profile" data-user="${player2.username}" data-redirect="history">
               <img class="w-12 h-12 rounded-full bg-gray-300" src="${player2Avatar}" alt="${player2.username}">
             </a>
             <div class="ml-3 flex flex-col">
@@ -215,7 +215,7 @@ async function loadMatches(userId: number, page: number) {
 					${p2StatusText}
 				</div>
 			</div>
-            <a href="#" class="open-profile" data-user="${player2.username}">
+            <a href="#" class="open-profile" data-user="${player2.username}" data-redirect="history">
 				<span class="font-bold text-white">${player2.username}</span>
 			</a>
               </div>
