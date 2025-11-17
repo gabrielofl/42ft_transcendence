@@ -3,7 +3,8 @@ import { API_BASE_URL } from "./config";
 import { loadUserGameStats, loadUserStats } from "./ProfilePerformance";
 import { navigateTo } from "../navigation";
 import { loadLeaderboard } from "./Leaderboard";
-import { Screen } from "../redux/reducers/navigationReducer.js";
+import { renderHistoryTab } from "./ProfileHistory";
+import { renderFriendsTab } from "./ProfileFriends";
 import { initAlertModal, setupAlert } from "./AlertModal.js";
 
 
@@ -14,20 +15,22 @@ async function updateScreen(redirect: string, modal: HTMLElement) {
 		case "leaderboard":
 			await loadLeaderboard(1);
 			break;
+		case "history":
+			await renderHistoryTab();
+			break;
+		case "friends":
+			await renderFriendsTab();
+			break;
+		case "performance":
+			await renderFriendsTab();
+			break;
+		default:
+			console.log("No redirect: ", redirect);
+			window.location.reload();
+			break;
 	}
 	modal?.classList.add("hidden");
 
-		if (redirect === "leaderboard") {
-			await loadLeaderboard(1);
-			modal?.classList.add("hidden");
-			return;
-		}
-		else {
-			// fallback if no redirect is provided
-			// navigateTo("home");
-			console.log("No redirect: ", redirect);
-			// window.location.reload();
-		}
 
 }
 
@@ -182,6 +185,7 @@ async function openUserProfile(username: string | number, redirect: string | nul
 				friendActionBtn.textContent = "Go to my profile";
 				friendBtnStatus = "btn-primary";
 				friendActionBtn.dataset.action = "myProfile"; 
+				friendActionBtn.dataset.redirect = "account"; 
 
 			}
 			friendActionBtn.classList.add(friendBtnStatus);
@@ -239,6 +243,8 @@ async function openUserProfile(username: string | number, redirect: string | nul
 
 					case "myProfile":
 					navigateTo("profile");
+					if (redirect == "history" || redirect == "friends")
+						window.location.reload();
 					modal?.classList.add("hidden");
 					return;
 
@@ -256,18 +262,6 @@ async function openUserProfile(username: string | number, redirect: string | nul
 						if (redirect && modal) {
 							updateScreen(redirect, modal);
 						}
-					// if (redirect === "leaderboard") {
-					// 	await loadLeaderboard(1);
-					// 	modal?.classList.add("hidden");
-					// 	return;
-					// }
-					// else {
-					// 	// fallback if no redirect is provided
-					// 	navigateTo("home");
-					// }
-
-					// modal?.classList.add("hidden");
-						// window.location.reload(); // refresh the whole page
 				}
 				
 				} catch (err) {
