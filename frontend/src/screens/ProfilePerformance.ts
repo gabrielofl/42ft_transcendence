@@ -1,6 +1,10 @@
 import profilePerformance from "./profile-performance.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
 import { API_BASE_URL } from "./config";
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
+
+
 
 
 export function renderPerformanceTab() {
@@ -40,6 +44,80 @@ export async function setupPerformanceTab() {
 				scoreTitle.textContent = `${data.score} Pts | 🔒 Ranking Private`;
 			}
 		}
+
+	// Keep a reference to the chart globally (or in module scope)
+let doughnutChart: Chart | null = null;
+let lineChart: Chart | null = null;
+
+// Doughnut chart
+const container = document.getElementById('accuracy_chart') as HTMLCanvasElement;
+if (container) {
+  if (doughnutChart) doughnutChart.destroy();  // destroy previous chart if exists
+
+ if (data.win || data.losses)
+ {
+
+	 doughnutChart = new Chart(container, {
+	   type: 'doughnut',
+	   data: {
+		 labels: ['Wins', 'Looses'],
+		 datasets: [{
+		   label: 'Match accuracy',
+		   data: [data.wins, data.losses],
+		   backgroundColor: ['rgb(0,255,153)','rgb(255,170,0)'],
+		   hoverOffset: 4
+		 }]
+	   }
+	 });
+ }
+}
+
+// Line chart
+const linechart = document.getElementById('score_chart') as HTMLCanvasElement;
+if (linechart) {
+  if (lineChart) lineChart.destroy();  // destroy previous chart if exists
+
+	if (data.score)
+	{
+		const chartData = await fetch(`${API_BASE_URL}/profile/games/progression`, { credentials: 'include' }).then(r => r.json());
+
+		lineChart = new Chart(linechart, {
+		type: 'line',
+		data: {
+			datasets: [{
+			label: 'Score Progression',
+			data: chartData.progression,
+			fill: false,
+			borderColor: '#4ade80',
+			tension: 0.3
+			}]
+		},
+		options: {
+			scales: {
+			x: {
+				type: 'time',
+				time: { unit: 'day' },
+				title: { display: true, text: 'Match Date' }
+			},
+			y: {
+				min: 0,
+				max: chartData.maxScore,
+				title: { display: true, text: 'Score' }
+			}
+			}
+		}
+		});
+
+	}
+}
+
+
+
+
+
+
+
+
 		
 	} catch (err) {
 		console.error('Error loading stats:', err);

@@ -83,7 +83,7 @@ export function renderPlayersPanel(players: UserData[], currentUserId?: number, 
 						<!-- Row ${index + 1} -->
 						<div class="td ${boldClass}" ${highlightStyle}>#${globalRank}</div>
 						<div class="td ${boldClass}" ${highlightStyle} style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
-							${statusIndicator}${crownIndicator}<a href="#" class="open-profile" data-user="${player.username}">
+							${statusIndicator}${crownIndicator}<a href="#" class="open-profile" data-user="${player.username}" data-redirect="leaderboard">
 								<span class="font-bold text-white hover:text-yellow-400 transition-colors">${player.username}</span>
 							</a>
 						</div>
@@ -107,7 +107,7 @@ export async function renderLeaderboard(): Promise<void> {
 	await loadLeaderboard(1);
 }
 
-async function loadLeaderboard(page: number): Promise<void> {
+export async function loadLeaderboard(page: number): Promise<void> {
 	const main = document.getElementById('main');
 	if (!main) return;
 
