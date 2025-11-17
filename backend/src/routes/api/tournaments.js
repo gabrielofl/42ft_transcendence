@@ -57,6 +57,11 @@ export default async function (fastify, opts) {
         matchTimeLimit = 180
       } = req.body || {};
 
+      const parsedMatchTimeLimit = Number(matchTimeLimit);
+      const normalizedMatchTimeLimit = Number.isFinite(parsedMatchTimeLimit)
+        ? Math.max(30, parsedMatchTimeLimit)
+        : 180;
+
       const tournamentName = name || `Tournament #${Date.now()}`;
 
       // Encontrar el menor ID libre (solo reutilizar IDs de torneos ELIMINADOS)
@@ -81,14 +86,14 @@ export default async function (fastify, opts) {
         await fastify.db.run(
           `INSERT INTO tournaments (id, name, creator_id, status, map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount, match_time_limit)
            VALUES (?, ?, ?, 'waiting', ?, ?, ?, ?, ?, ?)`,
-          [nextId, tournamentName, user.id, mapKey, powerUpAmount, JSON.stringify(enabledPowerUps), windAmount, pointToWinAmount, matchTimeLimit]
+          [nextId, tournamentName, user.id, mapKey, powerUpAmount, JSON.stringify(enabledPowerUps), windAmount, pointToWinAmount, normalizedMatchTimeLimit]
         );
       } else {
         // Fallback: dejar que AUTOINCREMENT asigne
         await fastify.db.run(
           `INSERT INTO tournaments (name, creator_id, status, map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount, match_time_limit)
            VALUES (?, ?, 'waiting', ?, ?, ?, ?, ?, ?)`,
-          [tournamentName, user.id, mapKey, powerUpAmount, JSON.stringify(enabledPowerUps), windAmount, pointToWinAmount, matchTimeLimit]
+          [tournamentName, user.id, mapKey, powerUpAmount, JSON.stringify(enabledPowerUps), windAmount, pointToWinAmount, normalizedMatchTimeLimit]
         );
       }
 

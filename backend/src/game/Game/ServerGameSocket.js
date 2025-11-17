@@ -192,6 +192,9 @@ export class ServerGameSocket {
      * @param {any} msg El mensaje con la información del movimiento.
      */
 	HandlePreMoveMessage(msg, u) {
+        if(this.game.Paused)
+            return;
+
 		let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
@@ -200,6 +203,9 @@ export class ServerGameSocket {
     }
 
     HandleUsePowerUpMessage(msg, u) {
+        if(this.game.Paused)
+            return;
+
         let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
@@ -279,6 +285,10 @@ export class ServerGameSocket {
             // Determinar el ganador basado en los resultados
             const winner = this.determineWinner(payload.results);
             if (winner) {
+                console.log('[emitMatchResult]', this.roomId, {
+                    winner: winner.username,
+                    results: payload.results
+                });
                 // Emitir evento al sistema de torneos
                 tournamentEventBus.emit('matchResult', {
                     tournamentId: tournamentInfo.tournamentId,

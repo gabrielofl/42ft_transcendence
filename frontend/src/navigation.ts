@@ -20,7 +20,28 @@ import { clearTournamentMatchInfo, validateStoredTournamentMatch } from "./servi
 import { cleanupWaitingRoom } from "./screens/waiting_room.js";
 import { cleanupMapSelection } from "./screens/Game/map-selection.js";
 
+type NavigationGuard = (next: Screen) => string | null;
+const navigationGuards = new Set<NavigationGuard>();
+
+function shouldNavigate(screen: Screen): boolean {
+  for (const guard of navigationGuards) {
+    const reason = guard(screen);
+    if (reason) {
+      alert(reason);
+      return false;
+    }
+  }
+  return true;
+}
+
+export function registerNavigationGuard(guard: NavigationGuard): () => void {
+  navigationGuards.add(guard);
+  return () => navigationGuards.delete(guard);
+}
+
 export function navigateTo(screen: Screen): void {
+  if (!shouldNavigate(screen)) return;
+
 	// Cambiar estado en Store
 	AppStore.NavigoStore.Dispatch({ type: "NAVIGATE", payload: screen });
 
@@ -97,9 +118,13 @@ export function initNavigation() {
 
   // Escuchar back/forward del navegador
   window.addEventListener("popstate", (event) => {
-    // const screen = (event.state?.screen as Screen) || initialScreen;
+    const target = AppStore.NavigoStore.PeekBack?.() as Screen | null;
+    if (target && !shouldNavigate(target)) {
+      const current = AppStore.NavigoStore.GetState();
+      window.history.pushState({ screen: current }, "", `#${current}`);
+      return;
+    }
     AppStore.NavigoStore.GoBack();
-    // AppStore.NavigoStore.Dispatch({ type: "NAVIGATE", payload: screen });
   });
 
   window.addEventListener("hashchange", () => {
@@ -108,6 +133,13 @@ export function initNavigation() {
 
     const newScreen = window.location.hash.replace("#", "") as Screen;
     if (newScreen) {
+      if (!shouldNavigate(newScreen)) {
+        const current = AppStore.NavigoStore.GetState();
+        if (current) {
+          window.location.hash = `#${current}`;
+        }
+        return;
+      }
       AppStore.NavigoStore.Dispatch({ type: "NAVIGATE", payload: newScreen });
     }
   });
