@@ -173,9 +173,6 @@ export class ServerGameSocket {
         try {
             const message = JSON.parse(msg.toString());
 
-			if (message.id && userid != message.id)
-				return;
-
             const handler = this.handlers[message.type];
             if (handler) {
                 handler(message, user);

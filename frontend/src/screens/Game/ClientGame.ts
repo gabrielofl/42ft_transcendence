@@ -152,13 +152,13 @@ protected readonly WIN_POINTS = 50;
         // console.log(me);
         let localPlayers: number = 0;
         let localKeys: [string, string, string][] = [
-            ['z', 'x', 'c'],
-            ['1', '2', '3'],
+            ['q', 'w', 'e'],
+            ['u', 'i', 'o'],
         ];
 
 		let localMove: [string, string][] = [
             ['d', 'a'],
-            ["j", "l"],
+            ["l", "j"],
         ];
 
         msg.nArray.forEach(d => {
