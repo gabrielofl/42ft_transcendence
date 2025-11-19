@@ -180,10 +180,10 @@ export default async function (fastify, opts) {
 				body: {
 					type: 'object',
 					properties: {
-						username: { type: 'string', minLength: 1, maxLength: 50 },
+						username: { type: 'string', minLength: 1, maxLength: 10 },
 						email: { type: 'string', format: 'email' },
-						firstName: { type: 'string', minLength: 1, maxLength: 50 },
-						lastName: { type: 'string', minLength: 1, maxLength: 50 }
+						firstName: { type: 'string', minLength: 1, maxLength: 15 },
+						lastName: { type: 'string', minLength: 1, maxLength: 15 }
 					}
 				}
 			}
