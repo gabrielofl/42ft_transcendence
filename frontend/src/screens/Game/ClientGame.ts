@@ -82,7 +82,7 @@ protected readonly WIN_POINTS = 50;
         this.glow.intensity = 1;
         
         this.camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 20, new BABYLON.Vector3(0, 0, 0));
-        this.camera.position = new BABYLON.Vector3(42, 42, 42);
+        this.camera.position = new BABYLON.Vector3(0, 42, -70);
         this.camera.attachControl(canvas, true);
         this.camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
         this.scene.activeCameras?.push(this.camera);

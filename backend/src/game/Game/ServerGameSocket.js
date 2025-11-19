@@ -139,6 +139,7 @@ export class ServerGameSocket {
 
         // Suscribirse a eventos del juego
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
+        this.game.MessageBroker.Subscribe("GameCountdown", enqueueMessage);
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
         this.game.MessageBroker.Subscribe("PointMade", (msg) => { 
             const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;

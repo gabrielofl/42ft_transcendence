@@ -35,7 +35,6 @@ export class LocalPlayer extends APlayer {
 		if (!inputMap || this.game.Paused)
 			return;
 
-		console.log(inputMap);
 		if (inputMap[this.leftKey]) 
 		{
 			this.game.MessageBroker.Publish("PlayerPreMove", this.GetPreMoveMessage(-1));

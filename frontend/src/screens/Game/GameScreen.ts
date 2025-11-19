@@ -6,7 +6,7 @@ import { onScreenLeave, navigateTo } from "../../navigation";
 import { ClientGame } from "./ClientGame";
 import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
-import { MatchSuddenDeathMessage, MatchTimerTickMessage, ScoreMessage } from "@shared/types/messages";
+import { CountdownMessage, MatchSuddenDeathMessage, MatchTimerTickMessage, ScoreMessage } from "@shared/types/messages";
 import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, validateStoredTournamentMatch } from "../../services/tournament-state";
 
 var unsubscribeFromGameLeave: () => void;
@@ -21,6 +21,24 @@ interface GameViewModel {
 
 export const GameViewModel = new ReactiveViewModel<GameViewModel>();
 const binder = new DOMBinder(GameViewModel);
+
+function showCountdown(seconds: number) {
+	let countdownContainer = document.getElementById('countdown-container');
+	const timerElement = document.getElementById('countdown-timer');
+	
+	if (!countdownContainer || !timerElement)
+		return;
+
+	if (seconds > 1) {
+		timerElement.textContent = String(seconds);
+		countdownContainer.classList.remove('hidden');
+	} else {
+		timerElement.textContent = 'Go!';
+		setTimeout(() => {
+			countdownContainer?.classList.add('hidden');
+		}, 500);
+	}
+}
 
 let tournamentHudContainer: HTMLElement | null = null;
 let tournamentTimerDisplay: HTMLElement | null = null;
@@ -167,7 +185,7 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 
 		// Configurar WebSocket y eventos ANTES de conectar
 		const gameSocket = ClientGameSocket.GetInstance();
-		
+
 		// Guardar referencia del juego en el socket
 		gameSocket.game = game;
 		
@@ -223,6 +241,10 @@ function setupNormalGameEvents(): void {
 
 	ClientGameSocket.GetInstance().UIBroker.Subscribe("EffectsChanged", (msg) => {
 		GameViewModel.UpdateFromObject(msg.data);
+	});
+
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("GameCountdown", (msg: CountdownMessage) => {
+		showCountdown(msg.seconds);
 	});
 
 	if (!unsubscribeFromGameLeave) {
