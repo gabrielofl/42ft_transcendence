@@ -9,6 +9,7 @@ import { setupAlert } from "./AlertModal.js";
 import { fetchJSON } from "./utils";
 import { WaitPayloads } from "@shared/types/messages";
 
+
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
 let serverPlayers: PlayerLite[] = [];
 let roomCode = "";
@@ -205,7 +206,7 @@ bind("AllReady", (msg) => { allReady(msg as any); }, wait.UIBroker);
 }
 
 // ---------- UI construction (cards driven by serverPlayers only) ----------
-function buildSlots(n: number) {
+async function buildSlots(n: number) {
   const container = document.getElementById("player-cards-container");
   if (!container) { return; }
 
@@ -224,7 +225,7 @@ function buildSlots(n: number) {
       onAddAI: () => { ClientWaitRoomSocket.GetInstance().InviteAI?.(); },
     });
 
-    (card as any).fill = (p: PlayerLite | null) => {
+    (card as any).fill = async (p: PlayerLite | null) => {
       const el = card.cardElement;
       if (!p) {
         el.dataset.empty = "true";
@@ -232,7 +233,8 @@ function buildSlots(n: number) {
         if (menu && !menu.classList.contains("hidden")) menu.classList.add("hidden");
       } else {
         el.dataset.empty = "false";
-        el.innerHTML = createUserCard(playerLiteToUserData(p));
+        const userData = await playerLiteToUserData(p);
+        el.innerHTML = createUserCard(userData);
         el.dataset.userid = String(p.userId);
       }
     };
@@ -304,9 +306,57 @@ function applyRoomState(state: RoomStatePayload) {
 }
 
 // ---------- transforms & payload ----------
-function playerLiteToUserData(p: PlayerLite): UserData {
-  return { id: p.userId, username: p.username, avatar: undefined, status: 1, score: 0 } as unknown as UserData;
+// function playerLiteToUserData(p: PlayerLite): UserData {
+// 	fetch(`${API_BASE_URL}/users/username?username=${p.username}`, {
+// 		credentials: 'include',
+// 	})
+// 	.then(res => res.json())
+// 	.then(data => {
+// 		console.log("DATAPLAYER ", data.show_scores_publicly);
+// 		return { id: data.userId, username: data.username, avatar: data.avatar, status: data.status, score: data.score, show_scores_publicly: data.show_scores_publicly } as UserData;
+// 		})
+// 	.catch(err => console.error('Error loading profile:', err));
+// 	console.log("LALALAL ");
+//   	return { id: p.userId, username: p.username, avatar: undefined, status: 1, score: 0 } as unknown as UserData;
+// }
+
+async function playerLiteToUserData(p: PlayerLite): Promise<UserData> {
+	console.log("USERID: ", p.userId);
+	if ( p.userId < 0)
+		return { id: p.userId, username: p.username, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
+	try {
+		const res = await fetch(`${API_BASE_URL}/users/username?username=${p.username}`, {
+			credentials: 'include',
+		});
+		const data = await res.json();
+		return {
+			id: data.id,
+			first_name: data.first_name,
+			last_name: data.last_name,
+			username: data.username,
+			email: data.email,
+			last_login: data.last_login,
+			avatar: data.avatar,
+			status: data.status,
+			wins: data.wins,
+			losses: data.losses,
+			score: data.score,
+			max_score: data.max_score,
+			matches: data.matches,
+			allow_data_collection: data.allow_data_collection,
+			allow_data_processing: data.allow_data_processing,
+			allow_ai_training: data.allow_ai_training,
+			show_scores_publicly: data.show_scores_publicly,
+			created_at: data.created_at,
+			updated_at: data.updated_at
+		} as UserData;
+	} catch (err) {
+		console.error('Error loading profile:', err);
+		return { id: p.userId, username: p.username, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
+	}
 }
+
+
 
 function buildPlayersPayload(): [number, string][] {
   const ordered = [...serverPlayers].sort((a, b) =>
