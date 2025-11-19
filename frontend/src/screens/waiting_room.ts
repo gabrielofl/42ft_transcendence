@@ -206,7 +206,7 @@ bind("AllReady", (msg) => { allReady(msg as any); }, wait.UIBroker);
 }
 
 // ---------- UI construction (cards driven by serverPlayers only) ----------
-async function buildSlots(n: number) {
+function buildSlots(n: number) {
   const container = document.getElementById("player-cards-container");
   if (!container) { return; }
 
@@ -320,7 +320,7 @@ function applyRoomState(state: RoomStatePayload) {
 //   	return { id: p.userId, username: p.username, avatar: undefined, status: 1, score: 0 } as unknown as UserData;
 // }
 
-async function playerLiteToUserData(p: PlayerLite): Promise<UserData> {
+export async function playerLiteToUserData(p: PlayerLite): Promise<UserData> {
 	console.log("USERID: ", p.userId);
 	if ( p.userId < 0)
 		return { id: p.userId, username: p.username, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
