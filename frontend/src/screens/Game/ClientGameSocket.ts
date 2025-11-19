@@ -29,6 +29,7 @@ export class ClientGameSocket {
 			"GameEnded": (m: MessagePayloads["GameEnded"]) => this.HandleGameEnded(m),
 			"GameRestart": (m: MessagePayloads["GameRestart"]) => this.HandleGameRestart(),
 			"PointMade": (m: MessagePayloads["PointMade"]) => this.HandlePointMade(m),
+			"GameCountdown": (m: MessagePayloads["GameCountdown"]) => {console.log("GameCountdown"); this.UIBroker.Publish("GameCountdown", m);},
 			"BallMove": (m: MessagePayloads["BallMove"]) => this.HandleBallMove(m),
 			"BallRemove": (m: MessagePayloads["BallRemove"]) => this.HandleBallRemove(m),
 			"PaddlePosition": (m: MessagePayloads["PaddlePosition"]) => this.HandlePaddlePosition(m),
