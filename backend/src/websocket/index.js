@@ -49,6 +49,6 @@ export async function startTournamentMatch(roomId) {
 export default async function registerWebsocket(fastify) {
   // Registrar el handler de WebSocket para partidas
   fastify.get("/gamews", { websocket: true }, async (connection, req) => {
-    handleGameConnection(connection, req);
+    handleGameConnection(connection, req, fastify);
   });
 } 

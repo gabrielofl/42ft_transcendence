@@ -117,6 +117,7 @@ export interface PreMoveMessage extends Message {
 export interface CountdownMessage extends Message {
     type: "GameCountdown";
     seconds: number;
+    message: string;
 }
 
 export interface UsePowerUpMessage extends Message {
