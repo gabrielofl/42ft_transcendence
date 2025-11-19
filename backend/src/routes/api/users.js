@@ -237,6 +237,9 @@ export default async function (fastify, opts) {
 			}
 		});
 		
+
+
+
 		// Get user by ID - GET /api/users/:id
 		fastify.get('/:id', {
 			schema: {
@@ -261,6 +264,8 @@ export default async function (fastify, opts) {
 			return user;
 		});
 
+
+		
 		// Update GDPR privacy settings - POST /api/users/privacy-settings
 		fastify.post('/privacy-settings', {
 			preHandler: authenticate,

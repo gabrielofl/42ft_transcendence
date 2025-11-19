@@ -8,6 +8,7 @@ import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
 import { CountdownMessage, MatchSuddenDeathMessage, MatchTimerTickMessage, ScoreMessage } from "@shared/types/messages";
 import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, validateStoredTournamentMatch } from "../../services/tournament-state";
+import { initAlertModal, setupAlert } from "../AlertModal.js";
 
 var unsubscribeFromGameLeave: () => void;
 
@@ -156,7 +157,7 @@ export async function renderGame() {
 		await ClientGameSocket.GetInstance().StartGame();
 	} catch (error) {
 		console.error("❌ Error iniciando juego normal:", error);
-		alert("No se pudo iniciar la partida. Inténtalo de nuevo.");
+		setupAlert('Oops!', "No se pudo iniciar la partida. Inténtalo de nuevo.", "Close");
 	}
 }
 

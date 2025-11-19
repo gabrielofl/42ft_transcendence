@@ -1,8 +1,9 @@
 import { navigateTo } from "../navigation.js";
 import resultTemplate from "./result-modal.html?raw";
 import { API_BASE_URL } from "./config";
+import { ScoreMessage } from "@shared/types/messages";
+import { getCurrentUser } from "./ProfileHistory";
 
-const result = 1;
 
 const winFrames = [
 	`${API_BASE_URL}/static/spark_01.png`,
@@ -21,12 +22,11 @@ export function initResultModal(): void {
 	if (!document.getElementById("result-modal")) {
     	document.body.insertAdjacentHTML("beforeend", resultTemplate);
   	}
-	setupResult();
 }
 
 	
 
-export function setupResult() {
+export async function setupResult(msg: ScoreMessage) {
 
 	const modal = document.getElementById("result-modal");
 	const title = document.getElementById("result-title");
@@ -43,7 +43,14 @@ export function setupResult() {
 	let scoreTxt = "YOU EARN +150PTS";
 	let frames = winFrames;
 	let imgURL = `${API_BASE_URL}/static/win_dog.jpg`;
+	let result = 0;
+	let saveMatch = 1;
+	let scoreMatch = 0;
 
+	const userData = await getCurrentUser();
+	if (msg.results[0].username == userData.username)
+		result = 1;
+	
 	if (result) {
 		titleTxt = "Congratulations!";
 		subtitleTxt = "You have won the game";
@@ -51,18 +58,25 @@ export function setupResult() {
 		scoreTxt = "YOU EARN +150PTS";
 		frames = winFrames;
 		imgURL = `${API_BASE_URL}/static/win_dog.jpg`;
+		scoreMatch = 150;
 	}
 	else {
 		titleTxt = "Oh, you almost got it!";
 		subtitleTxt = "You lost the game";
 		messageTxt = "At least you got something";
-		scoreTxt = "YOU EARN +10pts";
+		scoreTxt = "YOU EARN +50pts";
 		frames = loseFrames;
 		imgURL = `${API_BASE_URL}/static/loose_cat.jpg`;
+		scoreMatch = 50;
 	}
 	
+	for (let index = 0; index < msg.results.length; index++) {
+		if (msg.results[index].id < 0)
+			saveMatch = 0;
+	}
 
-
+	console.log("Save : ",saveMatch);
+	
 
 	if (title && subtitle && message && score)
 	{

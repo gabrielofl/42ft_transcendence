@@ -568,15 +568,15 @@ async function tournamentWebsocket(fastify) {
       updateBracketWithWinner(bracket, matchId, winnerData, player1Score, player2Score);
 		
 		try {
-			await blockchainWriteMatchOnce(fastify, {
-				tournamentId,
-				matchId,
-				player1: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player1?.username || 'TBD',
-				player2: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username || 'TBD',
-				winner: winnerData.username,
-				score1: player1Score,
-				score2: player2Score
-			});
+			// await blockchainWriteMatchOnce(fastify, {
+			// 	tournamentId,
+			// 	matchId,
+			// 	player1: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player1?.username || 'TBD',
+			// 	player2: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username || 'TBD',
+			// 	winner: winnerData.username,
+			// 	score1: player1Score,
+			// 	score2: player2Score
+			// });
 			} catch (e) {
 			console.error('Failed blockchain store match on-chain:', e);
 		}
@@ -612,11 +612,11 @@ async function tournamentWebsocket(fastify) {
           [persistedWinnerId, tournamentId]
         );
 		  
-	  try {
-		await blockchainWriteFinalBracketOnce(fastify, tournamentId, bracket);
-		} catch (e) {
-		console.error('Failed blockchain store final bracket on-chain:', e);
-		}
+	//   try {
+	// 	await blockchainWriteFinalBracketOnce(fastify, tournamentId, bracket);
+	// 	} catch (e) {
+	// 	console.error('Failed blockchain store final bracket on-chain:', e);
+	// 	}
 
         broadcast(tournamentId, {
           type: 'TournamentFinished',

@@ -105,6 +105,7 @@ export interface AddPlayerMessage extends Message {
 }
 
 export interface PlayerResult {
+    id: number;
     username: string;
     score: number;
 }

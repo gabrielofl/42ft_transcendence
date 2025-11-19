@@ -9,6 +9,7 @@ import { Maps } from "./Maps";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
+import { initResultModal, setupResult } from "../ResultModal";
 import { BASE_URL, WS_URL } from "../config";
 import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
 
@@ -286,8 +287,10 @@ export class ClientGameSocket {
 	 * @param {ScoreMessage} msg - El mensaje con los resultados finales.
 	 */
 	public HandleGameEnded(msg: ScoreMessage): void {
-		console.log("HandleGameEnded");
+		console.log("HandleGameEnded", msg);
 		this.UIBroker.Publish("GameEnded", msg);
+		initResultModal();
+		setupResult(msg);
 		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
 		if (this.game) {
 			this.game.MessageBroker.Publish("GameEnded", msg);
