@@ -149,14 +149,13 @@ export class ServerGameSocket {
             enqueueMessage(msg); 
         });
         this.game.MessageBroker.Subscribe("GameEnded", (msg) => { 
-            const winner = msg.results.sort((a, b) => b.score - a.score)[0];
-            const loser = msg.results.sort((a, b) => b.score - a.score)[1];
-            const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
-            console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
+            // const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+            // const loser = msg.results.sort((a, b) => b.score - a.score)[1];
+            // const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+            // console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
             this.handleGameEnded(msg); 
-			this.saveMatchResult(winner, loser, msg);
-			
-			// this.Dispose();
+			// this.saveMatchResult(winner, loser, msg);
+			// this.HandleGameDispose(msg);
             enqueueMessage(msg); 
         });
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
@@ -280,21 +279,29 @@ export class ServerGameSocket {
     /**
      * Handler para cuando el juego termina
      */
-   handleGameEnded(payload) {
+   handleGameEnded(msg) {
         console.log("🏁 Partida terminada.");
+		const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+		const loser = msg.results.sort((a, b) => b.score - a.score)[1];
+		const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+		console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
+		this.handleGameEnded(msg); 
+		this.saveMatchResult(winner, loser, msg);
+		this.HandleGameDispose(msg);
+		
         // Verificar si es un match de torneo
         const tournamentInfo = this.parseTournamentRoomId(this.roomId);
         if (tournamentInfo) {
             
             // Determinar el ganador basado en los resultados
-            const winner = this.determineWinner(payload.results);
-            if (winner) {
+            const tournamentWinner = this.determineWinner(msg.results);
+            if (tournamentWinner) {
                 // Emitir evento al sistema de torneos
                 tournamentEventBus.emit('matchResult', {
                     tournamentId: tournamentInfo.tournamentId,
                     matchId: tournamentInfo.matchId,
-                    winner: winner,
-                    results: payload.results,
+                    winner: tournamentWinner,
+                    results: msg.results,
                     roomId: this.roomId
                 });
             }
@@ -384,11 +391,6 @@ export class ServerGameSocket {
 		let saveMatch = 1;
 		let saveScore = 1;
 
-		// set room status on close or delete
-
-
-		console.log("MSG: ", msg);
-
 		for (let index = 0; index < msg.results.length; index++) {
 			if (msg.results[index].id < 0)
 				saveMatch = saveScore = 0;
@@ -430,36 +432,59 @@ export class ServerGameSocket {
 		}
 		if (saveScore)
 		{
-			// try {
-			// // Insert match into DB
-			// const result = await fastify.db.run(
-			// 	`
-			// 	INSERT INTO games (
-			// 	player1_id,
-			// 	player2_id,
-			// 	winner_id,
-			// 	player1_score,
-			// 	player2_score,
-			// 	status,
-			// 	finished_at
-			// 	) VALUES (?, ?, ?, ?, ?, 'finished', CURRENT_TIMESTAMP)
-			// 	`,
-			// 	[
-			// 	winner.id,
-			// 	loser.id,
-			// 	winner.id,
-			// 	winner.score,
-			// 	loser.score
-			// 	]
-			// );
-			// console.log("Success: ", result);
+			// Update users statistics and score
+			try {
+				for (let i = 0; i < msg.results.length; i++) {
+					const player = msg.results[i];
+					const isWinner = player.id === winner.id;
 
-			// }
-			// catch (err) {
-			// 	console.error("Error saving match:", err);
-			// }
+					// winner gets +150, others get +50
+					const scoreIncrement = isWinner ? 150 : 50;
+
+					// update user stats
+					await app.db.run(
+						`
+						UPDATE users
+						SET 
+							score      = score + ?,
+							max_score  = CASE WHEN (score + ?) > max_score THEN (score + ?) ELSE max_score END,
+							wins       = wins + ?,
+							losses     = losses + ?,
+							matches    = matches + 1,
+							updated_at = CURRENT_TIMESTAMP
+						WHERE id = ?
+						`,
+						[
+							scoreIncrement,     // score + ?
+							scoreIncrement,     // (score + ?) for max_score
+							scoreIncrement,     // (score + ?) again
+							isWinner ? 1 : 0,   // wins + ?
+							isWinner ? 0 : 1,   // losses + ?
+							player.id           // WHERE id = ?
+						]
+					);
+				}
+
+				// console.log("User stats updated successfully.");
+			} catch (err) {
+				console.error("Error updating user scores:", err);
+			}
+
 		}
+		// Delete room from the rooms table
+		try {
+			const result = await app.db.run(
+				`
+				DELETE FROM rooms
+				WHERE code = ?
+				`,
+				[ this.roomId ]
+			);
 
+			console.log("Room deleted:", result);
+		} catch (err) {
+			console.error("Error deleting room:", err);
+		}
 
 	}
 	
