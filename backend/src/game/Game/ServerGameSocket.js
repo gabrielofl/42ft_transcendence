@@ -192,9 +192,6 @@ export class ServerGameSocket {
      * @param {any} msg El mensaje con la información del movimiento.
      */
 	HandlePreMoveMessage(msg, u) {
-        if(this.game.Paused)
-            return;
-
 		let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
@@ -203,9 +200,6 @@ export class ServerGameSocket {
     }
 
     HandleUsePowerUpMessage(msg, u) {
-        if(this.game.Paused)
-            return;
-
         let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{

@@ -1,6 +1,5 @@
 import { ServerGame } from "../Game/ServerGame.js";
 import { APlayer } from "../Player/APlayer.js";
-import { PausableTimer } from "../PausableTimer.js";
 import { Event } from "../Utils/Event.js";
 
 export class APlayerEffect { //implements IEffectCommand<APlayer>
@@ -11,7 +10,6 @@ export class APlayerEffect { //implements IEffectCommand<APlayer>
     disposed = false;//: boolean
     duration;//: number
     game;//: ServerGame
-    timer = null;//: PausableTimer | null
 
     /**
      * 
@@ -31,10 +29,6 @@ export class APlayerEffect { //implements IEffectCommand<APlayer>
 
         this.disposed = true;
         this.OnDisposeEvent.Invoke();
-        if (this.timer) {
-            this.game.MessageBroker.Unsubscribe("GamePause", this.onGamePause);
-            this.timer.Cancel();
-        }
         this.OnDisposeEvent.Clear();
     }
 
@@ -47,35 +41,18 @@ export class APlayerEffect { //implements IEffectCommand<APlayer>
     }
 
     /**
-     * Maneja el evento de pausa del juego.
-     * @param {{pause: boolean}} msg - El mensaje de pausa.
-     */
-    onGamePause = (msg) => {
-        if (!this.timer)
-            return;
-        
-        if (msg.pause) {
-            this.timer.Pause();
-        } else {
-            this.timer.Resume();
-        }
-    }
-
-    /**
      * 
      * @param {APlayer} target
      */
     Execute(target) {
         // Planificar el Undo después de la duración
-        if (this.duration > 0) {
-            this.game.MessageBroker.Subscribe("GamePause", this.onGamePause);
-            this.timer = new PausableTimer(() => {
+        if (this.duration > 0)
+            {
+                setTimeout(() => {
                 if (!this.disposed) {
                     this.Undo(target);
                 }
-                this.game.MessageBroker.Unsubscribe("GamePause", this.onGamePause);
-            }, this.duration * 1000);
-            this.timer.Start();
+            }, this.duration);
         }
     }
 
