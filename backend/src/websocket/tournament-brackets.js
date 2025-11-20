@@ -108,25 +108,16 @@ export function generateBracket(players) {
  * @param {number} score2 - Score del player2
  * @returns {Object} - Bracket actualizado
  */
-export function findMatchInBracket(bracket, matchId) {
-  if (!bracket?.rounds) return null;
-  for (let roundIndex = 0; roundIndex < bracket.rounds.length; roundIndex++) {
-    const round = bracket.rounds[roundIndex];
-    const match = round.matches?.find(m => m.matchId === matchId);
-    if (match) {
-      return { roundIndex, round, match };
-    }
-  }
-  return null;
-}
-
 export function updateBracketWithWinner(bracket, matchId, winner, score1, score2) {
-  const matchInfo = findMatchInBracket(bracket, matchId);
-  if (!matchInfo) {
-    throw new Error(`Match ${matchId} no encontrado en el bracket`);
+  const currentRound = bracket.rounds[bracket.currentRound];
+  
+  // Encontrar el match
+  const match = currentRound.matches.find(m => m.matchId === matchId);
+  if (!match) {
+    throw new Error(`Match ${matchId} no encontrado en ronda actual`);
   }
 
-  const { match } = matchInfo;
+  // Registrar ganador y scores
   match.winner = winner;
   match.status = 'completed';
   match.score1 = score1;

@@ -37,13 +37,6 @@ export class HistoryStore<State, Action> {
     }
   }
 
-  public PeekBack(): State | null {
-    if (this.index > 0) {
-      return this.history[this.index - 1];
-    }
-    return null;
-  }
-
   public GoForward() {
     if (this.index < this.history.length - 1) {
       const prev = this.GetState();

@@ -247,6 +247,7 @@ function setupTournamentListeners(game: ClientGame): void {
 
 		if (matchInfo) {
 			const isFinal = matchInfo.round === 'Finals';
+			clearTournamentMatchInfo();
 			
 			if (isFinal) {
 				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
@@ -259,8 +260,14 @@ function setupTournamentListeners(game: ClientGame): void {
 				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
 				const winnerNameSpan = document.getElementById("tournament-winner-name");
 				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+				const resultMessage = document.getElementById("tournament-result-message");
+				if (resultMessage) {
+					resultMessage.textContent = msg.reason === "opponent_disconnected"
+						? "Tu oponente se ha desconectado. Victoria automática."
+						: "Volviendo al bracket del torneo...";
+				}
 
-				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
+				console.log('Match de torneo terminado, mostrando panel intermedio');
 				
 				setTimeout(() => {
 					navigateTo('tournament-waiting');

@@ -1,7 +1,7 @@
 import view from "./tournament_waiting_room.html?raw";
 import { createAddPlayerCard } from "./add_player_card";
 import { createUserCard } from "./user-card";
-import { navigateTo, registerNavigationGuard } from "../navigation";
+import { navigateTo } from "../navigation";
 import { PlayerLite, UserData } from "../../../shared/types/messages";
 import { API_BASE_URL } from "./config";
 import { ClientTournamentSocket } from "../services/tournament-socket";
@@ -24,112 +24,7 @@ let bracketViewer: BracketViewer | null = null;
 let isBracketVisible = false;
 let myCurrentMatch: any = null; // Info del match actual del usuario
 
-const PENDING_COUNTDOWN_KEY = 'pendingCountdown';
-
-type PendingCountdownInfo = {
-  tournamentId: number;
-  matchId: number;
-  roomId: string;
-  expiresAt: number;
-};
-
-let countdownGuardCleanup: (() => void) | null = null;
-let countdownGuardExpiresAt: number | null = null;
-let beforeUnloadHandler: ((event: BeforeUnloadEvent) => void) | null = null;
-
 export let localPlayersUserName: [number, string][] = [];
-
-function getPendingCountdownInfo(): PendingCountdownInfo | null {
-  try {
-    const raw = sessionStorage.getItem(PENDING_COUNTDOWN_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as PendingCountdownInfo;
-  } catch (error) {
-    console.error("Failed to parse pending countdown info:", error);
-    sessionStorage.removeItem(PENDING_COUNTDOWN_KEY);
-    return null;
-  }
-}
-
-function savePendingCountdownInfo(info: PendingCountdownInfo) {
-  try {
-    sessionStorage.setItem(PENDING_COUNTDOWN_KEY, JSON.stringify(info));
-  } catch (error) {
-    console.error("Failed to save pending countdown info:", error);
-  }
-}
-
-function clearPendingCountdownInfo() {
-  sessionStorage.removeItem(PENDING_COUNTDOWN_KEY);
-}
-
-function remainingCountdownSeconds(): number {
-  if (!countdownGuardExpiresAt) return 0;
-  return Math.ceil((countdownGuardExpiresAt - Date.now()) / 1000);
-}
-
-function ensureBeforeUnloadListener() {
-  if (beforeUnloadHandler) return;
-  beforeUnloadHandler = (event: BeforeUnloadEvent) => {
-    if (!countdownGuardExpiresAt) return;
-    const remaining = remainingCountdownSeconds();
-    if (remaining <= 0) {
-      disableCountdownGuard();
-      return;
-    }
-    event.preventDefault();
-    event.returnValue = "";
-  };
-  window.addEventListener("beforeunload", beforeUnloadHandler);
-}
-
-function removeBeforeUnloadListener() {
-  if (!beforeUnloadHandler) return;
-  window.removeEventListener("beforeunload", beforeUnloadHandler);
-  beforeUnloadHandler = null;
-}
-
-function ensureCountdownNavigationGuard() {
-  if (countdownGuardCleanup) return;
-  countdownGuardCleanup = registerNavigationGuard((nextScreen) => {
-    if (!countdownGuardExpiresAt) return null;
-    if (nextScreen === "game") return null;
-    const remaining = remainingCountdownSeconds();
-    if (remaining <= 0) {
-      disableCountdownGuard();
-      return null;
-    }
-    return `Your tournament match starts in ${remaining}s. Please stay in the waiting room.`;
-  });
-}
-
-function activateCountdownGuard(match: any, seconds: number, expiresAtOverride?: number) {
-  if (!tournamentId || !match) return;
-  const expiresAt = expiresAtOverride ?? (Date.now() + seconds * 1000);
-  countdownGuardExpiresAt = expiresAt;
-  savePendingCountdownInfo({
-    tournamentId,
-    matchId: match.matchId,
-    roomId: match.roomId,
-    expiresAt,
-  });
-  ensureCountdownNavigationGuard();
-  ensureBeforeUnloadListener();
-}
-
-function disableCountdownGuard() {
-  countdownGuardExpiresAt = null;
-  clearPendingCountdownInfo();
-  if (countdownGuardCleanup) {
-    countdownGuardCleanup();
-    countdownGuardCleanup = null;
-  }
-  removeBeforeUnloadListener();
-  if (countdownInterval) {
-    clearInterval(countdownInterval);
-    countdownInterval = null;
-  }
-}
 
 // ---------- utilities ----------
 async function fetchJSON(url: string, init?: RequestInit) {
@@ -159,21 +54,48 @@ function setTournamentName(name: string) {
   if (el) el.textContent = name || "Loading tournament...";
 }
 
+const TOURNAMENT_BANNER_ID = "tournament-notification-banner";
+
+function showTournamentBanner(message: string, variant: "success" | "info" = "success") {
+  const existing = document.getElementById(TOURNAMENT_BANNER_ID);
+  if (existing) {
+    existing.remove();
+  }
+
+  const banner = document.createElement("div");
+  banner.id = TOURNAMENT_BANNER_ID;
+  banner.className = [
+    "fixed top-6 left-1/2 -translate-x-1/2 z-[9999]",
+    "px-5 py-3 rounded-lg shadow-lg text-white font-semibold",
+    variant === "success" ? "bg-emerald-600/90" : "bg-indigo-600/90"
+  ].join(" ");
+  banner.textContent = message;
+
+  document.body.appendChild(banner);
+
+  setTimeout(() => {
+    if (banner.parentElement) {
+      banner.remove();
+    }
+  }, 4000);
+}
+
 function updateReadyButton() {
   if (!readyButtonRef) return;
+  const button = readyButtonRef;
 
   const setInProgressState = () => {
-    readyButtonRef.disabled = true;
-    readyButtonRef.textContent = "TOURNAMENT IN PROGRESS";
-    readyButtonRef.style.opacity = "0.5";
-    readyButtonRef.style.cursor = "not-allowed";
+    button.disabled = true;
+    button.textContent = "TOURNAMENT IN PROGRESS";
+    button.style.opacity = "0.5";
+    button.style.cursor = "not-allowed";
   };
 
   const setReadyState = () => {
-    readyButtonRef.disabled = false;
-    readyButtonRef.textContent = myReadyState ? "NOT READY" : "READY";
-    readyButtonRef.style.opacity = "1";
-    readyButtonRef.style.cursor = "pointer";
+    button.disabled = false;
+    button.textContent = myReadyState ? "NOT READY" : "READY";
+    button.style.opacity = "1";
+    button.style.cursor = "pointer";
   };
 
   const localMatchInfo = getStoredTournamentMatchInfo();
@@ -323,7 +245,7 @@ function initializeBracketViewer() {
 function cleanupTournamentState() {
   // Limpiar estado del torneo actual
   clearTournamentMatchInfo();
-  disableCountdownGuard();
+  sessionStorage.removeItem('pendingCountdown');
   
   // Limpiar variables globales
   myCurrentMatch = null;
@@ -397,13 +319,6 @@ function startCountdown(seconds: number, onComplete: () => void) {
     clearInterval(countdownInterval);
   }
   
-  if (remaining <= 0) {
-    countdownSection.classList.add('hidden');
-    disableCountdownGuard();
-    onComplete();
-    return;
-  }
-  
   countdownInterval = window.setInterval(() => {
     remaining--;
     countdownTimer.textContent = remaining.toString();
@@ -411,7 +326,6 @@ function startCountdown(seconds: number, onComplete: () => void) {
     if (remaining <= 0) {
       if (countdownInterval) clearInterval(countdownInterval);
       countdownSection.classList.add('hidden');
-      disableCountdownGuard();
       onComplete();
     }
   }, 1000);
@@ -495,6 +409,7 @@ export async function renderWaitingRoom(): Promise<void> {
   }
   
   setTournamentName(tournament.name);
+  const currentTournamentStatus = tournament.status;
   isHost = tournament.creator_id === userId;
   tournamentPlayers = tournament.players || [];
   totalSlots = tournament.max_players || 8;
@@ -581,7 +496,6 @@ export async function renderWaitingRoom(): Promise<void> {
       showBracket();
       updateMatchInfo();
       
-      activateCountdownGuard(myMatch, 10);
       startCountdown(10, async () => {
         navigateTo('game');
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -600,7 +514,6 @@ export async function renderWaitingRoom(): Promise<void> {
     if (myCurrentMatch && myCurrentMatch.matchId === data.matchId) {
       showWaitingMessage();
       myCurrentMatch = null;
-      disableCountdownGuard();
     }
   });
 
@@ -625,7 +538,6 @@ export async function renderWaitingRoom(): Promise<void> {
       const currentScreen = window.location.hash.replace('#', '');
       
       if (currentScreen === 'tournament-waiting') {
-        activateCountdownGuard(myNewMatch, 10);
         startCountdown(10, async () => {
           navigateTo('game');
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -633,17 +545,41 @@ export async function renderWaitingRoom(): Promise<void> {
           tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: myNewMatch.roomId });
         });
       } else {
-        savePendingCountdownInfo({
-          tournamentId: data.tournamentId,
-          matchId: myNewMatch.matchId,
-          roomId: myNewMatch.roomId,
-          expiresAt: Date.now() + 10_000
-        });
+        // Guardar que hay un countdown pendiente
+        sessionStorage.setItem('pendingCountdown', 'true');
       }
     } else {
       // Mostrar mensaje de espera
       showWaitingMessage();
-      disableCountdownGuard();
+    }
+  });
+
+  tournamentSocket.UIBroker.Subscribe("TournamentForfeitWin", (data) => {
+    const isWinner = data?.winner?.userId === userId;
+    const isLoser = data?.loser?.userId === userId;
+    const currentScreen = window.location.hash.replace('#', '');
+    const onGameScreen = currentScreen === 'game';
+
+    if (isWinner) {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      sessionStorage.removeItem('pendingCountdown');
+      myCurrentMatch = null;
+      if (!onGameScreen) {
+        clearTournamentMatchInfo();
+      }
+      showWaitingMessage();
+      showTournamentBanner('Tu oponente se desconectó. Avanzas automáticamente.');
+      return;
+    }
+
+    if (isLoser) {
+      showTournamentBanner('Has sido eliminado por desconexión.', 'info');
+      if (!onGameScreen) {
+        clearTournamentMatchInfo();
+      }
     }
   });
 
@@ -651,7 +587,6 @@ export async function renderWaitingRoom(): Promise<void> {
     if (countdownInterval) {
       clearInterval(countdownInterval);
     }
-    disableCountdownGuard();
     const countdownSection = document.getElementById('countdown-section');
     if (countdownSection) countdownSection.classList.add('hidden');
     
@@ -680,28 +615,28 @@ export async function renderWaitingRoom(): Promise<void> {
   
   // Mostrar bracket si hay información de match válida en storage
   const { status: storedMatchStatus, matchInfo: activeMatchInfo } = await validateStoredTournamentMatch();
-  if (activeMatchInfo) {
+  const shouldForceBracket = currentTournamentStatus === 'in_progress' || currentTournamentStatus === 'finished';
+
+  if (activeMatchInfo || shouldForceBracket) {
     showBracket();
 
-    // Verificar si hay un countdown pendiente de iniciar
-    const pendingCountdownInfo = getPendingCountdownInfo();
-    if (pendingCountdownInfo && pendingCountdownInfo.tournamentId === tournamentId) {
-      const remainingMs = pendingCountdownInfo.expiresAt - Date.now();
-      if (remainingMs > 0) {
-        const remainingSeconds = Math.ceil(remainingMs / 1000);
-        activateCountdownGuard(activeMatchInfo, remainingSeconds, pendingCountdownInfo.expiresAt);
+    if (activeMatchInfo) {
+      // Verificar si hay un countdown pendiente de iniciar
+      const hasPendingCountdown = sessionStorage.getItem('pendingCountdown');
+      if (hasPendingCountdown === 'true') {
+        sessionStorage.removeItem('pendingCountdown');
 
         setTimeout(() => {
-          startCountdown(remainingSeconds, async () => {
+          startCountdown(10, async () => {
             navigateTo('game');
             await new Promise(resolve => setTimeout(resolve, 1000));
             const tournamentSocket = ClientTournamentSocket.GetInstance();
             tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: activeMatchInfo.roomId });
           });
         }, 100);
-      } else {
-        clearPendingCountdownInfo();
       }
+    } else {
+      showWaitingMessage();
     }
 
     // Obtener el bracket actualizado del backend para mostrar el estado actual
@@ -732,7 +667,7 @@ export async function renderWaitingRoom(): Promise<void> {
           tournamentId: tournamentId,
           currentRound: bracket.currentRound || 0,
           rounds: allRounds,
-          status: bracket.status || (storedMatchStatus === 'active' ? 'in_progress' : 'pending')
+          status: bracket.status || currentTournamentStatus || (storedMatchStatus === 'active' ? 'in_progress' : 'pending')
         });
       }
     } catch (error) {
