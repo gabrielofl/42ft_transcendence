@@ -9,10 +9,7 @@ export function createUserCard(userData: UserData): string {
 		: 'default.jpg';
 
 	const statusInfo = getStatusInfo(userData.status);
-	
-	console.log("userData ", userData);
-	console.log("Score ", userData.score);
-	
+
 	const scoreDisplay = userData.show_scores_publicly === 1 
 		? `${userData.score ?? 0} pts` : '🔒 Private';
 

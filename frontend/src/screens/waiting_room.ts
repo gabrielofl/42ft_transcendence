@@ -321,7 +321,6 @@ function applyRoomState(state: RoomStatePayload) {
 // }
 
 export async function playerLiteToUserData(p: PlayerLite): Promise<UserData> {
-	console.log("USERID: ", p.userId);
 	if ( p.userId < 0)
 		return { id: p.userId, username: p.username, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
 	try {

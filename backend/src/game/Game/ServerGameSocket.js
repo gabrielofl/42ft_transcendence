@@ -4,6 +4,8 @@ import { ServerGame } from "./ServerGame.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
 import { logToFile } from "./logger.js";
 import { tournamentEventBus } from "../../websocket/event-bus.js";
+import {app} from "../../index.js";
+
 
 /**
  * Gestiona la lógica de una sala de juego en el servidor, incluyendo las conexiones
@@ -148,9 +150,13 @@ export class ServerGameSocket {
         });
         this.game.MessageBroker.Subscribe("GameEnded", (msg) => { 
             const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+            const loser = msg.results.sort((a, b) => b.score - a.score)[1];
             const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
             console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
             this.handleGameEnded(msg); 
+			this.saveMatchResult(winner, loser, msg);
+			
+			// this.Dispose();
             enqueueMessage(msg); 
         });
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
@@ -366,4 +372,97 @@ export class ServerGameSocket {
             score: winner.score
         };
     }
+
+	/**
+     * Almacena en base de datos los resultados del juego y agrega el score a los usuarios si el match es valido
+     * Los matches validos para sumar puntos son cuando los jugadores son users registrados
+     * Los matches validos para almacenar son cuando los jugadores son users registrados y son solo 2 en la partida
+     * @param {ScoreMessage} (msg)
+     * @param {PlayerResult} (winner, loser)
+     */
+	async saveMatchResult(winner, loser, msg) {
+		let saveMatch = 1;
+		let saveScore = 1;
+
+		// set room status on close or delete
+
+
+		console.log("MSG: ", msg);
+
+		for (let index = 0; index < msg.results.length; index++) {
+			if (msg.results[index].id < 0)
+				saveMatch = saveScore = 0;
+		}
+		if (msg.results.length > 2)
+			saveMatch = 0;
+
+		console.log("Save Match: ", saveMatch);
+		if (saveMatch)
+		{
+			try {
+			// Insert match into DB
+			const result = await app.db.run(
+				`
+				INSERT INTO games (
+				player1_id,
+				player2_id,
+				winner_id,
+				player1_score,
+				player2_score,
+				status,
+				finished_at
+				) VALUES (?, ?, ?, ?, ?, 'finished', CURRENT_TIMESTAMP)
+				`,
+				[
+				winner.id,
+				loser.id,
+				winner.id,
+				winner.score,
+				loser.score
+				]
+			);
+			console.log("Success: ", result);
+
+			}
+			catch (err) {
+				console.error("Error saving match:", err);
+			}
+		}
+		if (saveScore)
+		{
+			// try {
+			// // Insert match into DB
+			// const result = await fastify.db.run(
+			// 	`
+			// 	INSERT INTO games (
+			// 	player1_id,
+			// 	player2_id,
+			// 	winner_id,
+			// 	player1_score,
+			// 	player2_score,
+			// 	status,
+			// 	finished_at
+			// 	) VALUES (?, ?, ?, ?, ?, 'finished', CURRENT_TIMESTAMP)
+			// 	`,
+			// 	[
+			// 	winner.id,
+			// 	loser.id,
+			// 	winner.id,
+			// 	winner.score,
+			// 	loser.score
+			// 	]
+			// );
+			// console.log("Success: ", result);
+
+			// }
+			// catch (err) {
+			// 	console.error("Error saving match:", err);
+			// }
+		}
+
+
+	}
+	
+	
+
 }

@@ -3,6 +3,7 @@ import resultTemplate from "./result-modal.html?raw";
 import { API_BASE_URL } from "./config";
 import { ScoreMessage } from "@shared/types/messages";
 import { getCurrentUser } from "./ProfileHistory";
+import {  setupAlert } from "./AlertModal.js";
 
 
 const winFrames = [
@@ -44,8 +45,6 @@ export async function setupResult(msg: ScoreMessage) {
 	let frames = winFrames;
 	let imgURL = `${API_BASE_URL}/static/win_dog.jpg`;
 	let result = 0;
-	let saveMatch = 1;
-	let scoreMatch = 0;
 
 	const userData = await getCurrentUser();
 	if (msg.results[0].username == userData.username)
@@ -58,7 +57,6 @@ export async function setupResult(msg: ScoreMessage) {
 		scoreTxt = "YOU EARN +150PTS";
 		frames = winFrames;
 		imgURL = `${API_BASE_URL}/static/win_dog.jpg`;
-		scoreMatch = 150;
 	}
 	else {
 		titleTxt = "Oh, you almost got it!";
@@ -67,17 +65,8 @@ export async function setupResult(msg: ScoreMessage) {
 		scoreTxt = "YOU EARN +50pts";
 		frames = loseFrames;
 		imgURL = `${API_BASE_URL}/static/loose_cat.jpg`;
-		scoreMatch = 50;
 	}
 	
-	for (let index = 0; index < msg.results.length; index++) {
-		if (msg.results[index].id < 0)
-			saveMatch = 0;
-	}
-
-	console.log("Save : ",saveMatch);
-	
-
 	if (title && subtitle && message && score)
 	{
 		title.textContent = titleTxt;
@@ -101,6 +90,9 @@ export async function setupResult(msg: ScoreMessage) {
 
 	btn.addEventListener("click", () => {
 		modal?.classList.add("hidden");
+		navigateTo("home");
     });
 
 }
+
+
