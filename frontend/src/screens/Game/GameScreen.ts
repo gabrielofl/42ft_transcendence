@@ -22,18 +22,19 @@ interface GameViewModel {
 export const GameViewModel = new ReactiveViewModel<GameViewModel>();
 const binder = new DOMBinder(GameViewModel);
 
-function showCountdown(seconds: number) {
-	let countdownContainer = document.getElementById('countdown-container');
+function showCountdown(seconds: number, message: string) {
+	const countdownContainer = document.getElementById('countdown-container');
 	const timerElement = document.getElementById('countdown-timer');
+	const timerMessage = document.getElementById('countdown-message');
 	
-	if (!countdownContainer || !timerElement)
+	if (!countdownContainer || !timerElement || !timerMessage)
 		return;
 
+	timerMessage.textContent = message;
+	timerElement.textContent = String(seconds);
 	if (seconds > 1) {
-		timerElement.textContent = String(seconds);
 		countdownContainer.classList.remove('hidden');
 	} else {
-		timerElement.textContent = 'Go!';
 		setTimeout(() => {
 			countdownContainer?.classList.add('hidden');
 		}, 500);
@@ -244,7 +245,7 @@ function setupNormalGameEvents(): void {
 	});
 
 	ClientGameSocket.GetInstance().UIBroker.Subscribe("GameCountdown", (msg: CountdownMessage) => {
-		showCountdown(msg.seconds);
+		showCountdown(msg.seconds, msg.message);
 	});
 
 	if (!unsubscribeFromGameLeave) {

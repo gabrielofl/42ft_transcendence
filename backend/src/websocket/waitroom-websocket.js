@@ -10,6 +10,7 @@ import {
   sortCombinedPlayers,
 } from './virtual-players.js';
 import { startGame } from './game-manager.js'
+import { getRoomByCode } from '../services/room-service.js';
 
 function genRoomCode(len = 6) {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -46,19 +47,8 @@ async function waitroomWebsocket(fastify) {
     return fastify.jwt.verify(token); // { id, username }
   }
 
-  async function getRoomByCode(code) {
-    const room = await fastify.db.get(`SELECT * FROM rooms WHERE code = ?`, [code]);
-    if (!room) return null;
-    const players = await fastify.db.all(
-      `SELECT user_id AS userId, username, is_host AS isHost, ready
-         FROM room_players WHERE room_id = ?
-         ORDER BY joined_at ASC`, [room.id]
-    );
-    return { room, players };
-  }
-
   async function joinRoom(code, userId, username) {
-    const data = await getRoomByCode(code);
+    const data = await getRoomByCode(fastify, code);
     if (!data) throw new Error('Room not found');
     const { room } = data;
 
@@ -83,12 +73,12 @@ async function waitroomWebsocket(fastify) {
        VALUES (?, ?, ?, 0, 0)`,
       [room.id, userId, username]
     );
-    return await getRoomByCode(code);
+    return await getRoomByCode(fastify, code);
   }
 
   // ------- combined state helpers (use virtualPlayers.js) -------
   async function getCombinedPlayersByCode(code) {
-    const data = await getRoomByCode(code);
+    const data = await getRoomByCode(fastify, code);
     if (!data) return null;
     const { room, players } = data;
 
@@ -98,7 +88,7 @@ async function waitroomWebsocket(fastify) {
   }
 
   async function publicCombinedRoomState(code) {
-    const base = await getRoomByCode(code);
+    const base = await getRoomByCode(fastify, code);
     if (!base) return null;
     const { room } = base;
     const merged = await getCombinedPlayersByCode(code);
@@ -131,7 +121,7 @@ async function waitroomWebsocket(fastify) {
   }
 
   async function isRoomFullConsideringVirtuals(code) {
-    const data = await getRoomByCode(code);
+    const data = await getRoomByCode(fastify, code);
     if (!data) return true;
     const { room } = data;
     if (!room.max_players) return false;
@@ -174,7 +164,7 @@ async function waitroomWebsocket(fastify) {
 
   // ------- leave helpers -------
   async function leaveRealPlayer(code, userId) {
-    const data = await getRoomByCode(code);
+    const data = await getRoomByCode(fastify, code);
     if (!data) throw new Error('Room not found');
     const { room } = data;
 
@@ -182,7 +172,7 @@ async function waitroomWebsocket(fastify) {
       `SELECT id, is_host FROM room_players WHERE room_id = ? AND user_id = ?`,
       [room.id, userId]
     );
-    if (!row) return await getRoomByCode(code);
+    if (!row) return await getRoomByCode(fastify, code);
 
     await fastify.db.run(`DELETE FROM room_players WHERE id = ?`, [row.id]);
 
@@ -209,27 +199,27 @@ async function waitroomWebsocket(fastify) {
       await fastify.db.run(`UPDATE rooms SET status = 'closed' WHERE id = ?`, [room.id]);
       clearVirtuals(code);
     }
-    return await getRoomByCode(code);
+    return await getRoomByCode(fastify, code);
   }
 
   async function leaveAny(code, userId) {
     if (userId < 0) {
       removeVirtual(code, userId);
-      return await getRoomByCode(code);
+      return await getRoomByCode(fastify, code);
     } else {
       return await leaveRealPlayer(code, userId);
     }
   }
 
   async function setReady(code, userId, ready) {
-    const data = await getRoomByCode(code);
+    const data = await getRoomByCode(fastify, code);
     if (!data) throw new Error('Room not found');
     const { room } = data;
     await fastify.db.run(
       `UPDATE room_players SET ready = ? WHERE room_id = ? AND user_id = ?`,
       [ready ? 1 : 0, room.id, userId]
     );
-    return await getRoomByCode(code);
+    return await getRoomByCode(fastify, code);
   }
 
   async function setConfig(code, userId, cfg) {
@@ -256,7 +246,7 @@ async function waitroomWebsocket(fastify) {
       vals.push(room.id);
       await fastify.db.run(`UPDATE rooms SET ${upd.join(', ')} WHERE id = ?`, vals);
     }
-    return await getRoomByCode(code);
+    return await getRoomByCode(fastify, code);
   }
 
   function toAddPlayer(p) {
@@ -300,7 +290,7 @@ async function waitroomWebsocket(fastify) {
     const user = fastify.jwt.verify(token);
 
     const code = (req.params.code || '').toUpperCase();
-    const data = await getRoomByCode(code);
+    const data = await getRoomByCode(fastify, code);
     if (!data) return reply.code(404).send({ error: 'Room not found' });
 
     await leaveRealPlayer(code, user.id);
@@ -396,7 +386,7 @@ fastify.get('/rooms', async (req, reply) => {
     const roomCode = (url.searchParams.get('room') || '').toUpperCase().trim();
     if (!roomCode) { try { socket.close(1008, 'No room'); } catch {} return; }
 
-    const data0 = await getRoomByCode(roomCode);
+    const data0 = await getRoomByCode(fastify, roomCode);
     if (!data0 || data0.room.status === 'closed') {
       try { socket.close(1008, 'Room not joinable'); } catch {}
       return;
@@ -412,11 +402,11 @@ fastify.get('/rooms', async (req, reply) => {
     set.add(conn);
 
     // ensure membership
-    const before = await getRoomByCode(roomCode);
+    const before = await getRoomByCode(fastify, roomCode);
     const wasMember = before.players.some(p => p.userId === userId);
     if (!wasMember) {
       await joinRoom(roomCode, userId, username);
-      const now = await getRoomByCode(roomCode);
+      const now = await getRoomByCode(fastify, roomCode);
       const me = now.players.find(p => p.userId === userId);
       broadcast(roomCode, toAddPlayer(me));
     }
@@ -445,7 +435,7 @@ fastify.get('/rooms', async (req, reply) => {
               newReady = me ? !me.ready : true;
               setVirtualReady(roomCode, targetId, newReady);
             } else {
-              const current = await getRoomByCode(roomCode);
+              const current = await getRoomByCode(fastify, roomCode);
               const me = current && current.players.find(p => p.userId === targetId);
               newReady = me ? !me.ready : true;
               await setReady(roomCode, targetId, newReady);
@@ -480,7 +470,7 @@ fastify.get('/rooms', async (req, reply) => {
           }
 
           case 'InviteAI': {
-            const base = await getRoomByCode(roomCode);
+            const base = await getRoomByCode(fastify, roomCode);
             if (!base) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Room not found', code: 404 }); break; }
             if (base.room.host_id !== userId) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Only host can invite AI', code: 403 }); break; }
             if (await isRoomFullConsideringVirtuals(roomCode)) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Room full', code: 409 }); break; }
@@ -497,7 +487,7 @@ fastify.get('/rooms', async (req, reply) => {
           }
 
           case 'InviteLocal': {
-            const base = await getRoomByCode(roomCode);
+            const base = await getRoomByCode(fastify, roomCode);
             if (!base) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Room not found', code: 404 }); break; }
             if (base.room.host_id !== userId) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Only host can add local player', code: 403 }); break; }
             if (await isRoomFullConsideringVirtuals(roomCode)) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Room full', code: 409 }); break; }
@@ -520,7 +510,7 @@ fastify.get('/rooms', async (req, reply) => {
             const pub = await publicCombinedRoomState(roomCode);
             if (pub) broadcast(roomCode, { type: 'RoomState', ...pub });
 
-            const base = await getRoomByCode(roomCode);
+            const base = await getRoomByCode(fastify, roomCode);
             if (!base || base.room.status === 'closed') {
               const s = roomSockets.get(roomCode);
               if (s) {
