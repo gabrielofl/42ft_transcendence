@@ -398,7 +398,7 @@ export class ServerGame {
 			}
 		});
 
-		this.StartFrontEndTimer(5, () => this.Start());
+		this.StartFrontEndTimer(5, "Get ready!", () => this.Start());
 
 		this.initializeMatchTimer();
 		this.dependents.Add(this.PongTable);
@@ -409,13 +409,14 @@ export class ServerGame {
 	 * Inicia un temporizador que envía una cuenta regresiva a los clientes.
 	 * Si ya existe un temporizador, se cancela antes de iniciar el nuevo.
 	 * @param {number} countdown Segundos para la cuenta atrás.
+	 * @param {string} message Mensaje a mostrar mientras se encuentra el timer.
 	 * @param {() => void} callback Función a ejecutar cuando el temporizador llega a 0.
 	 */
-	StartFrontEndTimer(countdown, callback) {
+	StartFrontEndTimer(countdown, message, callback) {
 		this.CancelFrontEndTimer();
 
 		this.countdownTimerId = setInterval(() => {
-			this.MessageBroker.Publish("GameCountdown", { type: "GameCountdown", seconds: countdown });
+			this.MessageBroker.Publish("GameCountdown", { type: "GameCountdown", seconds: countdown, message: message });
 			countdown--;
 			if (countdown < 0) {
 				this.CancelFrontEndTimer();

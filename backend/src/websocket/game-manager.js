@@ -3,6 +3,7 @@ import { ServerGameSocket } from '../game/Game/ServerGameSocket.js';
 import { AIPlayer } from '../game/Player/AIPlayer.js';
 import { ServerSocketPlayer } from '../game/Player/ServerSocketPlayer.js';
 import * as MAPS from '../game/Maps.js';
+import { getRoomByCode } from '../services/room-service.js';
 
 /**
  * @description Mapa para almacenar las instancias de juego activas.
@@ -112,13 +113,13 @@ export function isGameActive(roomCode) {
  * @param {import('@fastify/websocket').SocketStream} connection - La conexión del socket.
  * @param {import('fastify').FastifyRequest} req - La solicitud de conexión.
  */
-export function handleGameConnection(connection, req) {
+export async function handleGameConnection(connection, req, fastify) {
   console.log("handleGameConnection");
 
   //user validation req.usre_id == id del mensaje
   const url = new URL(req.url, `http://${req.headers.host}`);
   const roomCode = (url.searchParams.get('room') || '').trim(); // No convertir a mayúsculas para soportar torneos
-  const user = url.searchParams.get('user') || 'anonymous';
+  const user = Number(url.searchParams.get('user')) || 0;
 
   if (!roomCode) {
     try { connection.socket.send(JSON.stringify({ error: "Missing room parameter" })); } catch {}
@@ -139,10 +140,23 @@ export function handleGameConnection(connection, req) {
 
   console.log(`[GameManager] Jugador ${user} uniéndose a la partida en la sala ${roomCode}.`);
   gameSocket.AddPeople(user, connection, user);
+  const data = await getRoomByCode(fastify, roomCode);
+  const isPlayerInRoom = data && data.players.some(p => p.userId === user);
 
-  connection.on("close", () => {
+  connection.on('close', () => {
     if (gameSocket.people.size === 0) {
       removeGame(roomCode);
+    } 
+    else if (isPlayerInRoom) {
+      gameSocket.game.MessageBroker.Publish("GamePause", {type: "GamePause", pause: true});
+      gameSocket.game.StartFrontEndTimer(30, `User ${data.players.find(p => p.userId === user).username} disconnected`, () => gameSocket.game.MessageBroker.Publish("GameEnded", gameSocket.game.GetScoreMessage("GameEnded")));
     }
   });
+
+  // --- Lógica para gestionar la reconexión ---
+  if (gameSocket.game && gameSocket.game.Paused) {
+    if (isPlayerInRoom) {
+      gameSocket.game.StartFrontEndTimer(5, "Get ready!", () => gameSocket.game.MessageBroker.Publish("GamePause", { type: "GamePause", pause: false }));
+    }
+  }
 }

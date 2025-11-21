@@ -29,6 +29,14 @@ export interface TournamentFinishedEvent {
   winner: { userId: number; username: string };
 }
 
+export interface TournamentForfeitEvent {
+  type: 'TournamentForfeitWin';
+  tournamentId: number;
+  matchId: number;
+  winner: { userId: number; username: string };
+  loser: { userId: number; username: string };
+}
+
 export class ClientTournamentSocket {
   private static instance: ClientTournamentSocket;
   private ws: WebSocket | null = null;
@@ -146,6 +154,9 @@ export class ClientTournamentSocket {
       case 'BracketUpdated':
         this.handleBracketUpdated(msg);
         break;
+      case 'TournamentForfeitWin':
+        this.handleTournamentForfeit(msg as TournamentForfeitEvent);
+        break;
     }
   }
 
@@ -179,6 +190,15 @@ export class ClientTournamentSocket {
     this.UIBroker.Publish('BracketTournamentFinished', {
       winner: event.winner,
       tournamentId: event.tournamentId
+    });
+  }
+
+  private handleTournamentForfeit(event: TournamentForfeitEvent) {
+    this.UIBroker.Publish('TournamentForfeitWin', {
+      tournamentId: event.tournamentId,
+      matchId: event.matchId,
+      winner: event.winner,
+      loser: event.loser
     });
   }
 

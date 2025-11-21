@@ -64,10 +64,6 @@ export class ServerGameSocket {
 
         // Asigna los manejadores de eventos para esta conexión específica.
         connection.on('message', (msg) => this.ReceiveSocketMessage(msg, user, userid));
-        connection.on('close', () => {
-            console.log(`Sala ${this.roomId} cerrada para ${user}`);
-            this.people.delete(user);
-        });
         connection.on('error', (msg) => { console.log(msg); });
     }
 

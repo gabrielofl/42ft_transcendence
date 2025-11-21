@@ -118,6 +118,7 @@ export interface PreMoveMessage extends Message {
 export interface CountdownMessage extends Message {
     type: "GameCountdown";
     seconds: number;
+    message: string;
 }
 
 export interface UsePowerUpMessage extends Message {
@@ -177,6 +178,8 @@ export interface GamePauseMessage extends Message {
 export interface ScoreMessage extends Message {
     type: "GameEnded" | "PointMade";
     results: PlayerResult[];
+    reason?: string;
+    metadata?: Record<string, any>;
 }
 
 export interface GameStartMessage extends Message {
