@@ -177,6 +177,8 @@ export interface GamePauseMessage extends Message {
 export interface ScoreMessage extends Message {
     type: "GameEnded" | "PointMade";
     results: PlayerResult[];
+    reason?: string;
+    metadata?: Record<string, any>;
 }
 
 export interface GameStartMessage extends Message {

@@ -54,21 +54,48 @@ function setTournamentName(name: string) {
   if (el) el.textContent = name || "Loading tournament...";
 }
 
+const TOURNAMENT_BANNER_ID = "tournament-notification-banner";
+
+function showTournamentBanner(message: string, variant: "success" | "info" = "success") {
+  const existing = document.getElementById(TOURNAMENT_BANNER_ID);
+  if (existing) {
+    existing.remove();
+  }
+
+  const banner = document.createElement("div");
+  banner.id = TOURNAMENT_BANNER_ID;
+  banner.className = [
+    "fixed top-6 left-1/2 -translate-x-1/2 z-[9999]",
+    "px-5 py-3 rounded-lg shadow-lg text-white font-semibold",
+    variant === "success" ? "bg-emerald-600/90" : "bg-indigo-600/90"
+  ].join(" ");
+  banner.textContent = message;
+
+  document.body.appendChild(banner);
+
+  setTimeout(() => {
+    if (banner.parentElement) {
+      banner.remove();
+    }
+  }, 4000);
+}
+
 function updateReadyButton() {
   if (!readyButtonRef) return;
+  const button = readyButtonRef;
 
   const setInProgressState = () => {
-    readyButtonRef.disabled = true;
-    readyButtonRef.textContent = "TOURNAMENT IN PROGRESS";
-    readyButtonRef.style.opacity = "0.5";
-    readyButtonRef.style.cursor = "not-allowed";
+    button.disabled = true;
+    button.textContent = "TOURNAMENT IN PROGRESS";
+    button.style.opacity = "0.5";
+    button.style.cursor = "not-allowed";
   };
 
   const setReadyState = () => {
-    readyButtonRef.disabled = false;
-    readyButtonRef.textContent = myReadyState ? "NOT READY" : "READY";
-    readyButtonRef.style.opacity = "1";
-    readyButtonRef.style.cursor = "pointer";
+    button.disabled = false;
+    button.textContent = myReadyState ? "NOT READY" : "READY";
+    button.style.opacity = "1";
+    button.style.cursor = "pointer";
   };
 
   const localMatchInfo = getStoredTournamentMatchInfo();
@@ -382,6 +409,7 @@ export async function renderWaitingRoom(): Promise<void> {
   }
   
   setTournamentName(tournament.name);
+  const currentTournamentStatus = tournament.status;
   isHost = tournament.creator_id === userId;
   tournamentPlayers = tournament.players || [];
   totalSlots = tournament.max_players || 8;
@@ -526,6 +554,35 @@ export async function renderWaitingRoom(): Promise<void> {
     }
   });
 
+  tournamentSocket.UIBroker.Subscribe("TournamentForfeitWin", (data) => {
+    const isWinner = data?.winner?.userId === userId;
+    const isLoser = data?.loser?.userId === userId;
+    const currentScreen = window.location.hash.replace('#', '');
+    const onGameScreen = currentScreen === 'game';
+
+    if (isWinner) {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      sessionStorage.removeItem('pendingCountdown');
+      myCurrentMatch = null;
+      if (!onGameScreen) {
+        clearTournamentMatchInfo();
+      }
+      showWaitingMessage();
+      showTournamentBanner('Tu oponente se desconectó. Avanzas automáticamente.');
+      return;
+    }
+
+    if (isLoser) {
+      showTournamentBanner('Has sido eliminado por desconexión.', 'info');
+      if (!onGameScreen) {
+        clearTournamentMatchInfo();
+      }
+    }
+  });
+
   tournamentSocket.UIBroker.Subscribe("BracketTournamentFinished", (data) => {
     if (countdownInterval) {
       clearInterval(countdownInterval);
@@ -558,22 +615,28 @@ export async function renderWaitingRoom(): Promise<void> {
   
   // Mostrar bracket si hay información de match válida en storage
   const { status: storedMatchStatus, matchInfo: activeMatchInfo } = await validateStoredTournamentMatch();
-  if (activeMatchInfo) {
+  const shouldForceBracket = currentTournamentStatus === 'in_progress' || currentTournamentStatus === 'finished';
+
+  if (activeMatchInfo || shouldForceBracket) {
     showBracket();
 
-    // Verificar si hay un countdown pendiente de iniciar
-    const hasPendingCountdown = sessionStorage.getItem('pendingCountdown');
-    if (hasPendingCountdown === 'true') {
-      sessionStorage.removeItem('pendingCountdown');
+    if (activeMatchInfo) {
+      // Verificar si hay un countdown pendiente de iniciar
+      const hasPendingCountdown = sessionStorage.getItem('pendingCountdown');
+      if (hasPendingCountdown === 'true') {
+        sessionStorage.removeItem('pendingCountdown');
 
-      setTimeout(() => {
-        startCountdown(10, async () => {
-          navigateTo('game');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const tournamentSocket = ClientTournamentSocket.GetInstance();
-          tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: activeMatchInfo.roomId });
-        });
-      }, 100);
+        setTimeout(() => {
+          startCountdown(10, async () => {
+            navigateTo('game');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const tournamentSocket = ClientTournamentSocket.GetInstance();
+            tournamentSocket.Send({ type: 'TournamentMatchStart', roomId: activeMatchInfo.roomId });
+          });
+        }, 100);
+      }
+    } else {
+      showWaitingMessage();
     }
 
     // Obtener el bracket actualizado del backend para mostrar el estado actual
@@ -604,7 +667,7 @@ export async function renderWaitingRoom(): Promise<void> {
           tournamentId: tournamentId,
           currentRound: bracket.currentRound || 0,
           rounds: allRounds,
-          status: bracket.status || (storedMatchStatus === 'active' ? 'in_progress' : 'pending')
+          status: bracket.status || currentTournamentStatus || (storedMatchStatus === 'active' ? 'in_progress' : 'pending')
         });
       }
     } catch (error) {

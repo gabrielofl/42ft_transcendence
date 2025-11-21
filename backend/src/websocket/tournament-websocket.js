@@ -4,9 +4,25 @@ import { addVirtualAI } from './virtual-players.js';
 import { tournamentEventBus } from './event-bus.js';
 import { blockchainWriteMatchOnce, blockchainWriteFinalBracketOnce } from '../services/blockchain.js';
 
+const MIN_MATCH_TIME_LIMIT_SECONDS = 30;
+const TOURNAMENT_FORFEIT_GRACE_MS = 5000;
+const tournamentDisconnectTimers = new Map();
+
 async function tournamentWebsocket(fastify) {
   // Conexiones por torneo: tournamentId -> Set<{ userId, socket }>
   const connections = new Map();
+
+  async function withTournamentTransaction(work) {
+    await fastify.db.exec('BEGIN IMMEDIATE TRANSACTION');
+    try {
+      const result = await work();
+      await fastify.db.exec('COMMIT');
+      return result;
+    } catch (error) {
+      try { await fastify.db.exec('ROLLBACK'); } catch {}
+      throw error;
+    }
+  }
 
   // Limpieza inicial: Eliminar torneos vacíos o huérfanos
   async function cleanupOrphanedTournaments() {
@@ -93,6 +109,19 @@ async function tournamentWebsocket(fastify) {
     }
   }
 
+  function findMatchInBracket(bracket, matchId) {
+    if (!bracket?.rounds?.length) return null;
+    for (let roundIndex = 0; roundIndex < bracket.rounds.length; roundIndex++) {
+      const round = bracket.rounds[roundIndex];
+      if (!round?.matches?.length) continue;
+      const match = round.matches.find(m => m?.matchId === matchId);
+      if (match) {
+        return { match, roundIndex };
+      }
+    }
+    return null;
+  }
+
   // Helper: Auth desde cookie
   async function requireUserFromCookie(req) {
     const token = req.cookies?.accessToken;
@@ -157,14 +186,17 @@ async function tournamentWebsocket(fastify) {
         });
         
         const matchPlayers = [match.player1, match.player2];
-        const matchTimeLimit = Number(tournamentConfig?.match_time_limit);
+        const rawMatchTimeLimit = Number(tournamentConfig?.match_time_limit);
+        const normalizedMatchTimeLimit = Number.isFinite(rawMatchTimeLimit)
+          ? Math.max(rawMatchTimeLimit, MIN_MATCH_TIME_LIMIT_SECONDS)
+          : null;
         const config = {
           mapKey: tournamentConfig?.map_key || 'ObstacleMap',
           powerUpAmount: tournamentConfig?.powerup_amount || 3,
           enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]'),
           windAmount: tournamentConfig?.wind_amount || 50,
           pointToWinAmount: tournamentConfig?.point_to_win_amount || 5,
-          matchTimeLimit: Number.isFinite(matchTimeLimit) && matchTimeLimit > 0 ? matchTimeLimit : null
+          matchTimeLimit: normalizedMatchTimeLimit
         };
         
         // Crear la sala para este match con config
@@ -429,20 +461,39 @@ async function tournamentWebsocket(fastify) {
     }
   }
 
+  function getDisconnectKey(tournamentId, userId) {
+    return `${tournamentId}:${userId}`;
+  }
+
+  function clearPendingForfeitTimer(tournamentId, userId) {
+    const key = getDisconnectKey(tournamentId, userId);
+    const existing = tournamentDisconnectTimers.get(key);
+    if (existing) {
+      clearTimeout(existing);
+      tournamentDisconnectTimers.delete(key);
+    }
+  }
+
   // Handler: Cleanup al desconectar jugador
   async function handlePlayerDisconnect(tournamentId, userId) {
-    // Obtener estado del torneo
     const tournament = await fastify.db.get(
-      `SELECT status FROM tournaments WHERE id = ?`,
+      `SELECT status, bracket FROM tournaments WHERE id = ?`,
       [tournamentId]
     );
 
     if (!tournament) return;
 
-    // Solo limpiar si el torneo está en waiting (no ha empezado)
-    if (tournament.status !== 'waiting') return;
+    if (tournament.status === 'waiting') {
+      await handleWaitingPhaseDisconnect(tournamentId, userId);
+      return;
+    }
 
-    // Quitar jugador del torneo
+    if (tournament.status === 'in_progress') {
+      await handleActiveTournamentDisconnect(tournamentId, userId, tournament.bracket);
+    }
+  }
+
+  async function handleWaitingPhaseDisconnect(tournamentId, userId) {
     const result = await fastify.db.run(
       `DELETE FROM tournament_players 
        WHERE tournament_id = ? AND user_id = ?`,
@@ -451,13 +502,11 @@ async function tournamentWebsocket(fastify) {
 
     if (result.changes === 0) return;
 
-    // Notificar a otros jugadores que salió
     broadcast(tournamentId, {
       type: 'PlayerLeft',
       userId
     });
 
-    // Verificar cuántos jugadores quedan y cuántos son reales
     const remainingPlayers = await fastify.db.get(
       `SELECT 
         COUNT(*) as total_count,
@@ -468,41 +517,256 @@ async function tournamentWebsocket(fastify) {
     );
 
     if (remainingPlayers.total_count === 0) {
-      // Torneo vacío → Eliminarlo
       await fastify.db.run(
         `DELETE FROM tournaments WHERE id = ?`,
         [tournamentId]
       );
-      
-      // Limpiar conexiones
       connections.delete(tournamentId);
-    } else if (remainingPlayers.real_count === 0) {
-      // Solo quedan jugadores IA → Eliminar torneo y jugadores IA
+      return;
+    }
+
+    if (remainingPlayers.real_count === 0) {
       await fastify.db.run(
         `DELETE FROM tournament_players WHERE tournament_id = ?`,
         [tournamentId]
       );
-      
       await fastify.db.run(
         `DELETE FROM tournaments WHERE id = ?`,
         [tournamentId]
       );
-      
-      // Limpiar conexiones
       connections.delete(tournamentId);
-    } else {
-      // Enviar estado actualizado a los que quedan
-      const updatedState = await getTournamentState(tournamentId);
-      if (updatedState) {
-        broadcast(tournamentId, {
-          type: 'TournamentState',
-          ...updatedState
-        });
+      return;
+    }
+
+    const updatedState = await getTournamentState(tournamentId);
+    if (updatedState) {
+      broadcast(tournamentId, {
+        type: 'TournamentState',
+        ...updatedState
+      });
+    }
+
+    await handleHostReassignment(tournamentId);
+  }
+
+  async function handleActiveTournamentDisconnect(tournamentId, userId, bracketData) {
+    const bracket = parseBracket(bracketData);
+    if (!bracket) return;
+
+    const matchInfo = findActiveMatchForPlayer(bracket, userId);
+    if (!matchInfo?.match || !matchInfo.opponent) {
+      return;
+    }
+
+    scheduleTournamentForfeit(tournamentId, userId, matchInfo.match.matchId);
+  }
+
+  function parseBracket(bracketData) {
+    if (!bracketData) return null;
+    if (typeof bracketData === 'object') return bracketData;
+    try {
+      return JSON.parse(bracketData);
+    } catch (error) {
+      console.error('Failed to parse bracket JSON:', error);
+      return null;
+    }
+  }
+
+  function findActiveMatchForPlayer(bracket, userId) {
+    if (!bracket?.rounds?.length) return null;
+    const roundIndex = Number.isInteger(bracket.currentRound) ? bracket.currentRound : 0;
+    const round = bracket.rounds[roundIndex];
+    if (!round?.matches?.length) return null;
+
+    const match = round.matches.find((m) => {
+      if (!m || m.status === 'completed') return false;
+      return (m.player1?.userId === userId) || (m.player2?.userId === userId);
+    });
+
+    if (!match) return null;
+
+    const opponent = match.player1?.userId === userId ? match.player2 : match.player1;
+
+    return { match, opponent };
+  }
+
+  function scheduleTournamentForfeit(tournamentId, userId, matchId) {
+    const key = getDisconnectKey(tournamentId, userId);
+    clearPendingForfeitTimer(tournamentId, userId);
+
+    const timer = setTimeout(async () => {
+      tournamentDisconnectTimers.delete(key);
+      try {
+        await finalizeTournamentForfeit(tournamentId, userId, matchId);
+      } catch (error) {
+        console.error(`Failed to finalize forfeit for user ${userId} in tournament ${tournamentId}:`, error);
+      }
+    }, TOURNAMENT_FORFEIT_GRACE_MS);
+
+    tournamentDisconnectTimers.set(key, timer);
+  }
+
+  async function finalizeTournamentForfeit(tournamentId, userId, matchId) {
+    const tournament = await fastify.db.get(
+      `SELECT status, bracket FROM tournaments WHERE id = ?`,
+      [tournamentId]
+    );
+
+    if (!tournament || tournament.status !== 'in_progress') return;
+
+    const bracket = parseBracket(tournament.bracket);
+    if (!bracket?.rounds?.length) return;
+
+    const roundIndex = Number.isInteger(bracket.currentRound) ? bracket.currentRound : 0;
+    const round = bracket.rounds[roundIndex];
+    if (!round?.matches?.length) return;
+
+    const match = round.matches.find((m) => m?.matchId === matchId);
+    if (!match || match.status === 'completed') return;
+
+    const isPlayer1 = match.player1?.userId === userId;
+    const isPlayer2 = match.player2?.userId === userId;
+    if (!isPlayer1 && !isPlayer2) return;
+
+    const loserInfo = isPlayer1 ? match.player1 : match.player2;
+    const winnerInfo = isPlayer1 ? match.player2 : match.player1;
+
+    if (!winnerInfo) {
+      console.warn(`Cannot award forfeit in tournament ${tournamentId}, match ${matchId}: missing opponent`);
+      return;
+    }
+
+    const winnerData = {
+      userId: winnerInfo.userId,
+      username: winnerInfo.username
+    };
+
+    const loserName = loserInfo?.username || `Player${userId}`;
+    const winnerName = winnerInfo.username || `Player${winnerInfo.userId}`;
+
+    const resultsPayload = [
+      { username: winnerName, score: 1 },
+      { username: loserName, score: 0 }
+    ];
+
+    await handleMatchResult(
+      tournamentId,
+      match.matchId,
+      winnerData,
+      resultsPayload,
+      fastify
+    );
+
+    broadcast(tournamentId, {
+      type: 'TournamentForfeitWin',
+      tournamentId,
+      matchId: match.matchId,
+      winner: winnerData,
+      loser: {
+        userId,
+        username: loserName
+      }
+    });
+
+    await notifyGamePlayersOfForfeit(
+      `tournament-${tournamentId}-match-${match.matchId}`,
+      resultsPayload
+    );
+  }
+
+  async function notifyGamePlayersOfForfeit(roomId, resultsPayload) {
+    const message = {
+      type: 'GameEnded',
+      results: resultsPayload,
+      reason: 'opponent_disconnected',
+      metadata: {
+        reason: 'opponent_disconnected'
+      }
+    };
+
+    if (global.pendingTournamentMatches?.has(roomId)) {
+      const pendingMatches = global.pendingTournamentMatches;
+      const pending = pendingMatches.get(roomId);
+      try {
+        pending?.gameSocket?.Broadcast?.(message);
+        pending?.gameSocket?.Dispose?.();
+      } catch (error) {
+        console.error(`Failed to notify pending match ${roomId} about forfeit:`, error);
+      }
+      pendingMatches.delete(roomId);
+      return;
+    }
+
+    try {
+      const { getGame, removeGame } = await import('./game-manager.js');
+      const gameSocket = getGame(roomId);
+      if (gameSocket) {
+        try {
+          gameSocket.Broadcast(message);
+        } catch (error) {
+          console.error(`Failed to broadcast forfeit GameEnded message for ${roomId}:`, error);
+        }
+        removeGame(roomId);
+      }
+    } catch (error) {
+      console.error(`Failed to clean up active game for ${roomId}:`, error);
+    }
+  }
+
+  async function persistTournamentMatchResult(tournamentId, matchId, winnerData, results) {
+    return withTournamentTransaction(async () => {
+      const row = await fastify.db.get(
+        `SELECT status, bracket FROM tournaments WHERE id = ?`,
+        [tournamentId]
+      );
+
+      if (!row || row.status !== 'in_progress') {
+        return null;
       }
 
-      // Reasignar host si es necesario
-      await handleHostReassignment(tournamentId);
-    }
+      const bracket = parseBracket(row.bracket);
+      if (!bracket) return null;
+
+      const matchInfo = findMatchInBracket(bracket, matchId);
+      if (!matchInfo?.match) {
+        console.warn(`Match ${matchId} not found in bracket for tournament ${tournamentId}`);
+        return null;
+      }
+
+      if (matchInfo.match.status === 'completed') {
+        return { bracket, advanceResult: null, alreadyProcessed: true };
+      }
+
+      const player1Score = results.find(r => r.username === matchInfo.match.player1?.username)?.score || 0;
+      const player2Score = results.find(r => r.username === matchInfo.match.player2?.username)?.score || 0;
+
+      matchInfo.match.winner = winnerData;
+      matchInfo.match.status = 'completed';
+      matchInfo.match.score1 = player1Score;
+      matchInfo.match.score2 = player2Score;
+
+      const advanceResult = advanceRoundIfReady(bracket);
+
+      await fastify.db.run(
+        `UPDATE tournaments SET bracket = ? WHERE id = ?`,
+        [JSON.stringify(bracket), tournamentId]
+      );
+
+      if (advanceResult?.tournamentFinished) {
+        const winnerId = (advanceResult.winner?.userId ?? null);
+        const persistedWinnerId = typeof winnerId === 'number' && winnerId > 0 ? winnerId : null;
+        await fastify.db.run(
+          `UPDATE tournaments 
+             SET status = 'finished', 
+                 finished_at = datetime('now'),
+                 winner_id = ?
+           WHERE id = ?`,
+          [persistedWinnerId, tournamentId]
+        );
+      }
+
+      return { bracket, advanceResult };
+    });
   }
 
   // Handler: Iniciar match de torneo cuando el countdown termina
@@ -560,70 +824,57 @@ async function tournamentWebsocket(fastify) {
         username: winnerPlayer.username
       };
 
-      // 3. Actualizar bracket con el ganador y scores
-      // Extraer scores de los resultados
-      const player1Score = results.find(r => r.username === bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player1?.username)?.score || 0;
-      const player2Score = results.find(r => r.username === bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username)?.score || 0;
-      
-      updateBracketWithWinner(bracket, matchId, winnerData, player1Score, player2Score);
-		
-		try {
-			await blockchainWriteMatchOnce(fastify, {
-				tournamentId,
-				matchId,
-				player1: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player1?.username || 'TBD',
-				player2: bracket.rounds[bracket.currentRound].matches.find(m => m.matchId === matchId)?.player2?.username || 'TBD',
-				winner: winnerData.username,
-				score1: player1Score,
-				score2: player2Score
-			});
-			} catch (e) {
-			console.error('Failed blockchain store match on-chain:', e);
-		}
-
-      // 4. Verificar si la ronda está completa y avanzar si es necesario
-      const advanceResult = advanceRoundIfReady(bracket);
-
-      // 5. Guardar bracket actualizado en la base de datos
-      await fastify.db.run(
-        `UPDATE tournaments SET bracket = ? WHERE id = ?`,
-        [JSON.stringify(bracket), tournamentId]
+      const persistedResult = await persistTournamentMatchResult(
+        tournamentId,
+        matchId,
+        winnerData,
+        results
       );
 
-      // 6. Broadcast actualización a todos los jugadores conectados
-      // SIEMPRE enviar BracketUpdated primero para actualizar el bracket con el ganador
+      if (!persistedResult || persistedResult.alreadyProcessed) {
+        return;
+      }
+
+      const { bracket: updatedBracket, advanceResult } = persistedResult;
+
+      // Obtener información del match para blockchain
+      const matchInfo = findMatchInBracket(updatedBracket, matchId);
+      if (matchInfo?.match) {
+        // Escribir resultado del match en blockchain
+        try {
+          await blockchainWriteMatchOnce(fastify, {
+            tournamentId,
+            matchId,
+            player1: matchInfo.match.player1?.username || 'TBD',
+            player2: matchInfo.match.player2?.username || 'TBD',
+            winner: winnerData.username,
+            score1: matchInfo.match.score1 || 0,
+            score2: matchInfo.match.score2 || 0
+          });
+        } catch (e) {
+          console.error('Failed blockchain store match on-chain:', e);
+        }
+      }
+
       broadcast(tournamentId, {
         type: 'BracketUpdated',
         tournamentId,
-        bracket: bracket
+        bracket: updatedBracket
       });
       
       if (advanceResult?.tournamentFinished) {
-        // Torneo terminado
-        const winnerId = (advanceResult.winner?.userId ?? null);
-        const persistedWinnerId = typeof winnerId === 'number' && winnerId > 0 ? winnerId : null;
-
-        await fastify.db.run(
-          `UPDATE tournaments 
-             SET status = 'finished', 
-                 finished_at = datetime('now'),
-                 winner_id = ?
-           WHERE id = ?`,
-          [persistedWinnerId, tournamentId]
-        );
-		  
-	  try {
-		await blockchainWriteFinalBracketOnce(fastify, tournamentId, bracket);
-		} catch (e) {
-		console.error('Failed blockchain store final bracket on-chain:', e);
-		}
+        // Escribir bracket final en blockchain
+        try {
+          await blockchainWriteFinalBracketOnce(fastify, tournamentId, updatedBracket);
+        } catch (e) {
+          console.error('Failed blockchain store final bracket on-chain:', e);
+        }
 
         broadcast(tournamentId, {
           type: 'TournamentFinished',
           winner: advanceResult.winner,
           tournamentId
         });
-
 
       } else if (advanceResult?.nextRound) {
         // Nueva ronda iniciada
@@ -650,14 +901,17 @@ async function tournamentWebsocket(fastify) {
 
         for (const roomInfo of roomIds) {
           const matchPlayers = [roomInfo.player1, roomInfo.player2];
-        const matchTimeLimit = Number(tournamentConfig?.match_time_limit);
+        const rawMatchTimeLimit = Number(tournamentConfig?.match_time_limit);
+        const normalizedMatchTimeLimit = Number.isFinite(rawMatchTimeLimit)
+          ? Math.max(rawMatchTimeLimit, MIN_MATCH_TIME_LIMIT_SECONDS)
+          : null;
         const config = {
             mapKey: tournamentConfig?.map_key || 'ObstacleMap',
             powerUpAmount: tournamentConfig?.powerup_amount || 3,
             enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]'),
             windAmount: tournamentConfig?.wind_amount || 50,
             pointToWinAmount: tournamentConfig?.point_to_win_amount || 5,
-            matchTimeLimit: Number.isFinite(matchTimeLimit) && matchTimeLimit > 0 ? matchTimeLimit : null
+            matchTimeLimit: normalizedMatchTimeLimit
           };
           
           // Crear la sala para este match con config
@@ -679,7 +933,7 @@ async function tournamentWebsocket(fastify) {
           type: 'RoundAdvanced',
           tournamentId,
           roundNumber,
-          roundName: bracket.rounds[roundNumber].name,
+          roundName: updatedBracket.rounds[roundNumber].name,
           matches: roomIds,
           countdown: 10 // Indicar que debe iniciar countdown de 10 segundos
         });
@@ -724,6 +978,8 @@ async function tournamentWebsocket(fastify) {
       try { socket.close(1008, 'No tournament ID'); } catch {}
       return;
     }
+
+    clearPendingForfeitTimer(tournamentId, user.id);
 
     // Registrar conexión
     let set = connections.get(tournamentId);

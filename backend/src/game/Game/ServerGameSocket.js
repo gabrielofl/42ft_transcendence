@@ -279,6 +279,10 @@ export class ServerGameSocket {
             // Determinar el ganador basado en los resultados
             const winner = this.determineWinner(payload.results);
             if (winner) {
+                console.log('[emitMatchResult]', this.roomId, {
+                    winner: winner.username,
+                    results: payload.results
+                });
                 // Emitir evento al sistema de torneos
                 tournamentEventBus.emit('matchResult', {
                     tournamentId: tournamentInfo.tournamentId,
