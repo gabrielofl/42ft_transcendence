@@ -8,6 +8,7 @@ import { ClientTournamentSocket } from "../services/tournament-socket";
 import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, setTournamentMatchInfo, validateStoredTournamentMatch } from "../services/tournament-state";
 import { BracketViewer } from "./Game/BracketViewer";
 import { showResultOverlay } from "./match-result-view";
+import { playerLiteToUserData } from "./waiting_room";
 
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
 let tournamentPlayers: PlayerLite[] = [];
@@ -708,7 +709,7 @@ function buildSlots(n: number) {
   for (let i = 0; i < cards.length; i++) {
     const cardIndex = i; // Capturar i en closure
     
-    (cards[i] as any).fill = (p: PlayerLite | null) => {
+    (cards[i] as any).fill = async (p: PlayerLite | null) => {
       const currentCard = cards[cardIndex];
       const el = currentCard.cardElement;
       
@@ -742,7 +743,8 @@ function buildSlots(n: number) {
       } else {
         // Slot con jugador
         el.dataset.empty = "false";
-        el.innerHTML = createUserCard(playerLiteToUserData(p));
+        const userData = await playerLiteToUserData(p);
+        el.innerHTML = createUserCard(userData);
         el.dataset.userid = String(p.userId);
       }
     };
@@ -808,12 +810,12 @@ function applyTournamentState(state: any) {
 }
 
 // ---------- transforms & payload ----------
-function playerLiteToUserData(p: PlayerLite): UserData {
-  return { 
-    id: p.userId, 
-    username: p.username, 
-    avatar: undefined, 
-    status: 1, 
-    score: 0 
-  } as unknown as UserData;
-}
+// function playerLiteToUserData(p: PlayerLite): UserData {
+//   return { 
+//     id: p.userId, 
+//     username: p.username, 
+//     avatar: undefined, 
+//     status: 1, 
+//     score: 0 
+//   } as unknown as UserData;
+// }

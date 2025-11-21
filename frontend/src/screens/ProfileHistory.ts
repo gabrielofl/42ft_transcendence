@@ -2,6 +2,7 @@ import profileMatchHistory from "./profile-match-history.html?raw";
 import { replaceTemplatePlaceholders } from "./utils";
 import { initProfileModal, setupProfileLinks } from "./ProfileModal";
 import { API_BASE_URL } from "./config";
+import { UserData } from "@shared/types/messages";
 
 // Keep track of current page and perPage
 let currentPage = 1;
@@ -30,6 +31,42 @@ export async function getCurrentUser() {
   if (!res.ok) throw new Error(`Failed to fetch user: ${res.status}`);
   return res.json();
 }
+
+export async function userIdToUserData(userId: number): Promise<UserData> {
+	if ( userId < 0)
+		return { id:userId, username: undefined, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
+	try {
+		const res = await fetch(`${API_BASE_URL}/users/id=${userId}`, {
+			credentials: 'include',
+		});
+		const data = await res.json();
+		return {
+			id: data.id,
+			first_name: data.first_name,
+			last_name: data.last_name,
+			username: data.username,
+			email: data.email,
+			last_login: data.last_login,
+			avatar: data.avatar,
+			status: data.status,
+			wins: data.wins,
+			losses: data.losses,
+			score: data.score,
+			max_score: data.max_score,
+			matches: data.matches,
+			allow_data_collection: data.allow_data_collection,
+			allow_data_processing: data.allow_data_processing,
+			allow_ai_training: data.allow_ai_training,
+			show_scores_publicly: data.show_scores_publicly,
+			created_at: data.created_at,
+			updated_at: data.updated_at
+		} as UserData;
+	} catch (err) {
+		console.error('Error loading profile:', err);
+		return { id:userId, username: undefined, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
+	}
+}
+
 
 
 export function getUserFromMap(usersMap: UsersMap, id: number) {

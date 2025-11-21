@@ -8,6 +8,7 @@ import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
 import { CountdownMessage, MatchSuddenDeathMessage, MatchTimerTickMessage, ScoreMessage } from "@shared/types/messages";
 import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, validateStoredTournamentMatch } from "../../services/tournament-state";
+import {  setupAlert } from "../AlertModal.js";
 
 var unsubscribeFromGameLeave: () => void;
 
@@ -157,7 +158,7 @@ export async function renderGame() {
 		await ClientGameSocket.GetInstance().StartGame();
 	} catch (error) {
 		console.error("❌ Error iniciando juego normal:", error);
-		alert("No se pudo iniciar la partida. Inténtalo de nuevo.");
+		setupAlert('Oops!', "No se pudo iniciar la partida. Inténtalo de nuevo.", "Close");
 	}
 }
 
@@ -266,36 +267,29 @@ function setupTournamentListeners(game: ClientGame): void {
 
 	// Listener para GameEnded (torneos)
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
-		const matchInfo = getStoredTournamentMatchInfo();
+		// const matchInfo = getStoredTournamentMatchInfo();
 
-		if (matchInfo) {
-			const isFinal = matchInfo.round === 'Finals';
-			clearTournamentMatchInfo();
+		// if (matchInfo) {
+		// 	const isFinal = matchInfo.round === 'Finals';
 			
-			if (isFinal) {
-				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
-				navigateTo('tournament-waiting');
-			} else {
-				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
-				const container = document.querySelector(".relative.w-full") as HTMLDivElement;
-				if (!container) return;
+		// 	if (isFinal) {
+		// 		console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
+		// 		navigateTo('tournament-waiting');
+		// 	} else {
+		// 		const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+		// 		const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+		// 		if (!container) return;
 
-				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
-				const winnerNameSpan = document.getElementById("tournament-winner-name");
-				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
-				const resultMessage = document.getElementById("tournament-result-message");
-				if (resultMessage) {
-					resultMessage.textContent = msg.reason === "opponent_disconnected"
-						? "Tu oponente se ha desconectado. Victoria automática."
-						: "Volviendo al bracket del torneo...";
-				}
+		// 		container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+		// 		const winnerNameSpan = document.getElementById("tournament-winner-name");
+		// 		if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
 
-				console.log('Match de torneo terminado, mostrando panel intermedio');
+		// 		console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
 				
-				setTimeout(() => {
-					navigateTo('tournament-waiting');
-				}, 2000);
-			}
-		}
+		// 		setTimeout(() => {
+		// 			navigateTo('tournament-waiting');
+		// 		}, 2000);
+		// 	}
+		// }
 	});
 }
