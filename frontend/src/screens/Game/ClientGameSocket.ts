@@ -12,6 +12,9 @@ import { getCurrentUser } from "../ProfileHistory";
 import { initResultModal, setupResult } from "../ResultModal";
 import { BASE_URL, WS_URL } from "../config";
 import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
+import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
+import { onScreenLeave, navigateTo } from "../../navigation";
+
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -106,9 +109,6 @@ export class ClientGameSocket {
 			const tournamentInfo = getStoredTournamentMatchInfo();
 			if (tournamentInfo && code.startsWith('tournament-')) {
 				code = tournamentInfo.roomId;
-				console.log("Connect Tournament");
-				console.log(tournamentInfo);
-
 			}
 
 			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
@@ -293,7 +293,43 @@ export class ClientGameSocket {
 		console.log("HandleGameEnded", msg);
 		this.UIBroker.Publish("GameEnded", msg);
 		initResultModal();
-		setupResult(msg);
+		let matchInfo = getStoredTournamentMatchInfo();
+		const modal = document.getElementById("result-modal");
+
+		if (matchInfo)
+		{
+			console.log("IS TOURNAMENT");
+			if (matchInfo) {
+			const isFinal = matchInfo.round === 'Finals';
+			
+			if (isFinal) {
+				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
+				modal?.classList.add("hidden");
+				navigateTo('tournament-waiting');
+			} else {
+				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+				const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+				if (!container) return;
+
+				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+				const winnerNameSpan = document.getElementById("tournament-winner-name");
+				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+
+				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
+				
+				setTimeout(() => {
+					if (modal)
+						modal?.classList.add("hidden");
+					navigateTo('tournament-waiting');
+				}, 4000);
+			}
+		}
+		}
+		else 
+		{
+			console.log("IS NOT TOURNAMENT");
+			setupResult(msg, "home");
+		}
 		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
 		if (this.game) {
 			this.game.MessageBroker.Publish("GameEnded", msg);

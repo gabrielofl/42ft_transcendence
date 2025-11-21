@@ -27,7 +27,7 @@ export function initResultModal(): void {
 
 	
 
-export async function setupResult(msg: ScoreMessage) {
+export async function setupResult(msg: ScoreMessage, redirect: string) {
 
 	const modal = document.getElementById("result-modal");
 	const title = document.getElementById("result-title");
@@ -90,7 +90,17 @@ export async function setupResult(msg: ScoreMessage) {
 
 	btn.addEventListener("click", () => {
 		modal?.classList.add("hidden");
-		navigateTo("home");
+		switch (redirect)
+		{
+			case "none":
+				break;
+			case "home":
+				navigateTo("home");
+				break;
+			default:
+				break;
+		}
+
     });
 
 }

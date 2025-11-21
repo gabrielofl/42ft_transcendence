@@ -266,29 +266,29 @@ function setupTournamentListeners(game: ClientGame): void {
 
 	// Listener para GameEnded (torneos)
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
-		const matchInfo = getStoredTournamentMatchInfo();
+		// const matchInfo = getStoredTournamentMatchInfo();
 
-		if (matchInfo) {
-			const isFinal = matchInfo.round === 'Finals';
+		// if (matchInfo) {
+		// 	const isFinal = matchInfo.round === 'Finals';
 			
-			if (isFinal) {
-				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
-				navigateTo('tournament-waiting');
-			} else {
-				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
-				const container = document.querySelector(".relative.w-full") as HTMLDivElement;
-				if (!container) return;
+		// 	if (isFinal) {
+		// 		console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
+		// 		navigateTo('tournament-waiting');
+		// 	} else {
+		// 		const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+		// 		const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+		// 		if (!container) return;
 
-				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
-				const winnerNameSpan = document.getElementById("tournament-winner-name");
-				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+		// 		container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+		// 		const winnerNameSpan = document.getElementById("tournament-winner-name");
+		// 		if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
 
-				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
+		// 		console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
 				
-				setTimeout(() => {
-					navigateTo('tournament-waiting');
-				}, 2000);
-			}
-		}
+		// 		setTimeout(() => {
+		// 			navigateTo('tournament-waiting');
+		// 		}, 2000);
+		// 	}
+		// }
 	});
 }
