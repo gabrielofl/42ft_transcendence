@@ -1,6 +1,7 @@
 // import { gameWebSocketConfig } from "../../config/websocket";
 import * as BABYLON from "@babylonjs/core";
 import { ServerGame } from "./ServerGame.js";
+import { removeGame } from "../../websocket/game-manager.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
 import { logToFile } from "./logger.js";
 import { tournamentEventBus } from "../../websocket/event-bus.js";
@@ -82,7 +83,7 @@ export class ServerGameSocket {
                 console.warn(`Error cerrando socket de ${user}:`, e);
             }
         }
-
+		removeGame(this.roomId);
         this.people.clear();
     }
 
@@ -145,13 +146,7 @@ export class ServerGameSocket {
             enqueueMessage(msg); 
         });
         this.game.MessageBroker.Subscribe("GameEnded", (msg) => { 
-            // const winner = msg.results.sort((a, b) => b.score - a.score)[0];
-            // const loser = msg.results.sort((a, b) => b.score - a.score)[1];
-            // const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
-            // console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
             this.handleGameEnded(msg); 
-			// this.saveMatchResult(winner, loser, msg);
-			// this.HandleGameDispose(msg);
             enqueueMessage(msg); 
         });
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
@@ -280,7 +275,8 @@ export class ServerGameSocket {
 		const winner = msg.results.sort((a, b) => b.score - a.score)[0];
 		const loser = msg.results.sort((a, b) => b.score - a.score)[1];
 		const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
-		console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
+		
+		// console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
 		
         // Verificar si es un match de torneo
         const tournamentInfo = this.parseTournamentRoomId(this.roomId);
@@ -387,6 +383,10 @@ export class ServerGameSocket {
 	async saveMatchResult(winner, loser, msg) {
 		let saveMatch = 1;
 		let saveScore = 1;
+		let tournamentId = null;
+		let tournamentInfo = this.parseTournamentRoomId(this.roomId);
+		if (tournamentInfo)
+			tournamentId = tournamentInfo.tournamentId;
 
 		for (let index = 0; index < msg.results.length; index++) {
 			if (msg.results[index].id < 0)
@@ -408,16 +408,18 @@ export class ServerGameSocket {
 				winner_id,
 				player1_score,
 				player2_score,
+				tournament_id,
 				status,
 				finished_at
-				) VALUES (?, ?, ?, ?, ?, 'finished', CURRENT_TIMESTAMP)
+				) VALUES (?, ?, ?, ?, ?, ?, 'finished', CURRENT_TIMESTAMP)
 				`,
 				[
 				winner.id,
 				loser.id,
 				winner.id,
 				winner.score,
-				loser.score
+				loser.score,
+				tournamentId
 				]
 			);
 			console.log("Success: ", result);
@@ -462,7 +464,6 @@ export class ServerGameSocket {
 					);
 				}
 
-				// console.log("User stats updated successfully.");
 			} catch (err) {
 				console.error("Error updating user scores:", err);
 			}

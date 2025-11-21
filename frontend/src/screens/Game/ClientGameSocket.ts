@@ -298,13 +298,11 @@ export class ClientGameSocket {
 
 		if (matchInfo)
 		{
-			console.log("IS TOURNAMENT");
 			if (matchInfo) {
 			const isFinal = matchInfo.round === 'Finals';
 			
 			if (isFinal) {
 				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
-				modal?.classList.add("hidden");
 				navigateTo('tournament-waiting');
 			} else {
 				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
@@ -318,16 +316,13 @@ export class ClientGameSocket {
 				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
 				
 				setTimeout(() => {
-					if (modal)
-						modal?.classList.add("hidden");
 					navigateTo('tournament-waiting');
 				}, 4000);
 			}
-		}
+			}
 		}
 		else 
 		{
-			console.log("IS NOT TOURNAMENT");
 			setupResult(msg, "home");
 		}
 		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba

@@ -8,7 +8,7 @@ import { Maps } from "./Maps";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
 import { CountdownMessage, MatchSuddenDeathMessage, MatchTimerTickMessage, ScoreMessage } from "@shared/types/messages";
 import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, validateStoredTournamentMatch } from "../../services/tournament-state";
-import { initAlertModal, setupAlert } from "../AlertModal.js";
+import {  setupAlert } from "../AlertModal.js";
 
 var unsubscribeFromGameLeave: () => void;
 
