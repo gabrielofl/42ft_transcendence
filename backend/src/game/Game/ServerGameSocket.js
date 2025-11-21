@@ -285,9 +285,6 @@ export class ServerGameSocket {
 		const loser = msg.results.sort((a, b) => b.score - a.score)[1];
 		const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
 		console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
-		this.handleGameEnded(msg); 
-		this.saveMatchResult(winner, loser, msg);
-		this.HandleGameDispose(msg);
 		
         // Verificar si es un match de torneo
         const tournamentInfo = this.parseTournamentRoomId(this.roomId);
@@ -306,6 +303,10 @@ export class ServerGameSocket {
                 });
             }
         }
+
+		this.saveMatchResult(winner, loser, msg);
+		this.HandleGameDispose(msg);
+
     }
 
     applyGameState(state) {
@@ -398,7 +399,7 @@ export class ServerGameSocket {
 		if (msg.results.length > 2)
 			saveMatch = 0;
 
-		console.log("Save Match: ", saveMatch);
+		console.log("Msg: ", msg);
 		if (saveMatch)
 		{
 			try {

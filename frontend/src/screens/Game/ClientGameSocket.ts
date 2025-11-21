@@ -106,6 +106,9 @@ export class ClientGameSocket {
 			const tournamentInfo = getStoredTournamentMatchInfo();
 			if (tournamentInfo && code.startsWith('tournament-')) {
 				code = tournamentInfo.roomId;
+				console.log("Connect Tournament");
+				console.log(tournamentInfo);
+
 			}
 
 			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
