@@ -2,7 +2,7 @@ import fp from 'fastify-plugin';
 import { generateBracket, updateBracketWithWinner, advanceRoundIfReady } from './tournament-brackets.js';
 import { addVirtualAI } from './virtual-players.js';
 import { tournamentEventBus } from './event-bus.js';
-// import { blockchainWriteMatchOnce, blockchainWriteFinalBracketOnce } from '../services/blockchain.js';
+import { blockchainWriteMatchOnce, blockchainWriteFinalBracketOnce } from '../services/blockchain.js';
 
 const MIN_MATCH_TIME_LIMIT_SECONDS = 30;
 const TOURNAMENT_FORFEIT_GRACE_MS = 5000;
@@ -837,6 +837,25 @@ async function tournamentWebsocket(fastify) {
 
       const { bracket: updatedBracket, advanceResult } = persistedResult;
 
+      // Obtener información del match para blockchain
+      const matchInfo = findMatchInBracket(updatedBracket, matchId);
+      if (matchInfo?.match) {
+        // Escribir resultado del match en blockchain
+        try {
+          await blockchainWriteMatchOnce(fastify, {
+            tournamentId,
+            matchId,
+            player1: matchInfo.match.player1?.username || 'TBD',
+            player2: matchInfo.match.player2?.username || 'TBD',
+            winner: winnerData.username,
+            score1: matchInfo.match.score1 || 0,
+            score2: matchInfo.match.score2 || 0
+          });
+        } catch (e) {
+          console.error('Failed blockchain store match on-chain:', e);
+        }
+      }
+
       broadcast(tournamentId, {
         type: 'BracketUpdated',
         tournamentId,
@@ -844,6 +863,13 @@ async function tournamentWebsocket(fastify) {
       });
       
       if (advanceResult?.tournamentFinished) {
+        // Escribir bracket final en blockchain
+        try {
+          await blockchainWriteFinalBracketOnce(fastify, tournamentId, updatedBracket);
+        } catch (e) {
+          console.error('Failed blockchain store final bracket on-chain:', e);
+        }
+
         broadcast(tournamentId, {
           type: 'TournamentFinished',
           winner: advanceResult.winner,
