@@ -157,15 +157,10 @@ async function databasePlugin(fastify, opts) {
 			player1_id    INTEGER,								-- References users.id
 			player2_id    INTEGER,								-- References users.id
 			status        TEXT     DEFAULT 'pending',			-- pending/accepted/
-			FOREIGN KEY (
-				player1_id
-			)
-			REFERENCES users (id) ON DELETE SET NULL,			-- Link to users table
-			FOREIGN KEY (
-				player2_id
-			)
-			REFERENCES users (id) ON DELETE SET NULL
-
+			requester_id  INTEGER,								-- References users.id
+			FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE
 		);
 
 		CREATE TABLE IF NOT EXISTS rooms (

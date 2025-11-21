@@ -41,6 +41,11 @@
 
     <!-- Canvas Container -->
     <div class="relative w-full">
+      <div id="countdown-container" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 z-50">
+        <div id="countdown-message" class="text-white text-6xl font-bold text-center"></div>
+        <div id="countdown-timer" class="text-white text-6xl font-bold text-center"></div>
+      </div>
+
       <canvas id="pong-canvas" class="w-full aspect-[21/9] min-h-[300px] border border-aqua-500"></canvas>
     </div>
   </div>

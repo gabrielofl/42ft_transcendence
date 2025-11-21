@@ -18,6 +18,7 @@ export type MessageTypes =
 "PowerUpBoxPicked"|
 "EffectsChanged"|
 "GameStatus"|
+"GameCountdown"|
 "MatchTimerTick"|
 "MatchSuddenDeath";
 
@@ -47,6 +48,7 @@ export type MessagePayloads = {
     ["EffectsChanged"]: EffectsChangedMessage;
     ["GameInit"]: Message;  // El servidor responde con un GameStatus
     ["GameStatus"]: GameStatusMessage; // Contiene varios mensajes
+    ["GameCountdown"]: CountdownMessage;
     ["MatchTimerTick"]: MatchTimerTickMessage;
     ["MatchSuddenDeath"]: MatchSuddenDeathMessage;
 };
@@ -110,6 +112,12 @@ export interface PlayerResult {
 export interface PreMoveMessage extends Message {
     id: number,
     dir: number, // -1 Izquierda, 1 Derecha
+}
+
+export interface CountdownMessage extends Message {
+    type: "GameCountdown";
+    seconds: number;
+    message: string;
 }
 
 export interface UsePowerUpMessage extends Message {

@@ -82,7 +82,7 @@ protected readonly WIN_POINTS = 50;
         this.glow.intensity = 1;
         
         this.camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 20, new BABYLON.Vector3(0, 0, 0));
-        this.camera.position = new BABYLON.Vector3(42, 42, 42);
+        this.camera.position = new BABYLON.Vector3(0, 42, -70);
         this.camera.attachControl(canvas, true);
         this.camera.inputs.removeByType("FreeCameraKeyboardMoveInput");
         this.scene.activeCameras?.push(this.camera);
@@ -152,13 +152,13 @@ protected readonly WIN_POINTS = 50;
         // console.log(me);
         let localPlayers: number = 0;
         let localKeys: [string, string, string][] = [
-            ['z', 'x', 'c'],
-            ['1', '2', '3'],
+            ['q', 'w', 'e'],
+            ['u', 'i', 'o'],
         ];
 
 		let localMove: [string, string][] = [
             ['d', 'a'],
-            ["j", "l"],
+            ["l", "j"],
         ];
 
         msg.nArray.forEach(d => {

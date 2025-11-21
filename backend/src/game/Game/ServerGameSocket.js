@@ -62,10 +62,6 @@ export class ServerGameSocket {
 
         // Asigna los manejadores de eventos para esta conexión específica.
         connection.on('message', (msg) => this.ReceiveSocketMessage(msg, user, userid));
-        connection.on('close', () => {
-            console.log(`Sala ${this.roomId} cerrada para ${user}`);
-            this.people.delete(user);
-        });
         connection.on('error', (msg) => { console.log(msg); });
     }
 
@@ -139,6 +135,7 @@ export class ServerGameSocket {
 
         // Suscribirse a eventos del juego
         // TODO Se debe cabiar el this.msgs.Publish... Por el connection.send...     
+        this.game.MessageBroker.Subscribe("GameCountdown", enqueueMessage);
         this.game.MessageBroker.Subscribe("CreatePowerUp", enqueueMessage);
         this.game.MessageBroker.Subscribe("PointMade", (msg) => { 
             const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
@@ -173,9 +170,6 @@ export class ServerGameSocket {
         try {
             const message = JSON.parse(msg.toString());
 
-			if (message.id && userid != message.id)
-				return;
-
             const handler = this.handlers[message.type];
             if (handler) {
                 handler(message, user);
@@ -192,6 +186,9 @@ export class ServerGameSocket {
      * @param {any} msg El mensaje con la información del movimiento.
      */
 	HandlePreMoveMessage(msg, u) {
+        if(this.game.Paused)
+            return;
+
 		let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{
@@ -200,6 +197,9 @@ export class ServerGameSocket {
     }
 
     HandleUsePowerUpMessage(msg, u) {
+        if(this.game.Paused)
+            return;
+
         let player = this.game.GetPlayers().find(p => p.id === msg.id);
 		if (player)
 		{

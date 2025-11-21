@@ -2,8 +2,37 @@ import profileModalHtml from "./profile-modal.html?raw";
 import { API_BASE_URL } from "./config";
 import { loadUserGameStats, loadUserStats } from "./ProfilePerformance";
 import { navigateTo } from "../navigation";
+import { loadLeaderboard } from "./Leaderboard";
+import { renderHistoryTab } from "./ProfileHistory";
+import { renderFriendsTab } from "./ProfileFriends";
 import { initAlertModal, setupAlert } from "./AlertModal.js";
 
+
+async function updateScreen(redirect: string, modal: HTMLElement) {
+
+	switch(redirect)
+	{
+		case "leaderboard":
+			await loadLeaderboard(1);
+			break;
+		case "history":
+			await renderHistoryTab();
+			break;
+		case "friends":
+			await renderFriendsTab();
+			break;
+		case "performance":
+			await renderFriendsTab();
+			break;
+		default:
+			console.log("No redirect: ", redirect);
+			window.location.reload();
+			break;
+	}
+	modal?.classList.add("hidden");
+
+
+}
 
 export function initProfileModal() {
   // Only append once
@@ -19,13 +48,17 @@ export function setupProfileLinks() {
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const username = link.getAttribute("data-user");
-      if (username) openUserProfile(username);
+      const redirect = link.getAttribute("data-redirect") || null;
+
+      if (username) openUserProfile(username, redirect);
     });
   });
 }
 
-async function openUserProfile(username: string | number) {
+async function openUserProfile(username: string | number, redirect: string | null) {
   const modal = document.getElementById("user-profile-modal");	
+  modal?.setAttribute("data-redirect", redirect ?? "");
+
   const avatar = document.getElementById("profile-avatar") as HTMLImageElement;
   const profileUsername = document.getElementById("profile-username");
 // Stats
@@ -44,6 +77,7 @@ async function openUserProfile(username: string | number) {
   const rejectBtn = document.getElementById("friend-reject-btn");
   const status = document.getElementById("modal-profile-status");
   const statusTooltip = document.getElementById("status-tooltip");
+
 
   try {
     const res = await fetch(`${API_BASE_URL}/users/username?username=${encodeURIComponent(username)}`, {
@@ -151,6 +185,7 @@ async function openUserProfile(username: string | number) {
 				friendActionBtn.textContent = "Go to my profile";
 				friendBtnStatus = "btn-primary";
 				friendActionBtn.dataset.action = "myProfile"; 
+				friendActionBtn.dataset.redirect = "account"; 
 
 			}
 			friendActionBtn.classList.add(friendBtnStatus);
@@ -208,6 +243,8 @@ async function openUserProfile(username: string | number) {
 
 					case "myProfile":
 					navigateTo("profile");
+					if (redirect == "history" || redirect == "friends")
+						window.location.reload();
 					modal?.classList.add("hidden");
 					return;
 
@@ -221,7 +258,10 @@ async function openUserProfile(username: string | number) {
 					const data = await res.json();
 					if (!res.ok) throw new Error(data.error || "Friendship action failed");	
 						setupAlert('Yay!', `${message}`, "close");
-					window.location.reload(); // refresh the whole page
+					
+						if (redirect && modal) {
+							updateScreen(redirect, modal);
+						}
 				}
 				
 				} catch (err) {
@@ -247,7 +287,9 @@ async function openUserProfile(username: string | number) {
 
 				setupAlert('Boom!', "Request rejected.", "close");
 				// optional: refresh profile/friends tab
-				window.location.reload(); // 👈 refresh the whole page
+				if (redirect && modal) {
+					updateScreen(redirect, modal);
+				}
 
 				} catch (err) {
 				// console.error("Reject error:", err);

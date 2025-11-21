@@ -30,6 +30,7 @@ export class ServerGame {
     // --- Disposable ---
     isDisposed = false;
     dependents = new ObservableList();
+	countdownTimerId = null;
 	OnDisposeEvent = new Event();
 
     // --- Visual ---
@@ -331,6 +332,7 @@ export class ServerGame {
         if(this.isDisposed)
             return;
 
+		this.CancelFrontEndTimer();
 		this.isEnding = true;
 		this.clearMatchTimer();
 		this.isSuddenDeath = false;
@@ -359,7 +361,7 @@ export class ServerGame {
 	 */
 	CreateGame(players) {
 		logToFile("ServerGame CreateGame Start");
-		
+
 		this.isEnding = false;
 		// EVENTS
 		this.Balls.OnRemoveEvent.Subscribe((ball) => {
@@ -369,7 +371,7 @@ export class ServerGame {
 			} );
 			this.BallRemoved();
 		});
-		
+
 		// BABYLON.AppendSceneAsync("models/SizeCube.glb", this.scene);
 		this.PongTable = new ServerPongTable(this);
 
@@ -394,10 +396,43 @@ export class ServerGame {
 				lastLog = now;
 			}
 		});
-		this.Start();
+
+		this.StartFrontEndTimer(5, "Get ready!", () => this.Start());
+
 		this.initializeMatchTimer();
 		this.dependents.Add(this.PongTable);
 		logToFile("ServerGame CreateGame End");
+	}
+
+	/**
+	 * Inicia un temporizador que envía una cuenta regresiva a los clientes.
+	 * Si ya existe un temporizador, se cancela antes de iniciar el nuevo.
+	 * @param {number} countdown Segundos para la cuenta atrás.
+	 * @param {string} message Mensaje a mostrar mientras se encuentra el timer.
+	 * @param {() => void} callback Función a ejecutar cuando el temporizador llega a 0.
+	 */
+	StartFrontEndTimer(countdown, message, callback) {
+		this.CancelFrontEndTimer();
+
+		this.countdownTimerId = setInterval(() => {
+			this.MessageBroker.Publish("GameCountdown", { type: "GameCountdown", seconds: countdown, message: message });
+			countdown--;
+			if (countdown < 0) {
+				this.CancelFrontEndTimer();
+				if (callback)
+					callback();
+			}
+		}, 1000);
+	}
+
+	/**
+	 * Si existe un timer, este es cancelado.
+	 */
+	CancelFrontEndTimer() {
+		if (this.countdownTimerId) {
+			clearInterval(this.countdownTimerId);
+			this.countdownTimerId = null;
+		}
 	}
 
 	logGameState() {

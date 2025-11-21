@@ -98,7 +98,7 @@ async function loadFriends(page: number, requestsPage: number) {
 
 	return `
 		<div class="w-full player-card border-[--primary-color]">
-		<a href="#" class="open-profile" data-user="${user.username}">
+		<a href="#" class="open-profile" data-user="${user.username}" data-redirect="friends">
 			<img id="user-card-avatar" class="w-12 h-12 rounded-full bg-gray-300" src="${friendAvatar}" alt="Avatar image">
 		</a>
 		<div class="ml-3 flex flex-col">
@@ -112,7 +112,7 @@ async function loadFriends(page: number, requestsPage: number) {
 				</div>
 			</div>
 			<span id="user-card-username" class="font-bold text-white ">
-				<a href="#" class="open-profile" data-user="${user.username}">${user.username}</a>
+				<a href="#" class="open-profile" data-user="${user.username}" data-redirect="friends">${user.username}</a>
 			</span>
 			</div>
 			<div id="user-card-points" class="text-red-500 font-bold text-sm ">${user.score ?? 0} pts</div>
@@ -150,7 +150,7 @@ async function loadFriends(page: number, requestsPage: number) {
 
 	return `
 		<div class="player-card border-[--primary-color]">
-		<a href="#" class="open-profile" data-user="${reqUser.username}">
+		<a href="#" class="open-profile" data-user="${reqUser.username}" data-redirect="friends">
 			<img id="user-card-avatar" class="w-12 h-12 rounded-full bg-gray-300" src="${reqFriendAvatar}" alt="Avatar image">
 		</a>
 		<div class="ml-3 flex flex-col">
@@ -164,7 +164,7 @@ async function loadFriends(page: number, requestsPage: number) {
 				</div>
 			</div>
 			<span id="user-card-username" class="font-bold text-white ">
-				<a href="#" class="open-profile" data-user="${reqUser.username}">${reqUser.username}</a>
+				<a href="#" class="open-profile" data-user="${reqUser.username}" data-redirect="friends">${reqUser.username}</a>
 			</span>
 			</div>
 			<div id="user-card-points" class="text-red-500 font-bold text-sm ">${reqUser.score ?? 0} pts</div>
