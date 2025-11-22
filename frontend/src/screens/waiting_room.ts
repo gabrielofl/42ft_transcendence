@@ -4,10 +4,11 @@ import { createAddPlayerCard } from "./add_player_card";
 import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
 import { PlayerLite, RoomStatePayload, UserData } from "@shared/types/messages";
-import { BASE_URL, API_BASE_URL } from "./config";
+import { API_BASE_URL } from "./config";
 import { setupAlert } from "./AlertModal.js";
 import { fetchJSON } from "./utils";
 import { WaitPayloads } from "@shared/types/messages";
+
 
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
 let serverPlayers: PlayerLite[] = [];
@@ -94,7 +95,7 @@ export async function renderWaitingRoom(): Promise<void> {
   let code = (url.searchParams.get("room") || "").toUpperCase().trim();
 
   if (!code) {
-    const mine = await fetchJSON(`${BASE_URL}/rooms/mine`, { credentials: "include" });
+    const mine = await fetchJSON(`${API_BASE_URL}/rooms/mine`, { credentials: "include" });
     if (!mine?.roomCode) { setupAlert('Whoops!', "No room to join. Create a game first.", "close"); navigateTo("create"); return; }
     code = String(mine.roomCode).toUpperCase();
     url.searchParams.set("room", code);
@@ -103,7 +104,7 @@ export async function renderWaitingRoom(): Promise<void> {
   	roomCode = code;
 	setRoomCodeText(roomCode);
 	
-	const state = await fetchJSON(`${BASE_URL}/rooms/${encodeURIComponent(roomCode)}`, { credentials: "include" });
+	const state = await fetchJSON(`${API_BASE_URL}/rooms/${encodeURIComponent(roomCode)}`, { credentials: "include" });
 	if (!state) { setupAlert('Whoops!', "Room not found or closed.", "close"); navigateTo("create"); return; }
 		console.log('this is state: ', state);
 	applyRoomState(state);
@@ -224,7 +225,7 @@ function buildSlots(n: number) {
       onAddAI: () => { ClientWaitRoomSocket.GetInstance().InviteAI?.(); },
     });
 
-    (card as any).fill = (p: PlayerLite | null) => {
+    (card as any).fill = async (p: PlayerLite | null) => {
       const el = card.cardElement;
       if (!p) {
         el.dataset.empty = "true";
@@ -232,7 +233,8 @@ function buildSlots(n: number) {
         if (menu && !menu.classList.contains("hidden")) menu.classList.add("hidden");
       } else {
         el.dataset.empty = "false";
-        el.innerHTML = createUserCard(playerLiteToUserData(p));
+        const userData = await playerLiteToUserData(p);
+        el.innerHTML = createUserCard(userData);
         el.dataset.userid = String(p.userId);
       }
     };
@@ -304,9 +306,56 @@ function applyRoomState(state: RoomStatePayload) {
 }
 
 // ---------- transforms & payload ----------
-function playerLiteToUserData(p: PlayerLite): UserData {
-  return { id: p.userId, username: p.username, avatar: undefined, status: 1, score: 0 } as unknown as UserData;
+// function playerLiteToUserData(p: PlayerLite): UserData {
+// 	fetch(`${API_BASE_URL}/users/username?username=${p.username}`, {
+// 		credentials: 'include',
+// 	})
+// 	.then(res => res.json())
+// 	.then(data => {
+// 		console.log("DATAPLAYER ", data.show_scores_publicly);
+// 		return { id: data.userId, username: data.username, avatar: data.avatar, status: data.status, score: data.score, show_scores_publicly: data.show_scores_publicly } as UserData;
+// 		})
+// 	.catch(err => console.error('Error loading profile:', err));
+// 	console.log("LALALAL ");
+//   	return { id: p.userId, username: p.username, avatar: undefined, status: 1, score: 0 } as unknown as UserData;
+// }
+
+export async function playerLiteToUserData(p: PlayerLite): Promise<UserData> {
+	if ( p.userId < 0)
+		return { id: p.userId, username: p.username, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
+	try {
+		const res = await fetch(`${API_BASE_URL}/users/username?username=${p.username}`, {
+			credentials: 'include',
+		});
+		const data = await res.json();
+		return {
+			id: data.id,
+			first_name: data.first_name,
+			last_name: data.last_name,
+			username: data.username,
+			email: data.email,
+			last_login: data.last_login,
+			avatar: data.avatar,
+			status: data.status,
+			wins: data.wins,
+			losses: data.losses,
+			score: data.score,
+			max_score: data.max_score,
+			matches: data.matches,
+			allow_data_collection: data.allow_data_collection,
+			allow_data_processing: data.allow_data_processing,
+			allow_ai_training: data.allow_ai_training,
+			show_scores_publicly: data.show_scores_publicly,
+			created_at: data.created_at,
+			updated_at: data.updated_at
+		} as UserData;
+	} catch (err) {
+		console.error('Error loading profile:', err);
+		return { id: p.userId, username: p.username, avatar: undefined, status: 0, score: 0 } as unknown as UserData;
+	}
 }
+
+
 
 function buildPlayersPayload(): [number, string][] {
   const ordered = [...serverPlayers].sort((a, b) =>

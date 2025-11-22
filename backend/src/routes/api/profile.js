@@ -773,5 +773,7 @@ export default async function (fastify, opts) {
 
 
 
+
+
 	}, { prefix: '/profile' });
 }

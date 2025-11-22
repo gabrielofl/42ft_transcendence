@@ -9,8 +9,12 @@ import { Maps } from "./Maps";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
-import { BASE_URL, WS_URL } from "../config";
+import { initResultModal, setupResult } from "../ResultModal";
+import { API_BASE_URL, makeWsUrl } from "../config";
 import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
+import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
+import { onScreenLeave, navigateTo } from "../../navigation";
+
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -107,14 +111,15 @@ export class ClientGameSocket {
 				code = tournamentInfo.roomId;
 			}
 
-			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
+			const ws = new WebSocket(makeWsUrl(`/gamews?room=${code}&user=${userID}`));
 			
 			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));
 			ws.addEventListener('close', (e) => {
 				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
-				// Intenta reconectar después de un breve retraso para no sobrecargar el servidor.
-				setTimeout(connect, 1000);
+				if (!this.disposed) {
+					setTimeout(connect, 1000);
+				}
 			});
 			ws.addEventListener('open', () => {
 				console.log("[ws] Connection established.");
@@ -138,13 +143,13 @@ export class ClientGameSocket {
 
 		/** Petición a back para obtener la información del juego **/
 		// const roomState: RoomStatePayload | null = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
-		const roomState: RoomStatePayload | null = await fetchJSON(`${BASE_URL}/rooms/mine`, { credentials: "include" });
+		const roomState: RoomStatePayload | null = await fetchJSON(`${API_BASE_URL}/rooms/mine`, { credentials: "include" });
 		if (!roomState) {
 			throw new Error(`Failed to fetch room data or room is not available.`);
 		}
 
 		ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
-		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.config.mapKey]);
+		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.mapKey || "BaseMap" ]);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
 		this.game.MessageBroker.Subscribe("PlayerUsePowerUp", (msg) => this.Send(msg));
 		console.log('roomState', roomState);
@@ -286,8 +291,41 @@ export class ClientGameSocket {
 	 * @param {ScoreMessage} msg - El mensaje con los resultados finales.
 	 */
 	public HandleGameEnded(msg: ScoreMessage): void {
-		console.log("HandleGameEnded");
+		console.log("HandleGameEnded", msg);
 		this.UIBroker.Publish("GameEnded", msg);
+		initResultModal();
+		let matchInfo = getStoredTournamentMatchInfo();
+		const modal = document.getElementById("result-modal");
+
+		if (matchInfo)
+		{
+			if (matchInfo) {
+			const isFinal = matchInfo.round === 'Finals';
+			
+			if (isFinal) {
+				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
+				navigateTo('tournament-waiting');
+			} else {
+				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+				const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+				if (!container) return;
+
+				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+				const winnerNameSpan = document.getElementById("tournament-winner-name");
+				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+
+				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
+				
+				setTimeout(() => {
+					navigateTo('tournament-waiting');
+				}, 4000);
+			}
+			}
+		}
+		else 
+		{
+			setupResult(msg, "home");
+		}
 		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
 		if (this.game) {
 			this.game.MessageBroker.Publish("GameEnded", msg);

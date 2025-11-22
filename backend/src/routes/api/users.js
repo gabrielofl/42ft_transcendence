@@ -8,15 +8,14 @@ const DEFAULT_CFG = {
   pointToWinAmount: 10,
 };
 
-  function requireUserFromCookie(req) {
+export default async function (fastify, opts) {
+
+	function requireUserFromCookie(req) {
     const token = req.cookies?.accessToken;
     if (!token) throw fastify.httpErrors.unauthorized('Oops! Unauthorized');
     return fastify.jwt.verify(token); // { id, username }
   }
 
-
-export default async function (fastify, opts) {
-	// Add /users prefix to all routes in this file
 	fastify.register(async function (fastify, opts) {
 
   // GET /room-config  (autoloaded under /api/users → /api/users/room-config)
@@ -180,10 +179,10 @@ export default async function (fastify, opts) {
 				body: {
 					type: 'object',
 					properties: {
-						username: { type: 'string', minLength: 1, maxLength: 50 },
+						username: { type: 'string', minLength: 1, maxLength: 10 },
 						email: { type: 'string', format: 'email' },
-						firstName: { type: 'string', minLength: 1, maxLength: 50 },
-						lastName: { type: 'string', minLength: 1, maxLength: 50 }
+						firstName: { type: 'string', minLength: 1, maxLength: 15 },
+						lastName: { type: 'string', minLength: 1, maxLength: 15 }
 					}
 				}
 			}
@@ -237,6 +236,9 @@ export default async function (fastify, opts) {
 			}
 		});
 		
+
+
+
 		// Get user by ID - GET /api/users/:id
 		fastify.get('/:id', {
 			schema: {
@@ -261,6 +263,8 @@ export default async function (fastify, opts) {
 			return user;
 		});
 
+
+		
 		// Update GDPR privacy settings - POST /api/users/privacy-settings
 		fastify.post('/privacy-settings', {
 			preHandler: authenticate,

@@ -41,7 +41,7 @@ async function onlineWebsocketPlugin(fastify) {
     }
   }, SWEEP_MS);
 
-  fastify.get('/online-websocket', { websocket: true }, async (socket, req) => {
+  fastify.get('/wss/online-websocket', { websocket: true }, async (socket, req) => {
     let userId, username, avatar;
     try {
       const token = req.cookies?.accessToken;

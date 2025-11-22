@@ -1,9 +1,12 @@
 // import { gameWebSocketConfig } from "../../config/websocket";
 import * as BABYLON from "@babylonjs/core";
 import { ServerGame } from "./ServerGame.js";
+import { removeGame } from "../../websocket/game-manager.js";
 import { AIPlayer } from "../Player/AIPlayer.js"
 import { logToFile } from "./logger.js";
 import { tournamentEventBus } from "../../websocket/event-bus.js";
+import {app} from "../../index.js";
+
 
 /**
  * Gestiona la lógica de una sala de juego en el servidor, incluyendo las conexiones
@@ -80,7 +83,7 @@ export class ServerGameSocket {
                 console.warn(`Error cerrando socket de ${user}:`, e);
             }
         }
-
+		removeGame(this.roomId);
         this.people.clear();
     }
 
@@ -143,9 +146,6 @@ export class ServerGameSocket {
             enqueueMessage(msg); 
         });
         this.game.MessageBroker.Subscribe("GameEnded", (msg) => { 
-            const winner = msg.results.sort((a, b) => b.score - a.score)[0];
-            const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
-            console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
             this.handleGameEnded(msg); 
             enqueueMessage(msg); 
         });
@@ -270,29 +270,35 @@ export class ServerGameSocket {
     /**
      * Handler para cuando el juego termina
      */
-   handleGameEnded(payload) {
+   handleGameEnded(msg) {
         console.log("🏁 Partida terminada.");
+		const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+		const loser = msg.results.sort((a, b) => b.score - a.score)[1];
+		const roomInfo = this.parseTournamentRoomId(this.roomId) ? `[Tournament Match ${this.parseTournamentRoomId(this.roomId).matchId}]` : `[Room ${this.roomId}]`;
+		
+		// console.log(`🏁 ${roomInfo} PARTIDA TERMINADA! Ganador: ${winner?.username} (${winner?.score} puntos)`);
+		
         // Verificar si es un match de torneo
         const tournamentInfo = this.parseTournamentRoomId(this.roomId);
         if (tournamentInfo) {
             
             // Determinar el ganador basado en los resultados
-            const winner = this.determineWinner(payload.results);
-            if (winner) {
-                console.log('[emitMatchResult]', this.roomId, {
-                    winner: winner.username,
-                    results: payload.results
-                });
+            const tournamentWinner = this.determineWinner(msg.results);
+            if (tournamentWinner) {
                 // Emitir evento al sistema de torneos
                 tournamentEventBus.emit('matchResult', {
                     tournamentId: tournamentInfo.tournamentId,
                     matchId: tournamentInfo.matchId,
-                    winner: winner,
-                    results: payload.results,
+                    winner: tournamentWinner,
+                    results: msg.results,
                     roomId: this.roomId
                 });
             }
         }
+
+		this.saveMatchResult(winner, loser, msg);
+		this.HandleGameDispose(msg);
+
     }
 
     applyGameState(state) {
@@ -366,4 +372,120 @@ export class ServerGameSocket {
             score: winner.score
         };
     }
+
+	/**
+     * Almacena en base de datos los resultados del juego y agrega el score a los usuarios si el match es valido
+     * Los matches validos para sumar puntos son cuando los jugadores son users registrados
+     * Los matches validos para almacenar son cuando los jugadores son users registrados y son solo 2 en la partida
+     * @param {ScoreMessage} (msg)
+     * @param {PlayerResult} (winner, loser)
+     */
+	async saveMatchResult(winner, loser, msg) {
+		let saveMatch = 1;
+		let saveScore = 1;
+		let tournamentId = null;
+		let tournamentInfo = this.parseTournamentRoomId(this.roomId);
+		if (tournamentInfo)
+			tournamentId = tournamentInfo.tournamentId;
+
+		for (let index = 0; index < msg.results.length; index++) {
+			if (msg.results[index].id < 0)
+				saveMatch = saveScore = 0;
+		}
+		if (msg.results.length > 2)
+			saveMatch = 0;
+
+		console.log("Msg: ", msg);
+		if (saveMatch)
+		{
+			try {
+			// Insert match into DB
+			const result = await app.db.run(
+				`
+				INSERT INTO games (
+				player1_id,
+				player2_id,
+				winner_id,
+				player1_score,
+				player2_score,
+				tournament_id,
+				status,
+				finished_at
+				) VALUES (?, ?, ?, ?, ?, ?, 'finished', CURRENT_TIMESTAMP)
+				`,
+				[
+				winner.id,
+				loser.id,
+				winner.id,
+				winner.score,
+				loser.score,
+				tournamentId
+				]
+			);
+			console.log("Success: ", result);
+
+			}
+			catch (err) {
+				console.error("Error saving match:", err);
+			}
+		}
+		if (saveScore)
+		{
+			// Update users statistics and score
+			try {
+				for (let i = 0; i < msg.results.length; i++) {
+					const player = msg.results[i];
+					const isWinner = player.id === winner.id;
+
+					// winner gets +150, others get +50
+					const scoreIncrement = isWinner ? 150 : 50;
+
+					// update user stats
+					await app.db.run(
+						`
+						UPDATE users
+						SET 
+							score      = score + ?,
+							max_score  = CASE WHEN (score + ?) > max_score THEN (score + ?) ELSE max_score END,
+							wins       = wins + ?,
+							losses     = losses + ?,
+							matches    = matches + 1,
+							updated_at = CURRENT_TIMESTAMP
+						WHERE id = ?
+						`,
+						[
+							scoreIncrement,     // score + ?
+							scoreIncrement,     // (score + ?) for max_score
+							scoreIncrement,     // (score + ?) again
+							isWinner ? 1 : 0,   // wins + ?
+							isWinner ? 0 : 1,   // losses + ?
+							player.id           // WHERE id = ?
+						]
+					);
+				}
+
+			} catch (err) {
+				console.error("Error updating user scores:", err);
+			}
+
+		}
+		// Delete room from the rooms table
+		try {
+			const result = await app.db.run(
+				`
+				DELETE FROM rooms
+				WHERE code = ?
+				`,
+				[ this.roomId ]
+			);
+
+			console.log("Room deleted:", result);
+		} catch (err) {
+			console.error("Error deleting room:", err);
+		}
+
+	}
+	
+	
+
 }

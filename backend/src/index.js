@@ -5,11 +5,13 @@ import { buildApp } from './app.js';
 // Import configuration
 import config from './config/index.js';
 
+export let app; 
+
 // Main startup function
 const start = async () => {
 	try {
 		// Build the application
-		const app = await buildApp({
+		 app = await buildApp({
 			// Configure logging
 			logger: {
 				level: config.logging.level,  // 'info', 'debug', etc.

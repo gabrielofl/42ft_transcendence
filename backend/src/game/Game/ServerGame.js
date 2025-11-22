@@ -136,6 +136,7 @@ export class ServerGame {
 		return {
 			type: type,
 			results: this.GetPlayers().map(p => ({
+				id: p.GetId(),
 				username: p.GetName(),
 				score: p.GetScore()
 			}))

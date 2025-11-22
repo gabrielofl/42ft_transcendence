@@ -24,15 +24,8 @@ async function fetchJSON(url: string, init?: RequestInit) {
   if (!res.ok) return null;
   try { return await res.json(); } catch { return null; }
 }
-// Build REST base from API_BASE_URL but strip any trailing /api
-function restBase(): string {
-  const api = new URL(API_BASE_URL, location.origin);
-  const base = new URL(api.toString());
-  if (base.pathname.endsWith('/api')) base.pathname = base.pathname.slice(0, -4);
-  base.search = '';
-  return base.toString().replace(/\/$/, '');
-}
-function roomsUrl(path = "") { return `${restBase()}/rooms${path}`; }
+
+function roomsUrl(path = "") { return `${API_BASE_URL}/rooms${path}`; }
 
 // Small 2-button modal: Rejoin / Remove
 function promptRejoin(roomCode: string): Promise<"rejoin"|"remove"|"cancel"> {
@@ -179,7 +172,7 @@ export async function renderMapSelection(): Promise<void> {
   setupMapSelectionControls();
 
   if (intent === "edit" && editRoom) {
-    const state = await fetchJSON(`${restBase()}/rooms/${encodeURIComponent(editRoom)}`, { credentials: "include" });
+    const state = await fetchJSON(`${API_BASE_URL}/rooms/${encodeURIComponent(editRoom)}`, { credentials: "include" });
     if (state) applyConfigToUI(state);
   } else {
     const lastCfg = await fetchJSON(`${API_BASE_URL}/users/room-config`, { credentials: 'include' });
