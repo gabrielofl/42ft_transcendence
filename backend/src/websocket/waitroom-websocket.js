@@ -99,6 +99,9 @@ async function waitroomWebsocket(fastify) {
       hostId: room.host_id,
       status: room.status,
       createdAt: room.created_at,
+      mapKey: room.map_key,
+      powerUpAmount: room.powerup_amount,
+      enabledPowerUps: JSON.parse(room.enabled_powerups || '[]'),
       config: {
         mapKey: room.map_key,
         powerUpAmount: room.powerup_amount,
@@ -270,7 +273,7 @@ async function waitroomWebsocket(fastify) {
   }
 
   // --- REST: GET /rooms/mine
-  fastify.get('/rooms/mine', async (req, reply) => {
+  fastify.get('/api/rooms/mine', async (req, reply) => {
     const token = req.cookies?.accessToken;
     if (!token) return reply.code(401).send({ error: 'Unauthorized' });
     const user = fastify.jwt.verify(token);
@@ -284,7 +287,7 @@ async function waitroomWebsocket(fastify) {
   });
 
   // --- REST: POST /rooms/:code/leave
-  fastify.post('/rooms/:code/leave', async (req, reply) => {
+  fastify.post('/api/rooms/:code/leave', async (req, reply) => {
     const token = req.cookies?.accessToken;
     if (!token) return reply.code(401).send({ error: 'Unauthorized' });
     const user = fastify.jwt.verify(token);
@@ -301,7 +304,7 @@ async function waitroomWebsocket(fastify) {
   });
 
   // --- REST: POST /rooms (create)
-  fastify.post('/rooms', async (req, reply) => {
+  fastify.post('/api/rooms', async (req, reply) => {
     const { mapKey, powerUpAmount, enabledPowerUps, maxPlayers, windAmount, pointToWinAmount } = req.body || {};
     const token = req.cookies?.accessToken;
     if (!token) return reply.code(401).send({ error: 'Unauthorized' });
@@ -340,14 +343,14 @@ async function waitroomWebsocket(fastify) {
     return { roomCode: code };
   });
 	
-	fastify.get('/rooms/:code', async (req, reply) => {
+	fastify.get('/api/rooms/:code', async (req, reply) => {
   const code = (req.params.code || '').toUpperCase();
   const pub = await publicCombinedRoomState(code);
   if (!pub || pub.status === 'closed') return reply.code(404).send({ error: 'Room not found' });
   return pub;
 });
 
-fastify.get('/rooms', async (req, reply) => {
+fastify.get('/api/rooms', async (req, reply) => {
   const status = (req.query?.status || '').toLowerCase();
   const where = status ? `WHERE r.status = ?` : '';
   const params = status ? [status] : [];
@@ -375,7 +378,7 @@ fastify.get('/rooms', async (req, reply) => {
 });
 
   // --- WS: /waitws
-  fastify.get('/waitws', { websocket: true }, async (socket, req) => {
+  fastify.get('/wss/waitws', { websocket: true }, async (socket, req) => {
     // auth
     let userCookie;
     try { userCookie = await requireUserFromCookie(req); }

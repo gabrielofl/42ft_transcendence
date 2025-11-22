@@ -1,7 +1,7 @@
 // join-game.ts
 import view from "./join-game.html?raw";
 import { navigateTo } from "../navigation";
-import { BASE_URL } from "./config";
+import { API_BASE_URL } from "./config";
 
 type RoomSummary = {
   code: string;
@@ -19,7 +19,7 @@ type MineState = {
   players: Array<{ userId: number; username: string; isHost: boolean; ready: boolean }>;
 };
 
-const ROOMS_URL = `${BASE_URL}/rooms?status=waiting`;
+const ROOMS_URL = `${API_BASE_URL}/rooms?status=waiting`;
 
 async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T | null> {
   try {
@@ -40,7 +40,7 @@ export async function renderJoinGame(): Promise<void> {
   wireUI();
   await loadRooms();
 
-  const mine = await fetchJSON<MineState>(`${BASE_URL.replace(/\/$/,'')}/rooms/mine`, { credentials: 'include' });
+  const mine = await fetchJSON<MineState>(`${API_BASE_URL.replace(/\/$/,'')}/rooms/mine`, { credentials: 'include' });
   if (mine?.roomCode) renderResumeCard(mine);
 }
 
@@ -79,7 +79,7 @@ function renderResumeCard(mine: MineState) {
 
 
   (card.querySelector('#leave-room') as HTMLButtonElement)?.addEventListener('click', async () => {
-	await fetch(`${BASE_URL.replace(/\/$/,'')}/rooms/${encodeURIComponent(mine.roomCode)}/leave`, {
+	await fetch(`${API_BASE_URL.replace(/\/$/,'')}/rooms/${encodeURIComponent(mine.roomCode)}/leave`, {
 		method: 'POST', credentials: 'include'
 	}).catch(()=>{});
 	const url = new URL(location.href);

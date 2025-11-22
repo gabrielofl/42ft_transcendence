@@ -4,7 +4,7 @@ import { createAddPlayerCard } from "./add_player_card";
 import { createUserCard } from "./user-card";
 import { navigateTo } from "../navigation";
 import { PlayerLite, RoomStatePayload, UserData } from "@shared/types/messages";
-import { BASE_URL, API_BASE_URL } from "./config";
+import { API_BASE_URL } from "./config";
 import { setupAlert } from "./AlertModal.js";
 import { fetchJSON } from "./utils";
 import { WaitPayloads } from "@shared/types/messages";
@@ -94,7 +94,7 @@ export async function renderWaitingRoom(): Promise<void> {
   let code = (url.searchParams.get("room") || "").toUpperCase().trim();
 
   if (!code) {
-    const mine = await fetchJSON(`${BASE_URL}/rooms/mine`, { credentials: "include" });
+    const mine = await fetchJSON(`${API_BASE_URL}/rooms/mine`, { credentials: "include" });
     if (!mine?.roomCode) { setupAlert('Whoops!', "No room to join. Create a game first.", "close"); navigateTo("create"); return; }
     code = String(mine.roomCode).toUpperCase();
     url.searchParams.set("room", code);
@@ -103,7 +103,7 @@ export async function renderWaitingRoom(): Promise<void> {
   	roomCode = code;
 	setRoomCodeText(roomCode);
 	
-	const state = await fetchJSON(`${BASE_URL}/rooms/${encodeURIComponent(roomCode)}`, { credentials: "include" });
+	const state = await fetchJSON(`${API_BASE_URL}/rooms/${encodeURIComponent(roomCode)}`, { credentials: "include" });
 	if (!state) { setupAlert('Whoops!', "Room not found or closed.", "close"); navigateTo("create"); return; }
 		console.log('this is state: ', state);
 	applyRoomState(state);

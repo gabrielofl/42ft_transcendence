@@ -1,5 +1,5 @@
 #frontend
-FROM node:24.2.0-bullseye
+FROM public.ecr.aws/docker/library/node:24.11.1-bullseye
 
 WORKDIR /app
 

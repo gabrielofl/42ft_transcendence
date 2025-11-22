@@ -1,5 +1,5 @@
 // Tournament WebSocket Client - Cliente para torneos en tiempo real
-import { WS_URL } from "../screens/config";
+import { makeWsUrl } from "../screens/config";
 import { MessageBroker } from "@shared/utils/MessageBroker";
 
 // Tipos para los nuevos eventos de bracket
@@ -60,8 +60,7 @@ export class ClientTournamentSocket {
     this.tournamentId = tournamentId;
     
     // Conectar al WebSocket con tournament ID en query params
-    const wsUrl = `${WS_URL}/tournamentws?tournament=${tournamentId}`;
-    
+    const wsUrl = makeWsUrl(`/tournamentws?tournament=${encodeURIComponent(tournamentId)}`);
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {

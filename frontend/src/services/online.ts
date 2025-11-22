@@ -1,6 +1,5 @@
 // services/presence.ts
-import { API_BASE_URL } from "../screens/config";
-import { apiService } from "./api";
+import { API_BASE_URL, makeWsUrl } from "../screens/config";
 
 export type OnlineUser = { userId: number; username: string; avatar?: string };
 type Listener = (users: OnlineUser[]) => void;
@@ -11,16 +10,6 @@ class OnlinePlayers {
   private listeners = new Set<Listener>();
   private users = new Map<number, OnlineUser>();
   private reconnectTimer?: number;
-
-  // Build WS URL from API_BASE_URL (handles http/https and subpaths)
-  private wsURL(path: string) {
-    const url = new URL(API_BASE_URL);
-    url.protocol = url.protocol.replace('http', 'ws');
-    // API_BASE_URL may include '/api' → we want server root; adjust as needed
-    // If your WS endpoint is on same host/port, just set pathname directly:
-    url.pathname = path;
-    return url.toString();
-  }
 
   subscribe(cb: Listener) {
     this.listeners.add(cb);
@@ -53,7 +42,7 @@ class OnlinePlayers {
 
   private connect() {
     try { this.ws?.close(); } catch {}
-    const url = this.wsURL('/online-websocket');
+    const url = makeWsUrl('/online-websocket');
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
