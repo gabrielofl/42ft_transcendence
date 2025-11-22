@@ -9,7 +9,7 @@ import { Maps } from "./Maps";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
-import { BASE_URL, WS_URL } from "../config";
+import { API_BASE_URL, makeWsUrl } from "../config";
 import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
 
 export class ClientGameSocket {
@@ -107,14 +107,15 @@ export class ClientGameSocket {
 				code = tournamentInfo.roomId;
 			}
 
-			const ws = new WebSocket(`${WS_URL}/gamews?room=${code}&user=${userID}`);
+			const ws = new WebSocket(makeWsUrl(`/gamews?room=${code}&user=${userID}`));
 			
 			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));
 			ws.addEventListener('close', (e) => {
 				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
-				// Intenta reconectar después de un breve retraso para no sobrecargar el servidor.
-				setTimeout(connect, 1000);
+				if (!this.disposed) {
+					setTimeout(connect, 1000);
+				}
 			});
 			ws.addEventListener('open', () => {
 				console.log("[ws] Connection established.");
@@ -138,13 +139,13 @@ export class ClientGameSocket {
 
 		/** Petición a back para obtener la información del juego **/
 		// const roomState: RoomStatePayload | null = await fetchJSON(`${new URL(API_BASE_URL, location.origin).toString().replace(/\/$/, '')}/rooms/mine`, { credentials: "include" });
-		const roomState: RoomStatePayload | null = await fetchJSON(`${BASE_URL}/rooms/mine`, { credentials: "include" });
+		const roomState: RoomStatePayload | null = await fetchJSON(`${API_BASE_URL}/rooms/mine`, { credentials: "include" });
 		if (!roomState) {
 			throw new Error(`Failed to fetch room data or room is not available.`);
 		}
 
 		ClientGameSocket.Canvas = document.getElementById('pong-canvas') as HTMLCanvasElement;
-		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.config.mapKey]);
+		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.mapKey || "BaseMap" ]);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
 		this.game.MessageBroker.Subscribe("PlayerUsePowerUp", (msg) => this.Send(msg));
 		console.log('roomState', roomState);

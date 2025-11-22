@@ -1,5 +1,5 @@
 #backend
-FROM node:24.2.0-bullseye
+FROM public.ecr.aws/docker/library/node:24.11.1-bullseye
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y net-tools && apt-get clean && rm -rf /var/lib/apt/lists/*
 

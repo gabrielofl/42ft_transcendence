@@ -1,23 +1,8 @@
 import { MessageBroker } from "@shared/utils/MessageBroker";
 import { WaitMessage, WaitMsgTypes, WaitPayloads } from "../../../../shared/types/messages";
-import { API_BASE_URL } from "../config";
+import { makeWsUrl } from "../config";
 
 type WSLike = WebSocket | undefined;
-
-/** Build ws URL from API_BASE_URL, without /api */
-function buildWsUrl(roomCode: string, userId: number): string {
-  const api = new URL(API_BASE_URL, location.origin);
-  const ws = new URL(api.toString());
-
-  ws.protocol = api.protocol === "https:" ? "wss:" : "ws:";
-  ws.host = api.host;
-  ws.pathname = "/waitws";
-  ws.search = "";
-  if (roomCode) ws.searchParams.set("room", roomCode);
-  ws.searchParams.set("user", String(userId));
-
-  return ws.toString();
-}
 
 export class ClientWaitRoomSocket {
   private static Instance: ClientWaitRoomSocket;
@@ -81,7 +66,7 @@ export class ClientWaitRoomSocket {
     this.disposed = false;
 
     const connect = () => {
-      const url = buildWsUrl(this._roomCode, this._userId);
+      const url = makeWsUrl(`/waitws?room=${encodeURIComponent(this._roomCode)}&user=${this._userId}`);
       const ws = new WebSocket(url);
       this.ws = ws;
 

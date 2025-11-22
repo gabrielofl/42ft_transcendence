@@ -962,7 +962,7 @@ async function tournamentWebsocket(fastify) {
   }
 
   // WebSocket endpoint
-  fastify.get('/tournamentws', { websocket: true }, async (socket, req) => {
+  fastify.get('/wss/tournamentws', { websocket: true }, async (socket, req) => {
     let user;
     try {
       user = await requireUserFromCookie(req);
