@@ -159,7 +159,7 @@ export class ServerGameSocket {
         this.game.MessageBroker.Subscribe("GamePause", (msg) => { enqueueMessage(msg); console.log("GamePause"); });
         this.game.MessageBroker.Subscribe("BallMove", enqueueMessage);
         this.game.MessageBroker.Subscribe("WindChanged", enqueueMessage);
-        // this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
+        this.game.MessageBroker.Subscribe("BallRemove", enqueueMessage);
         this.game.MessageBroker.Subscribe("PaddlePosition", enqueueMessage);
         this.game.MessageBroker.Subscribe("InventoryChanged", enqueueMessage);
         this.game.MessageBroker.Subscribe("PowerUpBoxPicked", enqueueMessage);
