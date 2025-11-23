@@ -47,7 +47,6 @@ protected readonly WIN_POINTS = 50;
     private camera: BABYLON.ArcRotateCamera;
     private glow: BABYLON.GlowLayer;
     public arrow: WindCompass | null = null;
-    private isLateralView: boolean = false;
     private materialFact: MaterialFactory;
 
     // ---Instances ---
@@ -183,31 +182,28 @@ protected readonly WIN_POINTS = 50;
             p.ConfigurePaddleBehavior({position: this.Map.spots[idx], lookAt: new BABYLON.Vector3(0, 0.5, 0)});
         });
 
-        // CAMERA
-        let cameraFrontView = new BABYLON.Vector3(0, 15, -this.Map.size.height);
-        let cameraLateralView = new BABYLON.Vector3(-this.Map.size.height, 45, 0);
-        this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
-            inputMap[evt.sourceEvent.key] = true;
-        
-            if (evt.sourceEvent.key === "v") {
-                this.isLateralView = !this.isLateralView;
-                this.camera.position = this.isLateralView
-                    ? cameraLateralView
-                    : cameraFrontView;
-                this.camera.setTarget(BABYLON.Vector3.Zero());
-            } else if (evt.sourceEvent.key === "p") {
-                // console.log("Pause: " + !this.Paused);
-                this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: !this.Paused});
-            }
-        }));
-
         this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, evt => {
             inputMap[evt.sourceEvent.key] = false;
         }));
         
         this.dependents.Add(this.PongTable);
-    }
 
+        // CAMERA
+        let isLocalGame = this.players.filter(p => p instanceof LocalPlayer).length >= 2;
+        if (isLocalGame) {
+            this.camera.position = new BABYLON.Vector3(-35, 35, 0);
+        } else {
+            this.players.forEach((p, idx) => {
+                if (p instanceof LocalPlayer) {
+                    let position: BABYLON.Vector3 = this.Map.spots[idx]
+                    position.x = position.x * 2.5;
+                    position.y = 42;
+                    position.z = position.z * 2.5;
+                    this.camera.position = position;
+                }
+            });
+        }
+    }
 
 	public processPlayerMoves(inputMap: Record<string, boolean>) {
 		for (const player of this.players) {
