@@ -9,6 +9,7 @@ import { clearTournamentMatchInfo, getStoredTournamentMatchInfo, setTournamentMa
 import { BracketViewer } from "./Game/BracketViewer";
 import { showResultOverlay } from "./match-result-view";
 import { playerLiteToUserData } from "./waiting_room";
+import { PowerUpType } from "../../../shared/types/messages";
 
 let cards: { cardElement: HTMLDivElement; cleanup: () => void; fill?: (p: PlayerLite | null) => void }[] = [];
 let tournamentPlayers: PlayerLite[] = [];
@@ -152,7 +153,7 @@ function replaceTournamentIdInURL(id: number | null) {
 }
 
 // ---------- bracket and notifications ----------
-
+const ALL_POWERUPS: PowerUpType[] = ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"];
 // Guardar info del match en sessionStorage
 async function saveMatchInfo(tournamentId: number, match: any, roundName: string) {
   
@@ -174,9 +175,9 @@ let matchInfo;
 		round: roundName,
 		isTournament: true,
 		mapKey: config.map_key || "BaseMap",
-		powerUpAmount: config.powerup_amount || "1",
-		enabledPowerUps: config.enabled_powerups || "1",
-		windAmount: config.wind_amount || "1",
+		powerUpAmount: Number.isFinite(config.powerup_amount) ? config.powerup_amount : 5,
+		enabledPowerUps: Array.isArray(config?.enabled_powerups) ? (config.enabled_powerups as PowerUpType[]) : ALL_POWERUPS,
+		windAmount: Number.isFinite(config.wind_amount) ? config.wind_amount : 50,
 		pointToWinAmount: config.point_to_win_amount || "10"
   	};
     

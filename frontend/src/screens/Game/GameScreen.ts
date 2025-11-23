@@ -173,9 +173,13 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 	prepareTournamentHUD();
 	attachTournamentEventHandlers();
 
+	const container = document.getElementById("player-cards-client");
+  	if (!container) return;
+	binder.RegisterBindings(container.parentElement as HTMLElement);
+	
 	try {
 		// Crear el juego con el mapa del torneo
-		const game = new ClientGame(canvas, Maps[matchInfo.mapKey || 'ObstacleMap']);
+		const game = new ClientGame(canvas, Maps[matchInfo.mapKey || 'BaseMap']);
 		
 		// Configurar jugadores EN EL MISMO ORDEN que el backend (player1, player2 del bracket)
 		// Esto es crítico para que las paletas se asignen correctamente
@@ -204,6 +208,10 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 		// Configurar eventos del juego
 		setupTournamentListeners(game);
 
+		GameViewModel.UpdateFromObject({
+			[matchInfo.player1.username]: { score: 0, inventory: {}, effects: [] },
+			[matchInfo.player2.username]: { score: 0, inventory: {}, effects: [] },
+		});
 	} catch (error) {
 		console.error('❌ Error configurando juego de torneo:', error);
 		alert('Error iniciando el juego del torneo. Inténtalo de nuevo.');
@@ -213,13 +221,6 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 function setupNormalGameEvents(): void {
 	hideTournamentHUD();
 	detachTournamentEventHandlers();
-
-	const container = document.getElementById("player-cards-client");
-	if (!container)
-		return;
-
-	console.log("Registrando bindings");
-	binder.RegisterBindings(container.parentElement as HTMLElement);
 
 	ClientGameSocket.GetInstance().UIBroker.Subscribe("PointMade", (msg) => {
 		const obj = msg.results.reduce((acc, m) => {
@@ -260,16 +261,7 @@ function setupNormalGameEvents(): void {
 }
 
 function setupTournamentListeners(game: ClientGame): void {
-	const container = document.getElementById("player-cards-client");
-	if (container) {
-		console.log("Registrando bindings para torneo");
-		binder.RegisterBindings(container.parentElement as HTMLElement);
 		
-	}
-	if (!container)
-	{
-		return;
-	}
 
 	ClientGameSocket.GetInstance().UIBroker.Subscribe("PointMade", (msg) => {
 		const obj = msg.results.reduce((acc, m) => {

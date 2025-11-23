@@ -3,6 +3,9 @@ import { generateBracket, updateBracketWithWinner, advanceRoundIfReady } from '.
 import { addVirtualAI } from './virtual-players.js';
 import { tournamentEventBus } from './event-bus.js';
 import { blockchainWriteMatchOnce, blockchainWriteFinalBracketOnce } from '../services/blockchain.js';
+import { addGame, getGame, removeGame } from './game-manager.js';
+import { startTournamentMatch } from './index.js';
+import { ServerGameSocket } from '../game/Game/ServerGameSocket.js';
 
 const MIN_MATCH_TIME_LIMIT_SECONDS = 30;
 const TOURNAMENT_FORFEIT_GRACE_MS = 5000;
@@ -169,10 +172,6 @@ async function tournamentWebsocket(fastify) {
         [tournamentId]
       );
 
-      // Importar lo necesario
-      const { ServerGameSocket } = await import('../game/Game/ServerGameSocket.js');
-      const { addGame, startGame: startGameManager } = await import('./game-manager.js');
-      const { startTournamentMatch } = await import('./index.js');
 
       for (let i = 0; i < quarterfinals.length; i++) {
         const match = quarterfinals[i];
@@ -698,7 +697,7 @@ async function tournamentWebsocket(fastify) {
     }
 
     try {
-      const { getGame, removeGame } = await import('./game-manager.js');
+      
       const gameSocket = getGame(roomId);
       if (gameSocket) {
         try {
@@ -772,7 +771,6 @@ async function tournamentWebsocket(fastify) {
   // Handler: Iniciar match de torneo cuando el countdown termina
   async function handleTournamentMatchStart(roomId, fastify) {
     try {
-      const { startTournamentMatch } = await import('./index.js');
       await startTournamentMatch(roomId);
     } catch (error) {
       console.error(`Error iniciando match ${roomId}:`, error);
@@ -894,10 +892,6 @@ async function tournamentWebsocket(fastify) {
           `SELECT map_key, powerup_amount, enabled_powerups, wind_amount, point_to_win_amount, match_time_limit FROM tournaments WHERE id = ?`,
           [tournamentId]
         );
-
-        const { ServerGameSocket } = await import('../game/Game/ServerGameSocket.js');
-        const { addGame } = await import('./game-manager.js');
-        const { startTournamentMatch } = await import('./index.js');
 
         for (const roomInfo of roomIds) {
           const matchPlayers = [roomInfo.player1, roomInfo.player2];

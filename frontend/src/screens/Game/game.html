@@ -29,14 +29,14 @@
   <!-- Vista Cliente -->
   <div class="flex flex-col items-center flex-1">
     <!-- Score Center Cliente -->
-    <div class="justify-self-center flex items-center gap-6 mb-4">
+    <div class="justify-self-center flex flex-col items-center gap-2 mb-4">
+	  <div id="tournament-hud" class="hidden flex flex-col items-center gap-1 text-white"></div>
       <!-- Tarjetas de jugadores -->
       <div class="flex items-center gap-6"
         id="player-cards-client"
         data-bind-list="*"
         data-template="#player-card-template">
       </div>
-      <div id="tournament-hud" class="hidden flex flex-col items-center gap-1 text-white"></div>
     </div>
 
     <!-- Canvas Container -->
