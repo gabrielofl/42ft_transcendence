@@ -439,6 +439,7 @@ export class ServerGameSocket {
 
 					// winner gets +150, others get +50
 					const scoreIncrement = isWinner ? 150 : 50;
+					const maxScore = player.score;
 
 					// update user stats
 					await app.db.run(
@@ -446,7 +447,7 @@ export class ServerGameSocket {
 						UPDATE users
 						SET 
 							score      = score + ?,
-							max_score  = CASE WHEN (score + ?) > max_score THEN (score + ?) ELSE max_score END,
+							max_score  = CASE WHEN (?) > max_score THEN (?) ELSE max_score END,
 							wins       = wins + ?,
 							losses     = losses + ?,
 							matches    = matches + 1,
@@ -455,8 +456,8 @@ export class ServerGameSocket {
 						`,
 						[
 							scoreIncrement,     // score + ?
-							scoreIncrement,     // (score + ?) for max_score
-							scoreIncrement,     // (score + ?) again
+							maxScore,   	  	// (?) for max_score
+							maxScore,	    	// (?) again
 							isWinner ? 1 : 0,   // wins + ?
 							isWinner ? 0 : 1,   // losses + ?
 							player.id           // WHERE id = ?
