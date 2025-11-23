@@ -19,6 +19,7 @@ import { ClientTournamentSocket } from "./services/tournament-socket";
 import { clearTournamentMatchInfo, validateStoredTournamentMatch } from "./services/tournament-state";
 import { cleanupWaitingRoom } from "./screens/waiting_room.js";
 import { cleanupMapSelection } from "./screens/Game/map-selection.js";
+import { getCurrentUser } from "./screens/ProfileHistory.js";
 
 export function navigateTo(screen: Screen): void {
 	// Cambiar estado en Store
@@ -52,7 +53,7 @@ export function initNavigation() {
 
   onScreenLeave("game", () => {
     console.log("Saliendo de game");
-    ClientGameSocket.GetInstance()?.DisposeGame();
+    ClientGameSocket.GetInstance()?.Dispose();
     
     void (async () => {
       const { status } = await validateStoredTournamentMatch();
@@ -123,6 +124,12 @@ async function renderScreen(screen: Screen) {
     console.error("Missing layout containers!");
     return;
   }
+
+  try {
+	await getCurrentUser();
+  } catch {
+		screen = "login";
+  } 
 
   main.innerHTML = "";
   if (screen !== "login") {

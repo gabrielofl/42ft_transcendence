@@ -4,7 +4,6 @@ export type MessageTypes =
 "GamePause"|
 "GameEnded"|
 "GameRestart"|
-"GameDispose"|
 "GameStart"|
 "PointMade"|
 "BallMove"|
@@ -34,7 +33,6 @@ export type MessagePayloads = {
     ["GamePause"]: GamePauseMessage;
     ["GameEnded"]: ScoreMessage;
     ["GameRestart"]: Message;
-    ["GameDispose"]: Message;
     ["GameStart"]: Message;
     ["PointMade"]: ScoreMessage;
     ["BallMove"]: BallMoveMessage;

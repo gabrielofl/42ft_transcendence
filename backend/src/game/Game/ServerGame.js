@@ -17,6 +17,7 @@ import { PaddleShieldEffect } from "../PowerUps/Effects/PaddleShieldEffect.js"
 import { logToFile } from "./logger.js";
 import { Event } from "../Utils/Event.js";
 import { MessageBroker } from "../Utils/MessageBroker.js";
+import {app} from "../../index.js";
 
 // import "@babylonjs/loaders/glTF";
 
@@ -493,6 +494,27 @@ export class ServerGame {
 		this.isSuddenDeath = false;
 		this.players.forEach(p => p.Reset());
 		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: false});
+		(async ()  => { 
+		try {
+		const result = await app.db.run(
+			`
+			UPDATE rooms
+			SET 
+				status      = "active"
+			WHERE code = ?
+			`,
+			[
+			this.roomId
+			]
+		);
+		console.log("Update room status: Active");
+
+		}
+		catch (err) {
+			console.error("Error saving match:", err);
+		}
+		} )();
+
 		this.Start();
 		this.initializeMatchTimer();
 		logToFile("ServerGame GameRestart End");

@@ -91,10 +91,10 @@ export function getGame(roomCode) {
  * @param {string} roomCode - El código de la sala.
  */
 export function removeGame(roomCode) {
-  const game = activeGames.get(roomCode);
-  if (game) {
+  const socketGame = activeGames.get(roomCode);
+  if (socketGame) {
     console.log(`[GameManager] Eliminando partida de la sala: ${roomCode}`);
-    game.Dispose();
+    socketGame.Dispose();
     activeGames.delete(roomCode);
   }
 }
@@ -122,8 +122,8 @@ export async function handleGameConnection(connection, req, fastify) {
   const user = Number(url.searchParams.get('user')) || 0;
 
   if (!roomCode) {
-    try { connection.socket.send(JSON.stringify({ error: "Missing room parameter" })); } catch {}
-    try { connection.socket.close(1008, 'No room code provided'); } catch {}
+    try { connection.send(JSON.stringify({ error: "Missing room parameter" })); } catch {}
+    try { connection.close(1008, 'No room code provided'); } catch {}
     return;
   }
 
@@ -133,8 +133,8 @@ export async function handleGameConnection(connection, req, fastify) {
 
   if (!gameSocket) {
     console.warn(`[GameManager] Partida no encontrada para la sala ${roomCode}. Rechazando conexión.`);
-    try { connection.socket.send(JSON.stringify({ error: `Game room ${roomCode} not found or not started yet.` })); } catch {}
-    try { connection.socket.close(1011, 'Game not found'); } catch {}
+    try { connection.send(JSON.stringify({ error: `Game room ${roomCode} not found or not started yet.` })); } catch {}
+    try { connection.close(1011, 'Game not found'); } catch {}
     return;
   }
 
@@ -144,7 +144,12 @@ export async function handleGameConnection(connection, req, fastify) {
   const isPlayerInRoom = data && data.players.some(p => p.userId === user);
 
   connection.on('close', () => {
+		console.log("\nLOLOLOLOLO \n");
+		console.log("\USER: ", user);
+
+	  gameSocket.RemovePeople(user, connection, user);
     if (gameSocket.people.size === 0) {
+		console.log("\nLALALLA \n");
       removeGame(roomCode);
     } 
     else if (isPlayerInRoom) {

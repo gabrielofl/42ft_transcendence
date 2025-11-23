@@ -13,7 +13,7 @@ type RoomSummary = {
 
 type MineState = {
   roomCode: string;
-  status: 'waiting' | 'active' | 'closed';
+  status: 'waiting' | 'active' | 'paused' | 'closed';
   createdAt?: string;
   maxPlayers?: number | null;
   players: Array<{ userId: number; username: string; isHost: boolean; ready: boolean }>;
@@ -71,10 +71,16 @@ function renderResumeCard(mine: MineState) {
   container.prepend(card);
 
   (card.querySelector('#resume-room') as HTMLButtonElement)?.addEventListener('click', () => {
-	const url = new URL(location.href);
-	url.searchParams.set('room', mine.roomCode.toUpperCase());
-	history.pushState(null, '', url.toString());
-	navigateTo('waiting');
+	
+	if (mine.status == "active" || mine.status == "paused")
+		navigateTo('game');
+	else
+	{
+		const url = new URL(location.href);
+		url.searchParams.set('room', mine.roomCode.toUpperCase());
+		history.pushState(null, '', url.toString());
+		navigateTo('waiting');
+	}
 	});
 
 

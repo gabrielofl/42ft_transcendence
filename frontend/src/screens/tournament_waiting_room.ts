@@ -155,31 +155,36 @@ function replaceTournamentIdInURL(id: number | null) {
 
 // Guardar info del match en sessionStorage
 async function saveMatchInfo(tournamentId: number, match: any, roundName: string) {
-  const matchInfo = {
-    tournamentId,
-    matchId: match.matchId,
-    roomId: match.roomId,
-    userId,
-    username,
-    opponent: match.player1.userId === userId ? match.player2 : match.player1,
-    player1: match.player1,
-    player2: match.player2,
-    round: roundName,
-    mapKey: "ObstacleMap",
-    isTournament: true,
-  };
-
+  
+let matchInfo;
   try {
     const tournamentConfig = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}`, {
       credentials: "include",
     });
     const config = await tournamentConfig.json();
-    matchInfo.mapKey = config.map_key || "ObstacleMap";
+	matchInfo = {
+		tournamentId,
+		matchId: match.matchId,
+		roomId: match.roomId,
+		userId,
+		username,
+		opponent: match.player1.userId === userId ? match.player2 : match.player1,
+		player1: match.player1,
+		player2: match.player2,
+		round: roundName,
+		isTournament: true,
+		mapKey: config.map_key || "BaseMap",
+		powerUpAmount: config.powerup_amount || "1",
+		enabledPowerUps: config.enabled_powerups || "1",
+		windAmount: config.wind_amount || "1",
+		pointToWinAmount: config.point_to_win_amount || "10"
+  	};
+    
   } catch (error) {
     console.error("Error obteniendo configuración del torneo:", error);
   }
-
-  setTournamentMatchInfo(matchInfo);
+  if (matchInfo)
+  	setTournamentMatchInfo(matchInfo);
 }
 
 function showBracket() {

@@ -13,7 +13,11 @@ export interface TournamentMatchInfo {
   player2: any;
   round: string;
   mapKey: string;
+  powerUpAmount?: number;
+  enabledPowerUps?: string[];
   isTournament: boolean;
+   windAmount?: number; 
+   pointToWinAmount?: number;
 }
 
 export interface TournamentStateResponse {

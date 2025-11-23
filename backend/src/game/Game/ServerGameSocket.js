@@ -50,7 +50,6 @@ export class ServerGameSocket {
         this.handlers = {
 			"PlayerPreMove": (m, u) => this.HandlePreMoveMessage(m, u),
 			"PlayerUsePowerUp": (m, u) => this.HandleUsePowerUpMessage(m, u),
-            "GameDispose": (m, u) => this.HandleGameDispose(m, u),
             "GameInit": (m, u) => this.HandleGameInit(m, u),
 		};
     }
@@ -61,11 +60,26 @@ export class ServerGameSocket {
      * @param {import('ws')} connection La conexión WebSocket del usuario.
      */
     AddPeople(user, connection, userid) {
+		console.log("1ADD USER: ", user, this.people.size);
+
         this.people.set(user, connection);
+		console.log("2ADD USER: ", user, this.people.size);
 
         // Asigna los manejadores de eventos para esta conexión específica.
         connection.on('message', (msg) => this.ReceiveSocketMessage(msg, user, userid));
         connection.on('error', (msg) => { console.log(msg); });
+    }
+
+	    /**
+     * Elimina un jugador y su conexión WebSocket a la sala.
+     * @param {string} user El identificador del usuario.
+     * @param {import('ws')} connection La conexión WebSocket del usuario.
+     */
+    RemovePeople(user, connection, userid) {
+		console.log("1REMOVE USER: ", user, this.people.size);
+
+		this.people.delete(user);
+		console.log("2REMOVE USER: ", user, this.people.size);
     }
 
     /**
@@ -73,27 +87,20 @@ export class ServerGameSocket {
      */
     Dispose() {
         console.log(`🧹 Cerrando sala ${this.roomId} y todas sus conexiones...`);
-        this.game?.Dispose();
+       	this.game?.Dispose();
         this.game = null;
 
         for (const [user, conn] of this.people.entries()) {
             try {
-                conn.socket.close();
+                conn.close();
             } catch (e) {
                 console.warn(`Error cerrando socket de ${user}:`, e);
             }
         }
-		removeGame(this.roomId);
+		// removeGame(this.roomId);
         this.people.clear();
-    }
-
-    /**
-     * Maneja el mensaje para desechar el juego actual.
-     * @param {any} msg El mensaje recibido.
-     */
-    HandleGameDispose(msg) {
-        console.log("HandleGameDispose");
-        this.game?.Dispose();
+		// this.game?.Dispose();
+        // this.game = null;
     }
 
     /**
@@ -262,8 +269,28 @@ export class ServerGameSocket {
     /**
      * Handler para cuando el juego se pausa
      */
-    handleGamePaused(payload) {
+   async handleGamePaused(payload) {
         console.log(`⏸️ Juego pausado: ${payload.reason}`);
+		try {
+			// Insert match into DB
+			
+			const result = await app.db.run(
+				`
+				UPDATE rooms
+				SET 
+					status      = "paused"
+				WHERE code = ?
+				`,
+				[
+				this.roomId
+				]
+			);
+			console.log("Update room status: Paused");
+
+			}
+			catch (err) {
+				console.error("Error saving match:", err);
+			}
         // Aquí puedes mostrar UI de pausa
     }
 
@@ -297,8 +324,7 @@ export class ServerGameSocket {
         }
 
 		this.saveMatchResult(winner, loser, msg);
-		this.HandleGameDispose(msg);
-
+		// this.Dispose();
     }
 
     applyGameState(state) {

@@ -175,7 +175,6 @@ export class ClientGameSocket {
 	 */
 	public DisposeGame(): void {
 		this.game?.Dispose();
-        this.Send({ type: "GameDispose" });
 	}
 
 	/**
@@ -293,13 +292,11 @@ export class ClientGameSocket {
 	public HandleGameEnded(msg: ScoreMessage): void {
 		console.log("HandleGameEnded", msg);
 		this.UIBroker.Publish("GameEnded", msg);
-		initResultModal();
+		
 		let matchInfo = getStoredTournamentMatchInfo();
 		const modal = document.getElementById("result-modal");
 
-		if (matchInfo)
-		{
-			if (matchInfo) {
+		if (matchInfo) {
 			const isFinal = matchInfo.round === 'Finals';
 			
 			if (isFinal) {
@@ -320,16 +317,13 @@ export class ClientGameSocket {
 					navigateTo('tournament-waiting');
 				}, 4000);
 			}
-			}
 		}
 		else 
 		{
+			initResultModal();
 			setupResult(msg, "home");
 		}
-		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
-		if (this.game) {
-			this.game.MessageBroker.Publish("GameEnded", msg);
-		}
+		
 	}
 
 	/** Maneja el mensaje para reiniciar el juego. */
@@ -444,7 +438,8 @@ export class ClientGameSocket {
 	public Dispose(): void {
 		if (this.disposed)
 			return;
-		
 		this.disposed = true;
+		ClientGameSocket.socket?.close();
+		this.game?.Dispose();
 	}
 }

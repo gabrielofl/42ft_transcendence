@@ -146,6 +146,7 @@ export async function renderGame() {
 			console.warn("No se pudo verificar el estado del torneo. Continuando con la información local.");
 		}
 		await setupTournamentGame(matchInfo);
+		console.log("MATCH INFO: ", matchInfo);
 		return;
 	}
 
@@ -263,8 +264,49 @@ function setupTournamentListeners(game: ClientGame): void {
 	if (container) {
 		console.log("Registrando bindings para torneo");
 		binder.RegisterBindings(container.parentElement as HTMLElement);
+		
+	}
+	if (!container)
+	{
+		return;
 	}
 
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("PointMade", (msg) => {
+		const obj = msg.results.reduce((acc, m) => {
+			acc[m.username] = { score: m.score };
+			return acc;
+		}, {} as Record<string, { score: number }>);
+
+		GameViewModel.UpdateFromObject(obj);
+	});
+
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("InventoryChanged", (msg) => {
+		GameViewModel.UpdateFromObject( {
+			[msg.username]: {
+				["inventory"]: {
+					[msg.slot]: {
+						["path"]: msg.path 
+					}
+				}
+			}
+		});
+	});
+
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("EffectsChanged", (msg) => {
+		GameViewModel.UpdateFromObject(msg.data);
+	});
+
+	ClientGameSocket.GetInstance().UIBroker.Subscribe("GameCountdown", (msg: CountdownMessage) => {
+		showCountdown(msg.seconds, msg.message);
+	});
+
+	if (!unsubscribeFromGameLeave) {
+		unsubscribeFromGameLeave = onScreenLeave("game", () => {
+			console.log("Vaciando GameViewModel, cerrando Socket y liberando ClientGame");
+			GameViewModel.data = {};
+			ClientGameSocket.GetInstance()?.DisposeGame();
+		});
+	}
 	// Listener para GameEnded (torneos)
 	game.MessageBroker.Subscribe("GameEnded", (msg: ScoreMessage) => {
 		// const matchInfo = getStoredTournamentMatchInfo();

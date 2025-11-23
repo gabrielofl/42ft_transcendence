@@ -141,6 +141,7 @@ export default async function (fastify, opts) {
           t.enabled_powerups,
           t.wind_amount,
           t.match_time_limit,
+          t.point_to_win_amount,
           COUNT(tp.id) as player_count,
           COUNT(CASE WHEN tp.user_id > 0 THEN 1 END) as real_player_count
          FROM tournaments t
