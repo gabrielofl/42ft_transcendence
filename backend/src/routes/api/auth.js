@@ -189,16 +189,17 @@ export default async function (fastify, opts) {
 						firstName: {
 							type: 'string',
 							minLength: 1,
-							maxLength: 50
+							maxLength: 15
 						},
 						lastName: {
 							type: 'string',
 							minLength: 1,
-							maxLength: 50
+							maxLength: 15
 						},
 						username: { 
 							type: 'string', 
-							minLength: 3  // At least 3 characters
+							minLength: 3,
+							maxLength: 10
 						},
 						email: { 
 							type: 'string', 

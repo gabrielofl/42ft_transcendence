@@ -9,9 +9,10 @@ export function createUserCard(userData: UserData): string {
 		: 'default.jpg';
 
 	const statusInfo = getStatusInfo(userData.status);
-	
+
 	const scoreDisplay = userData.show_scores_publicly === 1 
 		? `${userData.score ?? 0} pts` : '🔒 Private';
+
 
 	return replaceTemplatePlaceholders(userCardTemplate, {
 		borderColor: '[--primary-color]',

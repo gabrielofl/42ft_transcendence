@@ -9,8 +9,12 @@ import { Maps } from "./Maps";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
+import { initResultModal, setupResult } from "../ResultModal";
 import { BASE_URL, WS_URL } from "../config";
 import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
+import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
+import { onScreenLeave, navigateTo } from "../../navigation";
+
 
 export class ClientGameSocket {
 	private static Instance: ClientGameSocket;
@@ -286,8 +290,41 @@ export class ClientGameSocket {
 	 * @param {ScoreMessage} msg - El mensaje con los resultados finales.
 	 */
 	public HandleGameEnded(msg: ScoreMessage): void {
-		console.log("HandleGameEnded");
+		console.log("HandleGameEnded", msg);
 		this.UIBroker.Publish("GameEnded", msg);
+		initResultModal();
+		let matchInfo = getStoredTournamentMatchInfo();
+		const modal = document.getElementById("result-modal");
+
+		if (matchInfo)
+		{
+			if (matchInfo) {
+			const isFinal = matchInfo.round === 'Finals';
+			
+			if (isFinal) {
+				console.log('🏆 Final del torneo terminada, navegando directamente al waiting room');
+				navigateTo('tournament-waiting');
+			} else {
+				const winner = msg.results.sort((a, b) => b.score - a.score)[0];
+				const container = document.querySelector(".relative.w-full") as HTMLDivElement;
+				if (!container) return;
+
+				container.insertAdjacentHTML("beforeend", tournamentGameEndedTemplate);
+				const winnerNameSpan = document.getElementById("tournament-winner-name");
+				if (winnerNameSpan) winnerNameSpan.textContent = winner.username;
+
+				console.log('🎮 Match de torneo terminado, mostrando panel intermedio');
+				
+				setTimeout(() => {
+					navigateTo('tournament-waiting');
+				}, 4000);
+			}
+			}
+		}
+		else 
+		{
+			setupResult(msg, "home");
+		}
 		// También publicar al MessageBroker del juego para que setupGameEndedListener lo reciba
 		if (this.game) {
 			this.game.MessageBroker.Publish("GameEnded", msg);

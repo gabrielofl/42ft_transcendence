@@ -162,6 +162,14 @@ export class APlayer {
 
     /**
      * 
+     * @returns {number}
+     */
+    GetId() {
+        return this.id
+    };
+
+    /**
+     * 
      * @returns {string}
      */
     GetName() {

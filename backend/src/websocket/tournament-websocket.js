@@ -842,15 +842,15 @@ async function tournamentWebsocket(fastify) {
       if (matchInfo?.match) {
         // Escribir resultado del match en blockchain
         try {
-          await blockchainWriteMatchOnce(fastify, {
-            tournamentId,
-            matchId,
-            player1: matchInfo.match.player1?.username || 'TBD',
-            player2: matchInfo.match.player2?.username || 'TBD',
-            winner: winnerData.username,
-            score1: matchInfo.match.score1 || 0,
-            score2: matchInfo.match.score2 || 0
-          });
+        //   await blockchainWriteMatchOnce(fastify, {
+        //     tournamentId,
+        //     matchId,
+        //     player1: matchInfo.match.player1?.username || 'TBD',
+        //     player2: matchInfo.match.player2?.username || 'TBD',
+        //     winner: winnerData.username,
+        //     score1: matchInfo.match.score1 || 0,
+        //     score2: matchInfo.match.score2 || 0
+        //   });
         } catch (e) {
           console.error('Failed blockchain store match on-chain:', e);
         }
@@ -865,7 +865,7 @@ async function tournamentWebsocket(fastify) {
       if (advanceResult?.tournamentFinished) {
         // Escribir bracket final en blockchain
         try {
-          await blockchainWriteFinalBracketOnce(fastify, tournamentId, updatedBracket);
+        //   await blockchainWriteFinalBracketOnce(fastify, tournamentId, updatedBracket);
         } catch (e) {
           console.error('Failed blockchain store final bracket on-chain:', e);
         }

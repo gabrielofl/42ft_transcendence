@@ -100,7 +100,7 @@ export function setupAccountTab() {
 				}
 
 				if (!res.ok || !result.success) {
-				setupAlert('Oops!', result.error || 'Failed to update privacy settings', "close");
+				setupAlert('Oops!', result.message || 'Failed to update privacy settings', "close");
 				// rollback UI if update failed
 				cb.checked = !cb.checked;
 				} else {
@@ -186,7 +186,7 @@ export function setupAccountTab() {
 		result = {};
 		}
 		if (result.success) setupAlert('Success!',result.message, "close");
-		else setupAlert('Oops!',result.error || 'Oh no! Failed to update', "close");
+		else setupAlert('Oops!',result.message || 'Oh no! Failed to update', "close");
 	});
 
 	// Update username
@@ -216,7 +216,7 @@ export function setupAccountTab() {
 		result = {};
 		}
 		if (result.success) setupAlert('Success!', result.message, "close");
-		else setupAlert('Oops!', result.error || 'Oh no! Failed to update', "close");
+		else setupAlert('Oops!', result.message || 'Oh no! Failed to update', "close");
 	});
 
 	// Update email
@@ -247,7 +247,7 @@ export function setupAccountTab() {
 		}
 
 		if (result.success) setupAlert('Success!', result.message, "close");
-		else setupAlert('Oops!', result.error || 'Oh no! Failed to update', "close");
+		else setupAlert('Oops!', result.message || 'Oh no! Failed to update', "close");
 	});
 
 	document.getElementById('update-password-btn')?.addEventListener('click', async () => {
@@ -276,7 +276,7 @@ export function setupAccountTab() {
 		}
 
 		if (result.success) setupAlert('Success!', 'Yay! Password changed!', "close");
-		else setupAlert('Oops!', result.error || 'Failed to update password', "close");
+		else setupAlert('Oops!', result.message || 'Failed to update password', "close");
 	});
 
 	
