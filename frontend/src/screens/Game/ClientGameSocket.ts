@@ -17,11 +17,11 @@ import { onScreenLeave, navigateTo } from "../../navigation";
 
 
 export class ClientGameSocket {
-	private static Instance: ClientGameSocket;
+	private static Instance: ClientGameSocket | undefined;
 	public game: ClientGame | undefined;
 	private handlers: Partial<{[K in MessageTypes]: (payload: MessagePayloads[K]) => void }>;
 	public UIBroker: MessageBroker<MessagePayloads> = new MessageBroker();
-	private static socket: WebSocket | undefined;
+	private socket: WebSocket | undefined;
 	private disposed: boolean = false;
 	public static Canvas: HTMLCanvasElement;
 
@@ -116,8 +116,8 @@ export class ClientGameSocket {
 			ws.addEventListener('message', (e) => this.ReceiveSocketMessage(e));
 			ws.addEventListener('error', (e) => console.log('[ws] error', e));
 			ws.addEventListener('close', (e) => {
-				console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
 				if (!this.disposed) {
+					console.log(`[ws] close: ${e.code} ${e.reason}. Reconnecting...`);
 					setTimeout(connect, 1000);
 				}
 			});
@@ -126,7 +126,7 @@ export class ClientGameSocket {
 				if (onOpen) onOpen(); // Ejecutar el callback cuando la conexión esté abierta.
 			});
 
-			ClientGameSocket.socket = ws;
+			this.socket = ws;
 		};
 
 		connect();
@@ -152,7 +152,6 @@ export class ClientGameSocket {
 		this.game = new ClientGame(ClientGameSocket.Canvas, Maps[roomState.mapKey || "BaseMap" ]);
 		this.game.MessageBroker.Subscribe("PlayerPreMove", (msg) => this.Send(msg));
 		this.game.MessageBroker.Subscribe("PlayerUsePowerUp", (msg) => this.Send(msg));
-		console.log('roomState', roomState);
 
 		// El backend en `waitroom-websocket.js` devuelve un `nArray` en el evento `AllReady`.
 		// Aquí lo simulamos a partir de la lista de jugadores del estado de la sala.
@@ -186,8 +185,8 @@ export class ClientGameSocket {
 			return;
 		
 		// console.log("Sending message:", msg);
-		if (ClientGameSocket.socket?.readyState === WebSocket.OPEN) {
-			ClientGameSocket.socket.send(JSON.stringify(msg));
+		if (this.socket?.readyState === WebSocket.OPEN) {
+			this.socket.send(JSON.stringify(msg));
 		} else {
 			console.warn("Socket no está abierto. Mensaje no enviado:", msg);
 		}
@@ -438,8 +437,11 @@ export class ClientGameSocket {
 	public Dispose(): void {
 		if (this.disposed)
 			return;
+
+		ClientGameSocket.Instance = undefined;
 		this.disposed = true;
-		ClientGameSocket.socket?.close();
+		this.socket?.close();
+		this.socket = undefined;
 		this.game?.Dispose();
 	}
 }
