@@ -76,7 +76,7 @@ export function renderFooter(): void {
   const tournamentGameBtn = document.getElementById("nav-tournament-game");
   tournamentGameBtn?.addEventListener("click", (e) => {
     e.preventDefault();
-    navigateTo("tournament");
+    navigateTo("tournament-lobby");
   });
 
   const profileBtn = document.getElementById("nav-profile");

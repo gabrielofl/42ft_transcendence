@@ -13,7 +13,7 @@ import { renderMapSelection } from "./screens/Game/map-selection.js";
 import { renderWaitingRoom } from "./screens/waiting_room.js";
 import { renderJoinGame } from "./screens/join-game.js";
 import { renderTournamentSelection } from "./screens/Game/tournament-selection.js";
-import { renderTournamentLobby } from "./screens/tournament-lobby.js";
+import { renderTournamentLobby, cleanupTournamentLobby } from "./screens/tournament-lobby.js";
 import { renderWaitingRoom as renderTournamentWaitingRoom } from "./screens/tournament_waiting_room.js";
 import { ClientTournamentSocket } from "./services/tournament-socket";
 import { clearTournamentMatchInfo, validateStoredTournamentMatch } from "./services/tournament-state";
@@ -59,12 +59,12 @@ export function initNavigation() {
       const { status } = await validateStoredTournamentMatch();
 
       if (status === "active") {
-        console.log("🏆 Volviendo de match de torneo, manteniendo conexión");
+        console.log("Volviendo de match de torneo, manteniendo conexión");
         return;
       }
 
       if (status === "inactive") {
-        console.log("🏁 Torneo finalizado o ya no activo, desconectando socket de torneo");
+        console.log("Torneo finalizado o ya no activo, desconectando socket de torneo");
         ClientTournamentSocket.GetInstance()?.Disconnect();
         clearTournamentMatchInfo();
       }
@@ -90,6 +90,10 @@ export function initNavigation() {
       const tournamentSocket = ClientTournamentSocket.GetInstance();
       tournamentSocket.Disconnect();
     }
+  });
+
+  onScreenLeave("tournament-lobby", () => {
+    cleanupTournamentLobby();
   });
 
   // Render inicial

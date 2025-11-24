@@ -3,9 +3,20 @@ import { navigateTo } from "../navigation";
 import { API_BASE_URL } from "./config";
 import { clearTournamentMatchInfo } from "../services/tournament-state";
 
+let lobbyRefreshInterval: number | null = null;
+
+function clearLobbyRefreshInterval() {
+  if (lobbyRefreshInterval !== null) {
+    clearInterval(lobbyRefreshInterval);
+    lobbyRefreshInterval = null;
+  }
+}
+
 export async function renderTournamentLobby(): Promise<void> {
   const main = document.getElementById('main');
   if (!main) return;
+
+  clearLobbyRefreshInterval();
 
   main.innerHTML = view;
 
@@ -37,10 +48,11 @@ export async function renderTournamentLobby(): Promise<void> {
   await loadTournaments();
 
   // Auto-refresh cada 5 segundos
-  const interval = setInterval(loadTournaments, 5000);
-  
-  // Cleanup al salir
-  window.addEventListener('beforeunload', () => clearInterval(interval));
+  lobbyRefreshInterval = window.setInterval(loadTournaments, 5000);
+}
+
+export function cleanupTournamentLobby(): void {
+  clearLobbyRefreshInterval();
 }
 
 async function loadTournaments() {

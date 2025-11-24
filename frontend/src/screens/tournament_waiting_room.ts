@@ -87,6 +87,11 @@ function updateReadyButton() {
   if (!readyButtonRef) return;
   const button = readyButtonRef;
 	
+  if (globalTournamentStatus === 'finished') {
+    button.style.display = 'none';
+    return;
+  }
+	
   if (globalTournamentStatus && globalTournamentStatus !== 'waiting') {
     button.style.display = 'none';
     return;
@@ -117,8 +122,17 @@ function updateReadyButton() {
 
   setInProgressState();
 
+  if (globalTournamentStatus === 'finished') {
+    setReadyState();
+    return;
+  }
+
   validateStoredTournamentMatch()
     .then(({ status, matchInfo }) => {
+      if (globalTournamentStatus === 'finished') {
+        setReadyState();
+        return;
+      }
       const shouldDisable = status === "active" || (status === "unknown" && !!matchInfo);
       if (shouldDisable) {
         setInProgressState();
@@ -609,6 +623,10 @@ export async function renderWaitingRoom(): Promise<void> {
     const waitingMessage = document.getElementById('waiting-message');
     if (waitingMessage) waitingMessage.classList.add('hidden');
     
+    globalTournamentStatus = 'finished';
+    tournamentSocket.Disconnect();
+    tournamentSocket.UIBroker.ClearAll();
+    
     const isWinner = data.winner.userId === userId;
     
     showResultOverlay({
@@ -803,6 +821,15 @@ function applyTournamentState(state: any) {
 
   if (state.status) {
     globalTournamentStatus = state.status;
+    
+    if (state.status === 'finished') {
+      globalTournamentStatus = 'finished';
+      // Desconectar y limpiar
+      const tournamentSocket = ClientTournamentSocket.GetInstance();
+      tournamentSocket.Disconnect();
+      tournamentSocket.UIBroker.ClearAll();
+      return; // Salir temprano para evitar más procesamiento
+    }
 	}
 
   const slotsFromServer = state.max_players || totalSlots;
@@ -817,7 +844,9 @@ function applyTournamentState(state: any) {
   const myPlayer = tournamentPlayers.find(p => p.userId === userId);
   if (myPlayer) {
     myReadyState = myPlayer.ready || false;
-    updateReadyButton();
+    if (globalTournamentStatus !== 'finished') {
+      updateReadyButton();
+    }
   }
   
   renderPlayers();
