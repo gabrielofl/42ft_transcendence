@@ -17,7 +17,29 @@ interface GameViewModel {
     score: number;
     inventory: Record<number, { path: string }>;
     effects: string[];
+    controls: {
+      moveUp: string;
+      moveDown: string;
+      powerUpKeys: string[];
+    };
   }>;
+}
+
+function syncControlsFromGame(game: ClientGame) {
+	const bindings = game.ControlBindings || {};
+	const vmUpdate: GameViewModel = {};
+
+	for (const [username, b] of Object.entries(bindings)) {
+		vmUpdate[username] = {
+			controls: {
+				moveUp: b.moveRight,
+				moveDown: b.moveLeft,
+				powerUpKeys: b.powerUpKeys,
+			},
+		};
+	}
+
+	GameViewModel.UpdateFromObject(vmUpdate);
 }
 
 export const GameViewModel = new ReactiveViewModel<GameViewModel>();
@@ -87,6 +109,7 @@ function prepareTournamentHUD(): void {
 
 	tournamentHudContainer.classList.remove("hidden");
 	tournamentHudContainer.innerHTML = `
+		<div id="tournament-controls" class="flex gap-4 text-[10px] text-gray-300 mb-1"></div>
 		<div class="text-xs uppercase tracking-wide text-gray-300">Time Remaining</div>
 		<div id="tournament-timer-display" class="text-3xl font-extrabold text-white">--:--</div>
 		<div id="tournament-sudden-death" class="hidden text-sm font-bold text-red-400 uppercase tracking-wide">Sudden Death</div>
@@ -99,6 +122,44 @@ function prepareTournamentHUD(): void {
 	}
 	if (tournamentSuddenDeathBanner) {
 		tournamentSuddenDeathBanner.classList.add("hidden");
+	}
+}
+
+function renderLocalControlsOverCanvas(game: ClientGame) {
+	const left = document.getElementById("controls-local-1");
+	const right = document.getElementById("controls-local-2");
+	if (!left || !right) return;
+
+	left.innerHTML = "";
+	right.innerHTML = "";
+
+	const bindings = game.ControlBindings || {};
+	const entries = Object.entries(bindings);
+	if (!entries.length) return;
+
+	const makeBlock = (username: string, b: { moveLeft: string; moveRight: string; powerUpKeys: string[] }) => {
+		const move = `${b.moveLeft.toUpperCase()} / ${b.moveRight.toUpperCase()}`;
+		const powers = b.powerUpKeys.map((k) => k.toUpperCase()).join(" / ");
+
+		return `
+			<div class="bg-black/60 text-[10px] text-gray-100 rounded-md px-2 py-1 shadow">
+				<div class="font-semibold text-[11px] mb-0.5">${username}</div>
+				<div>Move: <span class="font-mono">${move}</span></div>
+				<div>PowerUps: <span class="font-mono">${powers}</span></div>
+			</div>
+		`;
+	};
+
+	const [first, second] = entries;
+
+	if (first) {
+		const [username, binding] = first;
+		left.innerHTML = makeBlock(username, binding);
+	}
+
+	if (second) {
+		const [username, binding] = second;
+		right.innerHTML = makeBlock(username, binding);
 	}
 }
 
@@ -156,7 +217,9 @@ export async function renderGame() {
 
 	setupNormalGameEvents();
 	try {
-		await ClientGameSocket.GetInstance().StartGame();
+		const game = await ClientGameSocket.GetInstance().StartGame();
+		syncControlsFromGame(game);
+		renderLocalControlsOverCanvas(game);
 	} catch (error) {
 		console.error("❌ Error iniciando juego normal:", error);
 		setupAlert('Oops!', "No se pudo iniciar la partida. Inténtalo de nuevo.", "Close");
@@ -189,6 +252,8 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 		];
 
 		await game.AddPlayers({ type: 'AllReady', nArray: players });
+		syncControlsFromGame(game);
+		renderLocalControlsOverCanvas(game);
 
 		// Configurar WebSocket y eventos ANTES de conectar
 		const gameSocket = ClientGameSocket.GetInstance();
@@ -221,6 +286,11 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 function setupNormalGameEvents(): void {
 	hideTournamentHUD();
 	detachTournamentEventHandlers();
+
+	const container = document.getElementById("player-cards-client");
+	if (container) {
+		binder.RegisterBindings(container.parentElement as HTMLElement);
+	}
 
 	ClientGameSocket.GetInstance().UIBroker.Subscribe("PointMade", (msg) => {
 		const obj = msg.results.reduce((acc, m) => {

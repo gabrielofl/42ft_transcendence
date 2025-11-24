@@ -41,7 +41,13 @@ protected readonly WIN_POINTS = 50;
     public Map: MAPS.MapDefinition;
 
     // --- Utils ---
-    protected players: APlayer[] = [];
+	protected players: APlayer[] = [];
+	
+	public ControlBindings: Record<string, {
+        moveLeft: string;
+        moveRight: string;
+        powerUpKeys: string[];
+    }> = {};
     // --- Visual ---
     private gui: GUI.AdvancedDynamicTexture;
     private camera: BABYLON.ArcRotateCamera;
@@ -140,13 +146,18 @@ protected readonly WIN_POINTS = 50;
      */
     public async AddPlayers(msg: AllReadyMessage): Promise<void> {
         // console.log(msg);
-        this.players = [];
+		this.players = [];
+		this.ControlBindings = {};
 
         if (!msg.nArray)
             throw new Error('Invalid AllReadyMessage received');
 
         const me = (await this.GetMe()).id;
-		console.log("Me: ", me);
+		// console.log("Me: ", me);
+
+		const spots = this.Map.spots || [];
+		const maxPlayersForMap = spots.length || msg.nArray.length;
+		const trimmed = msg.nArray.slice(0, maxPlayersForMap);
 
         // console.log(me);
         let localPlayers: number = 0;
@@ -158,19 +169,29 @@ protected readonly WIN_POINTS = 50;
 		let localMove: [string, string][] = [
             ['d', 'a'],
             ["l", "j"],
-        ];
+		];
 
-        msg.nArray.forEach(d => {
+		trimmed.forEach(d => {
+			const userId = d[0];
+        	const username = d[1];
             let player: APlayer;
-            const isLocal = d[0] === me || d[0] < -1000;
-            if (isLocal) {
-                console.log("LocalPlayer", d);
-                player = new LocalPlayer(this, d[0], d[1], localMove[localPlayers][0], localMove[localPlayers][1], localKeys[localPlayers]);
+            const isLocal = userId === me || userId < -1000;
+            if (isLocal && localPlayers < 2) {
+				// console.log("LocalPlayer", d);
+				const moveKeys = localMove[localPlayers];
+            	const powerUpKeys = localKeys[localPlayers];
+				player = new LocalPlayer(this, userId, username, moveKeys[0], moveKeys[1], powerUpKeys);
+			
+				this.ControlBindings[username] = {
+                moveLeft: moveKeys[1],
+                moveRight: moveKeys[0],
+                powerUpKeys,
+            };
 				localPlayers++;
             } else {
                 console.log("ClientSocketPlayer", d);
                  // Pasar userId como tercer parámetro para poder ejecutar el movimiento de las palas de las IA en los torneos.
-                player = new ClientSocketPlayer(this, d[1], d[0]);
+                player = new ClientSocketPlayer(this, username, userId);
             }
             this.players.push(player);
         });

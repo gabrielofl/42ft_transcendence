@@ -144,14 +144,17 @@ async function waitroomWebsocket(fastify) {
     const { room, combined } = merged;
     if (room.status !== 'waiting') return null;
 
-    const total = combined.length;
-    const readyCount = combined.reduce((n, p) => n + (p.ready ? 1 : 0), 0);
+    const maxPlayers = room.max_players || combined.length;
+	const trimmed = combined.slice(0, maxPlayers);
+
+	const total = trimmed.length;
+    const readyCount = trimmed.reduce((n, p) => n + (p.ready ? 1 : 0), 0);
     const fullOk = room.max_players ? (total >= room.max_players) : true;
 
     if (total > 0 && fullOk && readyCount === total) {
       await fastify.db.run(`UPDATE rooms SET status = 'active' WHERE id = ?`, [room.id]);
-      const nArray = playersToNArrayFromCombined(combined);
-      broadcast(code, { type: 'AllReady', players: combined, nArray });
+      const nArray = playersToNArrayFromCombined(trimmed);
+      broadcast(code, { type: 'AllReady', players: trimmed, nArray });
       const config = {
         mapKey: room.map_key,
         powerUpAmount: room.powerup_amount,
@@ -159,8 +162,8 @@ async function waitroomWebsocket(fastify) {
         windAmount: room.wind_amount,
         pointToWinAmount: room.point_to_win_amount,
       };
-      await startGame(code, combined, config);
-      return { room, players: combined };
+      await startGame(code, trimmed, config);
+      return { room, players: trimmed };
     }
     return null;
   }
@@ -418,6 +421,10 @@ fastify.get('/api/rooms', async (req, reply) => {
     const state = await publicCombinedRoomState(roomCode);
     if (state) sendTo(socket, roomCode, userId, { type: 'RoomState', ...state });
 
+	  function countLocalGuests(code) {
+		const virtuals = listVirtualLite(code);
+		return virtuals.filter(v => v.kind === 'guest' || v.type === 'guest' || /local/i.test(v.username)).length;
+	}
     // messages
     socket.on('message', async (buf) => {
       let msg;
@@ -495,6 +502,14 @@ fastify.get('/api/rooms', async (req, reply) => {
             if (base.room.host_id !== userId) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Only host can add local player', code: 403 }); break; }
             if (await isRoomFullConsideringVirtuals(roomCode)) { sendTo(socket, roomCode, userId, { type: 'Error', message: 'Room full', code: 409 }); break; }
 
+			if (countLocalGuests(roomCode) >= 1) {
+				sendTo(socket, roomCode, userId, {
+				type: 'Error',
+				message: 'You can only have one local guest on this keyboard. Add AI or remote players for the rest.',
+				code: 409,
+				});
+				break;
+			}
             const vp = addVirtualGuest(roomCode);
             broadcast(roomCode, { type: 'AddPlayer', userId: vp.userId, username: vp.username, isHost: false, ready: true });
             broadcast(roomCode, { type: 'PlayerReady', userId: vp.userId });

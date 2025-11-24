@@ -205,6 +205,12 @@ bind("AllReady", (msg) => { allReady(msg as any); }, wait.UIBroker);
   }
 }
 
+function countLocalHumans(): number {
+  return serverPlayers.filter(p =>
+    p.userId === userId || p.userId < -1000
+  ).length;
+}
+
 // ---------- UI construction (cards driven by serverPlayers only) ----------
 function buildSlots(n: number) {
   const container = document.getElementById("player-cards-container");
@@ -216,7 +222,12 @@ function buildSlots(n: number) {
 
   for (let i = 0; i < n; i++) {
     const card = createAddPlayerCard({
-      onAddLocal: () => {
+	onAddLocal: () => {
+		const locals = countLocalHumans();
+		if (locals >= 2) {
+		setupAlert( 'Whoops!', "You can only have two players on this keyboard. Add AI or remote players for the rest.", "close" );
+		return;
+		}
         const api = ClientWaitRoomSocket.GetInstance() as any;
         if (typeof api.AddLocalGuest === "function") api.AddLocalGuest();
         else if (typeof api.InviteLocalGuest === "function") api.InviteLocalGuest();
