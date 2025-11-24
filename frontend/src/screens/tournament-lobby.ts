@@ -102,29 +102,28 @@ function renderWaitingTournaments(tournaments: any[]) {
   // Attach global functions (temporal hack)
   (window as any).joinTournament = async (id: number) => {
     try {
-      // Verificar que el torneo existe y tiene espacio
       const response = await fetch(`${API_BASE_URL}/tournaments/${id}`, {
         credentials: 'include'
       });
       
       if (!response.ok) {
-        alert('Tournament not found or already started.');
+        alert('Tournament not found.');
         await loadTournaments();
         return;
       }
       
       const tournament = await response.json();
-      
+      const status = tournament.status;
+
+      if (status === 'waiting' || status === 'ready') {
       if (tournament.players.length >= 8) {
         alert('Tournament is full!');
         await loadTournaments();
         return;
-      }
-      
-      // Guardar ID y navegar (el WebSocket lo unirá automáticamente)
+          }
+		}
       try {
         sessionStorage.setItem("currentTournamentId", String(id));
-        // Limpiar información de torneos anteriores
         clearTournamentMatchInfo();
       } catch (e) {
         console.error('Failed to save to sessionStorage:', e);

@@ -125,33 +125,56 @@ export default async function (fastify, opts) {
   });
 
   // GET /api/tournaments - Listar torneos disponibles  
-  fastify.get('/tournaments', async (req, reply) => {
+	  fastify.get('/tournaments', async (req, reply) => {
+		  let userId;
+		  try {
+    const user = await fastify.jwt.verify(req.cookies?.accessToken);
+		  userId = user.id;
+		  } catch (err) {
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
     try {
       // Primero, limpiar automáticamente torneos que solo tienen IA
       await cleanupAITournaments(fastify);
 
       const tournaments = await fastify.db.all(
-        `SELECT 
-          t.id,
-          t.name,
-          t.status,
-          t.created_at,
-          t.map_key,
-          t.powerup_amount,
-          t.enabled_powerups,
-          t.wind_amount,
-          t.match_time_limit,
-          t.point_to_win_amount,
-          COUNT(tp.id) as player_count,
-          COUNT(CASE WHEN tp.user_id > 0 THEN 1 END) as real_player_count
-         FROM tournaments t
-         LEFT JOIN tournament_players tp ON tp.tournament_id = t.id
-         WHERE t.status IN ('waiting', 'ready')
-         GROUP BY t.id, t.name, t.status, t.created_at, t.map_key, t.powerup_amount, t.enabled_powerups, t.wind_amount, t.match_time_limit
-         HAVING player_count > 0 AND player_count < 8 AND real_player_count > 0
-         ORDER BY t.created_at DESC
-         LIMIT 20`
-      );
+  `SELECT 
+      t.id,
+      t.name,
+      t.status,
+      t.created_at,
+      t.map_key,
+      t.powerup_amount,
+      t.enabled_powerups,
+      t.wind_amount,
+      t.match_time_limit,
+      t.point_to_win_amount,
+      COUNT(tp.id) as player_count,
+      COUNT(CASE WHEN tp.user_id > 0 THEN 1 END) as real_player_count,
+      SUM(CASE WHEN tp.user_id = ? THEN 1 ELSE 0 END) as is_me
+   FROM tournaments t
+   LEFT JOIN tournament_players tp ON tp.tournament_id = t.id
+   WHERE t.status IN ('waiting', 'ready', 'in_progress')
+   GROUP BY t.id, t.name, t.status, t.created_at, t.map_key, t.powerup_amount, t.enabled_powerups, t.wind_amount, t.match_time_limit
+   HAVING
+     (
+       -- joinable tournaments
+       t.status IN ('waiting', 'ready')
+       AND player_count > 0 
+       AND player_count < 8 
+       AND real_player_count > 0
+     )
+     OR
+     (
+       -- my active tournaments
+       t.status = 'in_progress'
+       AND is_me > 0
+     )
+   ORDER BY t.created_at DESC
+   LIMIT 5`,
+  [userId]
+);
+
 
       return { tournaments };
     } catch (error) {
