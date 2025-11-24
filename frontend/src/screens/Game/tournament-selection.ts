@@ -8,7 +8,7 @@ import { clearTournamentMatchInfo } from "../../services/tournament-state";
 
 let game: ClientGame;
 const ALL_POWERUPS: PowerUpType[] = ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"];
-export let SelectedMap: MapDefinition = TournamentMaps.ObstacleMap;
+export let SelectedMap: MapDefinition = TournamentMaps.BaseMap;
 
 async function fetchJSON(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -107,8 +107,8 @@ function setupTournamentSelectionControls(): void {
       document.querySelectorAll<HTMLInputElement>('input[name="powerup-type"]:checked')
     ).map(cb => cb.value as PowerUpType);
 
-    const chosenMapKey = selectedMapKey ?? "ObstacleMap";
-    const mapDef = TournamentMaps[chosenMapKey as keyof typeof TournamentMaps] ?? TournamentMaps.ObstacleMap;
+    const chosenMapKey = selectedMapKey ?? "BaseMap";
+    const mapDef = TournamentMaps[chosenMapKey as keyof typeof TournamentMaps] ?? TournamentMaps.BaseMap;
     
     // 2) Limpiar estado de torneos anteriores
     clearTournamentMatchInfo();

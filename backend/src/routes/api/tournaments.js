@@ -49,7 +49,7 @@ export default async function (fastify, opts) {
       const user = fastify.jwt.verify(token);
       const { 
         name, 
-        mapKey = 'ObstacleMap',
+        mapKey = 'BaseMap',
         powerUpAmount = 3,
         enabledPowerUps = [],
         windAmount = 50,

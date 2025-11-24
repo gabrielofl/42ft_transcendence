@@ -33,7 +33,7 @@ export async function startTournamentMatch(roomId) {
   });
 
   // Configurar mapa
-  gameSocket.game.Map = MAPS[config.mapKey] || MAPS.MultiplayerMap;
+  gameSocket.game.Map = MAPS[config.mapKey] || MAPS.BaseMap;
   gameSocket.game.SetWinPoints(config.pointToWinAmount || 5);
   gameSocket.game.SetMatchTimeLimit(config.matchTimeLimit ?? null);
   gameSocket.game.maxPowerUps = config.powerUpAmount;

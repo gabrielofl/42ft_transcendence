@@ -47,7 +47,7 @@ export class ServerGame {
     MessageBroker = new MessageBroker();
     Balls = new ObservableList();
     PowerUps = new ObservableList();
-    Map = MAPS.MultiplayerMap;
+    Map = MAPS.BaseMap;
 
 	// --- Utils ---
 	players = [];

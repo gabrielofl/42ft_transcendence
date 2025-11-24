@@ -24,7 +24,9 @@ export class ServerGameSocket {
     /** @type {Object<string, (message: any, user: string) => void>} */
 	handlers;
     /** @type {Map<string, import('ws')>} */
-    people;
+	people;
+	
+	alreadyEnded = false;
 
     /**
      * Crea una instancia de ServerGameSocket para una sala específica.
@@ -297,7 +299,10 @@ export class ServerGameSocket {
     /**
      * Handler para cuando el juego termina
      */
-   handleGameEnded(msg) {
+	handleGameEnded(msg) {
+		if (this.alreadyEnded) return;
+		this.alreadyEnded = true;
+
         console.log("🏁 Partida terminada.");
 		const winner = msg.results.sort((a, b) => b.score - a.score)[0];
 		const loser = msg.results.sort((a, b) => b.score - a.score)[1];
@@ -389,11 +394,12 @@ export class ServerGameSocket {
         const sortedResults = results.sort((a, b) => b.score - a.score);
         const winner = sortedResults[0];
         
-        if (!winner || !winner.username) {
+        if (!winner || !winner.id || !winner.username) {
             return null;
         }
 
-        return {
+		return {
+			userId:   winner.id,
             username: winner.username,
             score: winner.score
         };

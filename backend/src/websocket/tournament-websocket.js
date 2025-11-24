@@ -14,17 +14,25 @@ const tournamentDisconnectTimers = new Map();
 async function tournamentWebsocket(fastify) {
   // Conexiones por torneo: tournamentId -> Set<{ userId, socket }>
   const connections = new Map();
+	
+  let txChain = Promise.resolve();
 
-  async function withTournamentTransaction(work) {
-    await fastify.db.exec('BEGIN IMMEDIATE TRANSACTION');
-    try {
-      const result = await work();
-      await fastify.db.exec('COMMIT');
-      return result;
-    } catch (error) {
-      try { await fastify.db.exec('ROLLBACK'); } catch {}
-      throw error;
-    }
+  function withTournamentTransaction(work) {
+    const run = async () => {
+      await fastify.db.exec('BEGIN IMMEDIATE TRANSACTION');
+      try {
+        const result = await work();
+        await fastify.db.exec('COMMIT');
+        return result;
+      } catch (error) {
+        try { await fastify.db.exec('ROLLBACK'); } catch {}
+        throw error;
+      }
+    };
+
+    // Encadenar esta transacción a la anterior
+    txChain = txChain.then(run, run);
+    return txChain;
   }
 
   // Limpieza inicial: Eliminar torneos vacíos o huérfanos
@@ -190,7 +198,7 @@ async function tournamentWebsocket(fastify) {
           ? Math.max(rawMatchTimeLimit, MIN_MATCH_TIME_LIMIT_SECONDS)
           : null;
         const config = {
-          mapKey: tournamentConfig?.map_key || 'ObstacleMap',
+          mapKey: tournamentConfig?.map_key || 'BaseMap',
           powerUpAmount: tournamentConfig?.powerup_amount || 3,
           enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]'),
           windAmount: tournamentConfig?.wind_amount || 50,
@@ -795,27 +803,33 @@ async function tournamentWebsocket(fastify) {
 
       // 2. Convertir username a userId para el ganador
       let winnerPlayer = await fastify.db.get(
-        `SELECT user_id AS userId, username FROM tournament_players 
-         WHERE tournament_id = ? AND username = ?`,
-        [tournamentId, winner.username]
-      );
+		`SELECT user_id AS userId, username FROM tournament_players 
+		WHERE tournament_id = ? AND user_id = ?`,
+		[tournamentId, winner.userId]
+	);
 
       if (!winnerPlayer) {
-        const matchEntry = bracket.rounds[bracket.currentRound]?.matches.find(m => m.matchId === matchId);
-        const fallbackPlayer = [matchEntry?.player1, matchEntry?.player2]
-          .filter(Boolean)
-          .find(p => p.username === winner.username);
+		const matchEntry = bracket.rounds[bracket.currentRound]?.matches.find(m => m.matchId === matchId);
+		const fallbackPlayer = [matchEntry?.player1, matchEntry?.player2]
+			.filter(Boolean)
+			.find(p =>
+			(winner.userId && p.userId === winner.userId) ||
+			(winner.username && p.username === winner.username)
+			);
 
-        if (fallbackPlayer) {
-          winnerPlayer = {
-            userId: fallbackPlayer.userId,
-            username: fallbackPlayer.username
-          };
-        } else {
-          console.warn(`No se pudo determinar el ganador para torneo ${tournamentId}, match ${matchId}`);
-          return;
-        }
-      }
+		if (fallbackPlayer) {
+			winnerPlayer = {
+			userId: fallbackPlayer.userId,
+			username: fallbackPlayer.username
+			};
+		} else {
+			console.warn(`No se pudo determinar el ganador para torneo ${tournamentId}, match ${matchId}`, {
+			winnerFromEvent: winner,
+			matchEntry
+			});
+			return;
+		}
+		}
 
       const winnerData = {
         userId: winnerPlayer.userId,
@@ -868,11 +882,16 @@ async function tournamentWebsocket(fastify) {
           console.error('Failed blockchain store final bracket on-chain:', e);
         }
 
-        broadcast(tournamentId, {
-          type: 'TournamentFinished',
-          winner: advanceResult.winner,
-          tournamentId
-        });
+        const finalWinner =
+			(updatedBracket && updatedBracket.winner) ||
+			advanceResult.winner ||
+			winnerData;
+
+		broadcast(tournamentId, {
+			type: 'TournamentFinished',
+			winner: finalWinner,
+			tournamentId
+		});
 
       } else if (advanceResult?.nextRound) {
         // Nueva ronda iniciada
@@ -900,7 +919,7 @@ async function tournamentWebsocket(fastify) {
           ? Math.max(rawMatchTimeLimit, MIN_MATCH_TIME_LIMIT_SECONDS)
           : null;
         const config = {
-            mapKey: tournamentConfig?.map_key || 'ObstacleMap',
+            mapKey: tournamentConfig?.map_key || 'BaseMap',
             powerUpAmount: tournamentConfig?.powerup_amount || 3,
             enabledPowerUps: JSON.parse(tournamentConfig?.enabled_powerups || '[]'),
             windAmount: tournamentConfig?.wind_amount || 50,

@@ -1,7 +1,7 @@
 import { authenticate } from '../../middleware/auth.js';
 
 const DEFAULT_CFG = {
-  mapKey: 'MultiplayerMap',
+  mapKey: 'BaseMap',
   powerUpAmount: 5,
   enabledPowerUps: ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"],
   windAmount: 50,

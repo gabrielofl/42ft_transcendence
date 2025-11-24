@@ -299,7 +299,7 @@ export class BracketViewer {
   private renderMatch(match: Match, roundIndex: number): string {
     const getPlayerClass = (player: Player | null, isWinner: boolean) => {
       if (!player) return 'bg-gray-700 text-gray-500';
-      if (isWinner) return 'bg-green-600 text-white';
+      if (isWinner) return 'bg-green-600 text-white border border-yellow-500/70';
       if (match.status === 'completed') return 'bg-red-600 text-white';
       if (match.status === 'in_progress') return 'bg-blue-600 text-white';
       return 'bg-gray-600 text-white';
@@ -308,21 +308,43 @@ export class BracketViewer {
     const isWinner1 = match.winner?.userId === match.player1?.userId;
     const isWinner2 = match.winner?.userId === match.player2?.userId;
 
-    const getStatusIcon = () => {
-      switch (match.status) {
-        case 'in_progress': return '🔄';
-        case 'completed': return '✅';
-        default: return '⏳';
-      }
-    };
+	const isCurrentRound = roundIndex === this.bracketState.currentRound;
+
+	const effectiveStatus: Match['status'] =
+		match.status === 'completed'
+		? 'completed'
+		: (isCurrentRound ? 'in_progress' : 'pending');
+		const getStatusIcon = () => {
+	switch (effectiveStatus) {
+		case 'in_progress':
+		return `
+			<svg class="w-6 h-6 text-blue-400 animate-pulse" viewBox="0 0 24 24">
+			<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+			<path d="M12 6v6l4 2" fill="none" stroke="currentColor" stroke-width="2" />
+			</svg>`;
+		case 'completed':
+		return `
+			<svg class="w-6 h-6 text-green-400" viewBox="0 0 24 24">
+			<path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2"/>
+			</svg>`;
+		default:
+		return `
+			<svg class="w-6 h-6 text-gray-500" viewBox="0 0 24 24">
+			<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+			<path d="M12 7v5l3 3" fill="none" stroke="currentColor" stroke-width="2" />
+			</svg>`;
+	}
+	};
 
     return `
       <div class="relative flex flex-col items-center space-y-2 w-full">
         <div class="text-xs text-gray-400 mb-1">Match ${match.matchId}</div>
         
         <div class="flex items-center gap-2 w-full">
-          <div class="text-xs">${getStatusIcon()}</div>
-          <div class="flex-1">
+          <div class="flex items-center gap-1 text-[11px] text-gray-200">
+			${getStatusIcon()}
+		</div>
+          <div class="flex-1 space-y-1">
             <div class="text-sm text-center px-3 py-2 rounded ${getPlayerClass(match.player1, isWinner1)}">
               ${match.player1?.username || 'TBD'}${match.score1 !== undefined && match.score1 !== null ? ` (${match.score1})` : ''}
             </div>
@@ -333,10 +355,10 @@ export class BracketViewer {
         </div>
 
         ${roundIndex < this.bracketState.rounds.length - 1 ? `
-          <div class="absolute right-[-20px] top-1/2 transform -translate-y-1/2">
+          <div class="absolute right-[-20px] top-1/2 transform -translate-y-1/3">
             <svg width="20" height="40" viewBox="0 0 20 40">
-              <path d="M0 20 L20 20 L20 10" stroke="white" stroke-width="2" fill="none"/>
-              <path d="M0 20 L20 20 L20 30" stroke="white" stroke-width="2" fill="none"/>
+              <path d="M0 20 L20 20 L20 10" stroke="white" stroke-width="4" fill="none"/>
+              <path d="M0 20 L20 20 L20 30" stroke="white" stroke-width="4" fill="none"/>
             </svg>
           </div>
         ` : ''}

@@ -9,7 +9,7 @@ import {  setupAlert } from "../AlertModal.js";
 
 let game: ClientGame | null = null;
 const ALL_POWERUPS: PowerUpType[] = ["MoreLength","LessLength","CreateBall","Shield","SpeedDown","SpeedUp"];
-export let SelectedMap: MapDefinition = Maps.MultiplayerMap;
+export let SelectedMap: MapDefinition = Maps.BaseMap;
 
 // ---------- tiny utils ----------
 function pretty(code: string) { return code.replace(/(.{3})/g, "$1 ").trim(); }
@@ -90,7 +90,7 @@ function styleBtn(btn: HTMLButtonElement, bg: string) {
 function applyConfigToUI(stateLike: any) {
   try {
     const cfg = stateLike?.config || stateLike;
-    const mapKey = cfg?.mapKey || 'MultiplayerMap';
+    const mapKey = cfg?.mapKey || 'BaseMap';
     const pua = Number.isFinite(cfg?.powerUpAmount) ? cfg.powerUpAmount : 5;
     const enabled = new Set(Array.isArray(cfg?.enabledPowerUps) ? cfg.enabledPowerUps : ALL_POWERUPS);
     const windAmount = Number.isFinite(cfg?.windAmount) ? cfg.windAmount : 50;
@@ -101,7 +101,7 @@ function applyConfigToUI(stateLike: any) {
     const li = Array.from(mapList.children).find(el => (el as HTMLElement).textContent?.trim() === mapKey) as HTMLElement | undefined;
     if (li) li.style.background = "#ddd";
 
-    const def = Maps[mapKey as keyof typeof Maps] ?? Maps.MultiplayerMap;
+    const def = Maps[mapKey as keyof typeof Maps] ?? Maps.BaseMap;
     renderPreview(def);
 
     const powerupAmountSlider = document.getElementById('powerup-amount') as HTMLInputElement | null;
@@ -259,7 +259,7 @@ function getMaxPlayersForMap(mapKey: string): number {
       document.querySelectorAll<HTMLInputElement>('input[name="powerup-type"]:checked')
     ).map(cb => cb.value as PowerUpType);
 
-    const chosenMapKey = selectedMapKey ?? "MultiplayerMap";
+    const chosenMapKey = selectedMapKey ?? "BaseMap";
 	const maxPlayers = getMaxPlayersForMap(chosenMapKey);
 
     const createOptions = {

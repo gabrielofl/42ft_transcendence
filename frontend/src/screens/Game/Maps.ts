@@ -17,30 +17,6 @@ export const BaseMap: MapDefinition = {
     spots: [new Vector3(0, 0.5, -25), new Vector3(0, 0.5, 25)],
 };
 
-export const ObstacleMap: MapDefinition = {
-    size: { width: 30, height: 50 },
-    walls: [
-        { position: [-15, 0], length: 50, rotation: Math.PI / 2 },
-        { position: [15, 0], length: 50, rotation: Math.PI / 2 }
-    ],
-    obstacles: [
-        { position: [0, 0], length: 10, rotation: 0, life: 5 }
-    ],
-    spots: [new Vector3(0, 0.5, -25), new Vector3(0, 0.5, 25)],
-};
-
-export const TestMap: MapDefinition = {
-    size: { width: 30, height: 50 },
-    walls: [
-        { position: [-15, 0], length: 50, rotation: Math.PI / 2 },
-        { position: [15, 0], length: 50, rotation: Math.PI / 2 },
-        { position: [0, 25], length: 30, rotation: 0 },
-        // { position: [0, -25], length: 30, rotation: 0 }
-    ],
-    obstacles: [],
-    spots: [new Vector3(0, 0.5, -25)],
-};
-
 export const MultiplayerMap: MapDefinition = {
     size: { width: 50, height: 50 },
     walls: [
@@ -54,13 +30,10 @@ export const MultiplayerMap: MapDefinition = {
 };
 
 export const Maps: Record<string, MapDefinition> = {
-    MultiplayerMap,
-    TestMap,
-    ObstacleMap,
     BaseMap,
+    MultiplayerMap
 };
 
 export const TournamentMaps: Record<string, MapDefinition> = {
-    ObstacleMap,
-    BaseMap,
+    BaseMap
 };

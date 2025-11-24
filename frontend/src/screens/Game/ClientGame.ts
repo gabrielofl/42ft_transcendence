@@ -68,7 +68,7 @@ protected readonly WIN_POINTS = 50;
         Shield: (game) => new PowerUpShield(game),
     }; */
 
-    constructor(canvas: HTMLCanvasElement, map: MAPS.MapDefinition = MAPS.MultiplayerMap, preview: boolean = false) {
+    constructor(canvas: HTMLCanvasElement, map: MAPS.MapDefinition = MAPS.BaseMap, preview: boolean = false) {
         this.engine = new BABYLON.Engine(canvas, true);
         this.scene = new BABYLON.Scene(this.engine);
         this.Map = map;

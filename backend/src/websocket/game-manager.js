@@ -62,7 +62,7 @@ export async function startGame(roomCode, combined, config) {
       }
     });
 
-    gameSocket.game.Map = MAPS[config.mapKey] || MAPS.MultiplayerMap;
+    gameSocket.game.Map = MAPS[config.mapKey] || MAPS.BaseMap;
     console.log("Game Map");
     // console.log(gameSocket.game.Map);
     gameSocket.game.maxPowerUps = config.powerUpAmount;

@@ -88,7 +88,7 @@ async function databasePlugin(fastify, opts) {
 			current_round INTEGER DEFAULT 0,
 			bracket     TEXT,                                 -- JSON string del bracket
 			-- Tournament configuration
-			map_key     TEXT     DEFAULT 'ObstacleMap',       -- Map configuration
+			map_key     TEXT     DEFAULT 'BaseMap',       -- Map configuration
 			powerup_amount INTEGER DEFAULT 3,                 -- Number of powerups
 			enabled_powerups TEXT DEFAULT '[]',               -- JSON array of enabled powerups
 			wind_amount INTEGER DEFAULT 50,                   -- Wind strength
