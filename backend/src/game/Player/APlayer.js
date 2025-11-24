@@ -44,7 +44,10 @@ export class APlayer {
 
         // Tratamiento de efectos.
         this.Effects.OnAddEvent.Subscribe((effect) => {
-            effect.OnDisposeEvent.Subscribe(() => this.Effects.Remove(effect));
+            effect.OnDisposeEvent.Subscribe(() => {
+                this.Effects.Remove(effect);
+                this.game.MessageBroker.Publish("EffectsChanged", this.GetEffectsChangedMessage());
+            });
         });
 
         // TODO pasar a server Subscripción a mensajería global.

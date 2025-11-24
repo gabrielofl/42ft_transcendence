@@ -74,7 +74,7 @@ export class APlayerEffect { //implements IEffectCommand<APlayer>
                     this.Undo(target);
                 }
                 this.game.MessageBroker.Unsubscribe("GamePause", this.onGamePause);
-            }, this.duration * 1000);
+            }, this.duration);
             this.timer.Start();
         }
     }

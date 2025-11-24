@@ -216,7 +216,7 @@ protected readonly WIN_POINTS = 50;
         } else {
             this.players.forEach((p, idx) => {
                 if (p instanceof LocalPlayer) {
-                    let position: BABYLON.Vector3 = this.Map.spots[idx]
+                    let position: BABYLON.Vector3 = this.Map.spots[idx].clone();
                     position.x = position.x * 2.5;
                     position.y = 42;
                     position.z = position.z * 2.5;
