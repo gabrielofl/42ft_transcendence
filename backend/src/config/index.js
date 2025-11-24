@@ -38,7 +38,7 @@ const config = {
 	
 	// CORS settings (Cross-Origin Resource Sharing)
 	cors: {
-		origin: process.env.FRONTEND_URL,
+		origin: '*',
 		methods: ['GET', 'POST', 'OPTIONS'],
 		credentials: true,  // Allow cookies to be sent
 	},

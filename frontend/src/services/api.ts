@@ -174,6 +174,7 @@ export class ApiService {
 
   async googleLogin(credential: string): Promise<LoginResponse> {
     try {
+		console.log('hola    ', credential);
       const response = await this.makeRequest('/auth/google', {
         method: 'POST',
         body: JSON.stringify({ credential})

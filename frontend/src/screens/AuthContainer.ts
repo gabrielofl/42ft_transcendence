@@ -167,6 +167,7 @@ function normalizeBackendError(
 
 window.handleCredentialResponse = async (response: any) => {
 	try {
+		console.log('we are in handle credential repsonse');
 		if (!response.credential)
 			return;
 		const result = await apiService.googleLogin(response.credential);
@@ -687,7 +688,7 @@ function setupAuthEvents(): void {
     if (window.google?.accounts?.id) {
       window.google.accounts.id.prompt((notification: any) => {
         if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-          console.log("Google Sign-In prompt not shown:", notification);
+          console.log("Google Sign-In prompt not shown:", notification, '   -----', window.google.accounts.id);
         }
       });
     } else {
