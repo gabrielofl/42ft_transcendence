@@ -25,9 +25,42 @@ export function initResultModal(): void {
   	}
 }
 
-	
+export function resetResultModal() {
+	const modal = document.getElementById("result-modal");
+	if (!modal) return;
 
-export async function setupResult(msg: ScoreMessage, redirect: string) {
+	// Remove any duplicated animations
+	const animationEl = document.getElementById("result-animation-img") as HTMLImageElement;
+	const animationEl2 = document.getElementById("result-animation-img-bis") as HTMLImageElement;
+
+	if (animationEl) animationEl.src = "";
+	if (animationEl2) animationEl2.src = "";
+
+	// Reset static text
+	const title = document.getElementById("result-title");
+	const subtitle = document.getElementById("result-subtitle");
+	const message = document.getElementById("result-message");
+	const score = document.getElementById("result-score");
+	const resultImg = document.getElementById("result-img") as HTMLImageElement;
+
+	if (title) title.textContent = "";
+	if (subtitle) subtitle.textContent = "";
+	if (message) message.textContent = "";
+	if (score) score.textContent = "";
+	if (resultImg) resultImg.src = "";
+
+	// Remove previously attached click handlers
+	const btn = document.getElementById("result-btn") as HTMLButtonElement;
+	if (btn) {
+		const cloned = btn.cloneNode(true) as HTMLButtonElement;
+		btn.parentNode?.replaceChild(cloned, btn);
+	}
+	
+	modal.classList.remove("hidden");
+}
+
+
+export async function setupResult(msg: ScoreMessage, opponent: string) {
 
 	const modal = document.getElementById("result-modal");
 	const title = document.getElementById("result-title");
@@ -50,21 +83,39 @@ export async function setupResult(msg: ScoreMessage, redirect: string) {
 	if (msg.results[0].username == userData.username)
 		result = 1;
 	
+	console.log("REDIRECT ", opponent);	
 	if (result) {
 		titleTxt = "Congratulations!";
 		subtitleTxt = "You have won the game";
-		messageTxt = "You're rich now, and should be proud!";
-		scoreTxt = "YOU EARN +150PTS";
 		frames = winFrames;
 		imgURL = `${API_BASE_URL}/static/win_dog.jpg`;
+		if (opponent == "user")
+		{
+			messageTxt = "You're rich now, and should be proud!";
+			scoreTxt = "YOU EARN +150PTS";
+		}
+		else
+		{
+			messageTxt = "Oh well, you haven't played with anyone we know.";
+			scoreTxt = "YOU EARN +NOTHING";
+		}
 	}
 	else {
 		titleTxt = "Oh, you almost got it!";
 		subtitleTxt = "You lost the game";
-		messageTxt = "At least you got something";
-		scoreTxt = "YOU EARN +50pts";
+		
 		frames = loseFrames;
 		imgURL = `${API_BASE_URL}/static/loose_cat.jpg`;
+		if (opponent == "user")
+		{
+			messageTxt = "At least you got something";
+			scoreTxt = "YOU EARN +50pts";
+		}
+		else
+		{
+			messageTxt = "At least you got something";
+			scoreTxt = "YOURSELF";
+		}
 	}
 	
 	if (title && subtitle && message && score)
@@ -90,17 +141,8 @@ export async function setupResult(msg: ScoreMessage, redirect: string) {
 
 	btn.addEventListener("click", () => {
 		modal?.classList.add("hidden");
-		switch (redirect)
-		{
-			case "none":
-				break;
-			case "home":
-				navigateTo("home");
-				break;
-			default:
-				break;
-		}
-
+		navigateTo("home");
+		
     });
 
 }

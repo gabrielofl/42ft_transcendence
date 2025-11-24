@@ -9,7 +9,7 @@ import { Maps } from "./Maps";
 import { WindCompass } from "./WindCompass";
 import { PaddleShieldEffect } from "./PowerUps/Effects/PaddleShieldEffect";
 import { getCurrentUser } from "../ProfileHistory";
-import { initResultModal, setupResult } from "../ResultModal";
+import { initResultModal, resetResultModal,setupResult } from "../ResultModal";
 import { API_BASE_URL, makeWsUrl } from "../config";
 import { getStoredTournamentMatchInfo } from "../../services/tournament-state";
 import tournamentGameEndedTemplate from "./tournament-game-ended.html?raw";
@@ -319,8 +319,14 @@ export class ClientGameSocket {
 		}
 		else 
 		{
+			let opponent = "user";
 			initResultModal();
-			setupResult(msg, "home");
+			resetResultModal();
+			for (let index = 0; index < msg.results.length; index++) {
+				if (msg.results[index].id < 0)
+					opponent = "local";
+			} 
+			setupResult(msg, opponent);
 		}
 		
 	}
