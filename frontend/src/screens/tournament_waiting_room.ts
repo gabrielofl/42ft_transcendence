@@ -20,6 +20,7 @@ let totalSlots = 8;
 let isHost = false;
 let myReadyState = false; // Track local ready state
 let readyButtonRef: HTMLButtonElement | null = null; // Keep a reference to the ready button
+let globalTournamentStatus: 'waiting' | 'in_progress' | 'finished' | null = null;
 
 // Bracket and notifications
 let bracketViewer: BracketViewer | null = null;
@@ -85,6 +86,13 @@ function showTournamentBanner(message: string, variant: "success" | "info" = "su
 function updateReadyButton() {
   if (!readyButtonRef) return;
   const button = readyButtonRef;
+	
+  if (globalTournamentStatus && globalTournamentStatus !== 'waiting') {
+    button.style.display = 'none';
+    return;
+  } else {
+    button.style.display = '';
+  }
 
   const setInProgressState = () => {
     button.disabled = true;
@@ -417,6 +425,7 @@ export async function renderWaitingRoom(): Promise<void> {
   
   setTournamentName(tournament.name);
   const currentTournamentStatus = tournament.status;
+  globalTournamentStatus = currentTournamentStatus;
   isHost = tournament.creator_id === userId;
   tournamentPlayers = tournament.players || [];
   totalSlots = tournament.max_players || 8;
@@ -605,7 +614,7 @@ export async function renderWaitingRoom(): Promise<void> {
     showResultOverlay({
       outcome: isWinner ? 'final' : 'lose',
       scope: 'tournament',
-      mountIn: 'main',
+      mountIn: document.body,
       frameLabel: 'Champion',
       winnerName: data.winner.username,
       onContinue: () => {
@@ -791,7 +800,11 @@ function setPlayerReady(uid: number, ready: boolean) {
 function applyTournamentState(state: any) {
   if (state.id) tournamentId = state.id;
   if (state.name) setTournamentName(state.name);
-  
+
+  if (state.status) {
+    globalTournamentStatus = state.status;
+	}
+
   const slotsFromServer = state.max_players || totalSlots;
   if (slotsFromServer !== totalSlots) {
     totalSlots = slotsFromServer;

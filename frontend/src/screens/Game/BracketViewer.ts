@@ -249,7 +249,6 @@ export class BracketViewer {
             <h2 class="text-[--primary-color] text-xl font-bold">Tournament Bracket</h2>
             <div class="text-sm text-gray-400">Final Results</div>
             <div class="text-lg text-yellow-400 font-bold mt-2">
-              🏆 Winner: ${this.bracketState.winner?.username}
             </div>
           </div>
           <div class="flex-1 overflow-x-auto">

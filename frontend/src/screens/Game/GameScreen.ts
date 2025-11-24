@@ -193,11 +193,29 @@ export function replaceTemplatePlaceholders(template: string, data: Record<strin
 	return template.replace(/\$\{(\w+)\}/g, (_, key) => data[key] ?? '');
 }
 
+function focusGameCanvas() {
+  const canvas = document.getElementById("pong-canvas") as HTMLCanvasElement | null;
+  if (!canvas) return;
+
+  if (!canvas.hasAttribute("tabindex")) {
+    canvas.setAttribute("tabindex", "0");
+  }
+
+  requestAnimationFrame(() => {
+    try {
+      canvas.focus();
+    } catch (e) {
+      console.warn("Could not focus canvas:", e);
+    }
+  });
+}
+
 export async function renderGame() {
 	const main = document.getElementById('main');
 	if (!main) return;
 	
 	main.innerHTML = gameTemplate;
+	focusGameCanvas();
 
 	// Verificar si es un torneo
 	const { status, matchInfo } = await validateStoredTournamentMatch();
@@ -220,6 +238,7 @@ export async function renderGame() {
 		const game = await ClientGameSocket.GetInstance().StartGame();
 		syncControlsFromGame(game);
 		renderLocalControlsOverCanvas(game);
+		focusGameCanvas();
 	} catch (error) {
 		console.error("❌ Error iniciando juego normal:", error);
 		setupAlert('Oops!', "No se pudo iniciar la partida. Inténtalo de nuevo.", "Close");
@@ -277,6 +296,7 @@ async function setupTournamentGame(matchInfo: any): Promise<void> {
 			[matchInfo.player1.username]: { score: 0, inventory: {}, effects: [] },
 			[matchInfo.player2.username]: { score: 0, inventory: {}, effects: [] },
 		});
+		focusGameCanvas();
 	} catch (error) {
 		console.error('❌ Error configurando juego de torneo:', error);
 		alert('Error iniciando el juego del torneo. Inténtalo de nuevo.');
