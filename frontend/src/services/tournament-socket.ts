@@ -38,7 +38,7 @@ export interface TournamentForfeitEvent {
 }
 
 export class ClientTournamentSocket {
-  private static instance: ClientTournamentSocket;
+  private static instance: ClientTournamentSocket | undefined;
   private ws: WebSocket | null = null;
   public UIBroker = new MessageBroker();
   private tournamentId: number | null = null;
@@ -126,6 +126,7 @@ export class ClientTournamentSocket {
       this.ws.close();
       this.ws = null;
     }
+    ClientTournamentSocket.instance = undefined;
     
     // Limpiar TODAS las suscripciones para evitar duplicados en próxima conexión
     this.UIBroker.ClearAll();
