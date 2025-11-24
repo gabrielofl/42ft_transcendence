@@ -472,19 +472,28 @@ export class ServerGame {
 		return dir.scale(magnitude);
 	}
 
-	GameEnded() {
+	GameEnded(userDisconected) {
 		logToFile("ServerGame GameEnded Start");
 		this.isEnding = true;
 		this.isTimeBased = false;
 		this.clearMatchTimer();
 		this.isSuddenDeath = false;
 
-		if (this.Paused === true)
-			return;
+		// if (this.Paused === true)
+		// 	return;
+
+		let message = this.GetScoreMessage("GameEnded");
+
+		if (userDisconected) {
+			for (let index = 0; index < message.results.length; index++) {
+				if (message.results[index].id === userDisconected)
+					message.results[index].score = -42;
+			}
+		}
 
 		this.MessageBroker.Publish("GamePause", {type: "GamePause", pause: true});
 		this.Balls.GetAll().forEach(ball => ball.Dispose());
-		this.MessageBroker.Publish("GameEnded", this.GetScoreMessage("GameEnded"));
+		this.MessageBroker.Publish("GameEnded", message);
 		logToFile("ServerGame GameEnded End");
 	}
 

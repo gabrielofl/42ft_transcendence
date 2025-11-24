@@ -18,6 +18,7 @@ const loseFrames = [
 	`${API_BASE_URL}/static/fire_03.png`,
 ];
 
+let animationIntervalId: number | null = null;
 
 export function initResultModal(): void {
 	if (!document.getElementById("result-modal")) {
@@ -26,6 +27,10 @@ export function initResultModal(): void {
 }
 
 export function resetResultModal() {
+	if (animationIntervalId !== null) {
+        clearInterval(animationIntervalId);
+        animationIntervalId = null;
+    }
 	const modal = document.getElementById("result-modal");
 	if (!modal) return;
 
@@ -129,15 +134,22 @@ export async function setupResult(msg: ScoreMessage, opponent: string) {
 	{
 		resultImg.src = imgURL;
 	}
+	
 	if (animationEl && animationEl2) {
-	let index = 0;
+    // Clear previous animation interval
+    if (animationIntervalId !== null) {
+        clearInterval(animationIntervalId);
+        animationIntervalId = null;
+    }
 
-	setInterval(() => {
-		animationEl.src = frames[index];
-		animationEl2.src = frames[index];
-		index = (index + 1) % frames.length;
-	}, 300); // 300ms per frame
-	}
+    let index = 0;
+
+    animationIntervalId = setInterval(() => {
+        animationEl.src = frames[index];
+        animationEl2.src = frames[index];
+        index = (index + 1) % frames.length;
+    }, 300);
+}
 
 	btn.addEventListener("click", () => {
 		modal?.classList.add("hidden");

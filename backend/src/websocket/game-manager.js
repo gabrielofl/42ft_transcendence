@@ -144,17 +144,13 @@ export async function handleGameConnection(connection, req, fastify) {
   const isPlayerInRoom = data && data.players.some(p => p.userId === user);
 
   connection.on('close', () => {
-		console.log("\nLOLOLOLOLO \n");
-		console.log("\USER: ", user);
-
 	  gameSocket.RemovePeople(user, connection, user);
     if (gameSocket.people.size === 0) {
-		console.log("\nLALALLA \n");
       removeGame(roomCode);
     } 
     else if (isPlayerInRoom) {
-      gameSocket.game.MessageBroker.Publish("GamePause", {type: "GamePause", pause: true});
-      gameSocket.game.StartFrontEndTimer(30, `User ${data.players.find(p => p.userId === user).username} disconnected`, () => gameSocket.game.MessageBroker.Publish("GameEnded", gameSocket.game.GetScoreMessage("GameEnded")));
+	gameSocket.game.MessageBroker.Publish("GamePause", {type: "GamePause", pause: true});
+      gameSocket.game.StartFrontEndTimer(10, `User ${data.players.find(p => p.userId === user).username} disconnected`, () => gameSocket.game.GameEnded(user));
     }
   });
 
