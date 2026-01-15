@@ -16,3 +16,4 @@ fclean:
 
 nuke:
 	docker system prune -a --volumes -f
+	docker container prune
